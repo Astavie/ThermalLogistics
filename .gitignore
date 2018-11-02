@@ -1,0 +1,10 @@
+# idea
+classes
+.idea
+
+# gradle
+build
+.gradle
+
+# other
+run

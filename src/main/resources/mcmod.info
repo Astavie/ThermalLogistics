@@ -1,0 +1,11 @@
+[
+  {
+    "modid": "thermallogistics",
+    "name": "Thermal Logistics",
+    "description": "Logistics Pipes, but servos.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "authorList": [ "Astavie", "Thaumatarge" ],
+    "credits": "The Aleph Null team"
+  }
+]
