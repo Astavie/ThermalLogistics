@@ -34,7 +34,7 @@ import java.util.*;
 
 public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> extends TileNameable implements IProcessHolder<P, T, I>, IProcessLoader, ITickable {
 
-	public final InventorySpecial requester = new InventorySpecial(i -> i.getItem() instanceof ItemRequester, null);
+	public final InventorySpecial requester = new InventorySpecial(1, i -> i.getItem() instanceof ItemRequester, null);
 
 	private final Set<Container> registry = new HashSet<>();
 

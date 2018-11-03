@@ -219,10 +219,8 @@ public class GuiTerminalItem extends GuiTerminal {
 				int slot = slider.getValue() * 9 + posX + posY * 9;
 				if (slot < filter.size()) {
 					selected = filter.get(slot).getLeft();
-					if (button.isVisible()) {
+					if (button.isVisible())
 						amount.setText(Long.toString(filter.get(slot).getRight() ? selected.getMaxStackSize() : Math.min(filter.get(slot).getMiddle(), selected.getMaxStackSize())));
-						amount.setFocused(true);
-					}
 				} else selected = null;
 			}
 			return;

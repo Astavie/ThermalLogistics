@@ -11,8 +11,8 @@ public class InventorySpecial extends InventorySimple {
 	private final Predicate<ItemStack> predicate;
 	private final Consumer<ItemStack> consumer;
 
-	public InventorySpecial(Predicate<ItemStack> predicate, Consumer<ItemStack> consumer) {
-		super(1);
+	public InventorySpecial(int limit, Predicate<ItemStack> predicate, Consumer<ItemStack> consumer) {
+		super(1, limit);
 		this.predicate = predicate;
 		this.consumer = consumer;
 	}

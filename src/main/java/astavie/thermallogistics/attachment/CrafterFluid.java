@@ -6,6 +6,7 @@ import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.process.ProcessFluid;
 import astavie.thermallogistics.util.IDestination;
 import astavie.thermallogistics.util.IProcessLoader;
+import astavie.thermallogistics.util.NetworkUtils;
 import codechicken.lib.fluid.FluidUtils;
 import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
@@ -348,15 +349,18 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 		}
 	}
 
-	private void onFill(FluidStack fluid) {
+	private int onFill(FluidStack fluid, boolean fill) {
+		int i = 0;
 		for (ProcessFluid process : processes) {
-			FluidStack stack = process.addFluid(fluid);
-			if (stack != null && stack.amount > 0) {
-				if (stack.amount == fluid.amount)
+			int amount = process.addFluid(fluid, fill);
+			if (amount > 0) {
+				i += amount;
+				if (amount == fluid.amount)
 					break;
-				fluid = FluidUtils.copy(fluid, fluid.amount - stack.amount);
+				fluid = FluidUtils.copy(fluid, fluid.amount - amount);
 			}
 		}
+		return i;
 	}
 
 	@Override
@@ -409,13 +413,13 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 		@Override
 		public void detectAndSendChanges(EntityPlayer player) {
 			for (int i = 0; i < inputs.length; i++) {
-				if (!FluidHelper.isFluidEqual(inputs[i], CrafterFluid.this.inputs[i])) {
+				if (!NetworkUtils.areFluidStacksEqual(inputs[i], CrafterFluid.this.inputs[i])) {
 					inputs[i] = CrafterFluid.this.inputs[i];
 					PacketHandler.sendTo(getPacket(inputs[i], true, i), player);
 				}
 			}
 			for (int i = 0; i < outputs.length; i++) {
-				if (!FluidHelper.isFluidEqual(outputs[i], CrafterFluid.this.outputs[i])) {
+				if (!NetworkUtils.areFluidStacksEqual(outputs[i], CrafterFluid.this.outputs[i])) {
 					outputs[i] = CrafterFluid.this.outputs[i];
 					PacketHandler.sendTo(getPacket(outputs[i], false, i), player);
 				}
@@ -452,11 +456,10 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 
 		@Override
 		public int fill(FluidStack resource, boolean doFill) {
-			if (doFill && !isInvalid()) {
-				int amount = handler.fill(resource, doFill);
+			if (!isInvalid()) {
+				int amount = handler.fill(resource, false);
 				if (amount > 0)
-					onFill(FluidUtils.copy(resource, amount));
-				return amount;
+					return handler.fill(FluidUtils.copy(resource, onFill(FluidUtils.copy(resource, amount), doFill)), doFill);
 			}
 			return handler.fill(resource, doFill);
 		}

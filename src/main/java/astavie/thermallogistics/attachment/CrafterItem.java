@@ -521,13 +521,13 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 		@Override
 		public void detectAndSendChanges(EntityPlayer player) {
 			for (int i = 0; i < inputs.length; i++) {
-				if (!ItemHelper.itemsIdentical(inputs[i], CrafterItem.this.inputs[i])) {
+				if (!ItemStack.areItemStacksEqual(inputs[i], CrafterItem.this.inputs[i])) {
 					inputs[i] = CrafterItem.this.inputs[i];
 					PacketHandler.sendTo(getPacket(inputs[i], true, i), player);
 				}
 			}
 			for (int i = 0; i < outputs.length; i++) {
-				if (!ItemHelper.itemsIdentical(outputs[i], CrafterItem.this.outputs[i])) {
+				if (!ItemStack.areItemStacksEqual(outputs[i], CrafterItem.this.outputs[i])) {
 					outputs[i] = CrafterItem.this.outputs[i];
 					PacketHandler.sendTo(getPacket(outputs[i], false, i), player);
 				}

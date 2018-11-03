@@ -271,7 +271,7 @@ public class NetworkUtils {
 				Attachment attachment = duct.parent.getAttachment(side);
 				if (attachment != null) {
 					if (attachment instanceof CrafterFluid) {
-						for (ProcessFluid process: ((CrafterFluid) attachment).processes)
+						for (ProcessFluid process : ((CrafterFluid) attachment).processes)
 							amt -= process.waiting(fluid);
 						continue;
 					}
@@ -319,6 +319,11 @@ public class NetworkUtils {
 			}
 		}
 		return output;
+	}
+
+	// OTHER
+	public static boolean areFluidStacksEqual(FluidStack a, FluidStack b) {
+		return a == null && b == null || a != null && b != null && a.isFluidStackIdentical(b);
 	}
 
 }

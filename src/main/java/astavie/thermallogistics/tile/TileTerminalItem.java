@@ -35,6 +35,8 @@ import java.io.IOException;
 
 public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, ItemStack> {
 
+	private boolean refreshed = false;
+
 	public final InventorySimple inventory = new InventorySimple(27);
 	public NonNullList<Triple<ItemStack, Long, Boolean>> terminal;
 
@@ -81,7 +83,10 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 					PacketBase p = PacketTileInfo.newPacket(this);
 					GridItem grid = getGrid(DuctToken.ITEMS);
 					if (grid != null) {
-						terminal = NetworkUtils.getItems(grid);
+						if (!refreshed) {
+							terminal = NetworkUtils.getItems(grid);
+							refreshed = true;
+						}
 						p.addInt(terminal.size());
 						for (Triple<ItemStack, Long, Boolean> stack : terminal) {
 							try {
@@ -149,6 +154,12 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 				terminal.add(Triple.of(stack, stackSize, craft));
 			}
 		}
+	}
+
+	@Override
+	public void update() {
+		super.update();
+		refreshed = false;
 	}
 
 	@Override

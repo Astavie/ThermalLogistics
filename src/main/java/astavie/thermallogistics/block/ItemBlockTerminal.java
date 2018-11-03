@@ -57,8 +57,7 @@ public class ItemBlockTerminal extends ItemCore implements IModelRegister, IInit
 			pos = pos.offset(facing);
 
 			if (!itemstack.isEmpty() && player.canPlayerEdit(pos, facing, itemstack) && world.mayPlace(block, pos, false, facing, null)) {
-				int i = this.getMetadata(itemstack.getMetadata());
-				IBlockState newState = block.getStateForPlacement(world, pos, facing, hitX, hitY, hitZ, i, player, hand);
+				IBlockState newState = block.getStateForPlacement(world, pos, facing, hitX, hitY, hitZ, itemstack.getItemDamage(), player, hand);
 
 				if (world.setBlockState(pos, newState, 11)) {
 					IBlockState state = world.getBlockState(pos);

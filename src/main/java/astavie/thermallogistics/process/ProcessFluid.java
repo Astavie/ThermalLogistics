@@ -309,26 +309,28 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 		return Math.max(i, 0);
 	}
 
-	public FluidStack addFluid(FluidStack fluid) {
+	public int addFluid(FluidStack fluid, boolean fill) {
 		int required = crafter.amountRequired(this, fluid) * sum;
 		for (FluidStack stack: sent)
 			if (this.crafter.itemsIdentical(stack, fluid))
 				required -= stack.amount;
 
 		if (required > 0) {
-			FluidStack stack = FluidUtils.copy(fluid, Math.min(required, fluid.amount));
-			for (FluidStack sent: sent) {
-				if (FluidHelper.isFluidEqual(sent, stack)) {
-					sent.amount += stack.amount;
-					crafter.getTile().markChunkDirty();
-					return stack;
+			int i = Math.min(required, fluid.amount);
+			if (fill) {
+				for (FluidStack sent : sent) {
+					if (FluidHelper.isFluidEqual(sent, fluid)) {
+						sent.amount += i;
+						crafter.getTile().markChunkDirty();
+						return i;
+					}
 				}
+				sent.add(FluidUtils.copy(fluid, i));
+				crafter.getTile().markChunkDirty();
 			}
-			sent.add(stack);
-			crafter.getTile().markChunkDirty();
-			return stack;
+			return i;
 		}
-		return null;
+		return 0;
 	}
 
 	@Override
