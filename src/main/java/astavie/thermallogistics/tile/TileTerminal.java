@@ -74,11 +74,6 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 	}
 
 	@Override
-	public List<P> getProcesses() {
-		return processes;
-	}
-
-	@Override
 	public void addProcess(P process) {
 		processes.add(process);
 	}

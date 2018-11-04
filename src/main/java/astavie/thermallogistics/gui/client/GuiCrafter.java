@@ -4,11 +4,12 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.attachment.CrafterFluid;
 import astavie.thermallogistics.compat.ICrafterWrapper;
+import astavie.thermallogistics.gui.client.delegate.IDelegate;
 import astavie.thermallogistics.gui.client.tab.TabFluid;
 import astavie.thermallogistics.gui.client.tab.TabLink;
 import astavie.thermallogistics.gui.container.ContainerCrafter;
-import astavie.thermallogistics.proxy.ProxyClient;
 import cofh.core.gui.GuiContainerCore;
+import cofh.core.gui.element.ElementBase;
 import cofh.core.gui.element.ElementButton;
 import cofh.core.gui.element.tab.TabInfo;
 import cofh.core.util.helpers.BlockHelper;
@@ -38,7 +39,7 @@ public class GuiCrafter extends GuiContainerCore {
 
 	private TabFluid tab;
 
-	public GuiCrafter(InventoryPlayer inventory, Crafter crafter) {
+	public GuiCrafter(InventoryPlayer inventory, Crafter<?, ?, ?> crafter) {
 		super(new ContainerCrafter(inventory, crafter), TEXTURE);
 		this.crafter = crafter;
 		this.container = (ContainerCrafter) inventorySlots;
@@ -57,7 +58,12 @@ public class GuiCrafter extends GuiContainerCore {
 	@Override
 	public void initGui() {
 		super.initGui();
-		ProxyClient.addSlots(crafter, this);
+
+		for (int x = 0; x < container.inputWidth; x++)
+			for (int y = 0; y < container.inputHeight; y++)
+				addElement(createSlot(container.input + x * 18, container.y + container.inputOffset + y * 18, x + y * container.inputWidth, true));
+		for (int i = 0; i < crafter.getOutputs().length; i++)
+			addElement(createSlot(container.output + i * 18, container.y + (int) (18 * 2.5), i, false));
 
 		addTab(new TabLink(this));
 		if (crafter instanceof CrafterFluid) {
@@ -90,6 +96,11 @@ public class GuiCrafter extends GuiContainerCore {
 			addElement(flags[flag]);
 		}
 		setButtons();
+	}
+
+	private <C extends Crafter<?, ?, ?>, D extends IDelegate<?, C>> ElementBase createSlot(int x, int y, int slot, boolean input) {
+		//noinspection unchecked
+		return ((D) crafter.getDelegate()).createSlot(this, x, y, slot, (C) crafter, input);
 	}
 
 	@Override

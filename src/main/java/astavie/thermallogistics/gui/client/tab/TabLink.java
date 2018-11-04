@@ -2,6 +2,7 @@ package astavie.thermallogistics.gui.client.tab;
 
 import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.gui.client.GuiCrafter;
+import astavie.thermallogistics.gui.client.delegate.DelegateItemStack;
 import astavie.thermallogistics.proxy.ProxyClient;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.tab.TabBase;
@@ -47,6 +48,9 @@ public class TabLink extends TabBase {
 
 	@Override
 	protected void drawForeground() {
+		int mouseX = gui.getMouseX() - posX();
+		int mouseY = gui.getMouseY() - posY;
+
 		GlStateManager.disableLighting();
 		drawTabIcon(ProxyClient.ICON_LINK);
 		if (!isFullyOpened())
@@ -67,21 +71,93 @@ public class TabLink extends TabBase {
 		RenderHelper.disableStandardItemLighting();
 		RenderHelper.enableGUIStandardItemLighting();
 
+		ItemStack blockSelect = null;
+		Runnable stackSelect = null;
+
 		for (int i = first; i < first + num; i++) {
 			int x = sideOffset() + 2;
 			int y = 21 + (i - first) * HEIGHT;
 
-			Crafter link = linked.get(i);
+			Crafter<?, ?, ?> link = linked.get(i);
 			BlockPos pos = link.baseTile.getPos().offset(EnumFacing.VALUES[link.side]);
 			IBlockState state = link.baseTile.world().getBlockState(pos);
+
 			//noinspection deprecation
 			ItemStack item = state.getBlock().getItem(link.baseTile.world(), pos, state);
 
+			if (mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17)
+				blockSelect = item;
 			gui.drawItemStack(item, x, y, false, null);
-			ProxyClient.renderSummary(link, gui, x + 18, y, textColor);
-			gui.drawIcon(CoreTextures.ICON_CANCEL, x + 90, y);
+
+			Runnable run = drawSummary(link, x + 18, y);
+			if (run != null)
+				stackSelect = run;
+
+			if (mouseX >= x + 90 && mouseX < x + 106 && mouseY >= y && mouseY < y + 16)
+				gui.drawIcon(CoreTextures.ICON_CANCEL, x + 90, y);
+			else
+				gui.drawIcon(CoreTextures.ICON_CANCEL_INACTIVE, x + 90, y);
 		}
+
+		if (blockSelect != null)
+			DelegateItemStack.INSTANCE.drawHover(gui, mouseX, mouseY, blockSelect);
+		else if (stackSelect != null)
+			stackSelect.run();
+
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+	}
+
+	private <I, C extends Crafter<?, ?, I>> Runnable drawSummary(C crafter, int x, int y) {
+		int mouseX = gui.getMouseX() - posX();
+		int mouseY = gui.getMouseY() - posY;
+
+		I input = null, output = null;
+		boolean bI = false, bO = false;
+
+		boolean b = false;
+		for (I stack : crafter.getInputs()) {
+			if (!crafter.getDelegate().isNull(stack)) {
+				if (input == null)
+					input = stack;
+				if (b) {
+					bI = true;
+					break;
+				} else b = true;
+			}
+		}
+
+		b = false;
+		for (I stack : crafter.getOutputs()) {
+			if (!crafter.getDelegate().isNull(stack)) {
+				if (output == null)
+					output = stack;
+				if (b) {
+					bI = true;
+					break;
+				} else b = true;
+			}
+		}
+		if (input != null)
+			crafter.getDelegate().drawStack(gui, x, y, input);
+		if (bI)
+			gui.getFontRenderer().drawString("...", x + 19, y + 4, textColor);
+
+		gui.drawIcon(ProxyClient.ICON_ARROW_RIGHT, x + 26, y);
+
+		if (output != null)
+			crafter.getDelegate().drawStack(gui, x + 44, y, output);
+		if (bO)
+			gui.getFontRenderer().drawString("...", x + 63, y + 4, textColor);
+
+		if (!crafter.getDelegate().isNull(input) && mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17) {
+			final I i = input;
+			return () -> crafter.getDelegate().drawHover(gui, mouseX, mouseY, i);
+		}
+		if (!crafter.getDelegate().isNull(output) && mouseX >= x + 43 && mouseX < x + 61 && mouseY >= y - 1 && mouseY < y + 17) {
+			final I i = output;
+			return () -> crafter.getDelegate().drawHover(gui, mouseX, mouseY, i);
+		}
+		return null;
 	}
 
 	@Override

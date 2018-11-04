@@ -3,6 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.event.EventHandler;
+import astavie.thermallogistics.gui.client.delegate.DelegateFluidStack;
 import astavie.thermallogistics.process.ProcessFluid;
 import astavie.thermallogistics.util.IDestination;
 import astavie.thermallogistics.util.IProcessLoader;
@@ -80,6 +81,11 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	@Override
 	public boolean itemsIdentical(FluidStack a, FluidStack b) {
 		return a.getFluid() == b.getFluid() && (values[2] || FluidStack.areFluidStackTagsEqual(a, b));
+	}
+
+	@Override
+	public DelegateFluidStack getDelegate() {
+		return DelegateFluidStack.INSTANCE;
 	}
 
 	@Override

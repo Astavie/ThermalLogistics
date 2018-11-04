@@ -119,11 +119,6 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	}
 
 	@Override
-	public List<P> getProcesses() {
-		return processes;
-	}
-
-	@Override
 	public void addProcess(P process) {
 		processes.add(process);
 	}

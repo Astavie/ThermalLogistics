@@ -2,6 +2,7 @@ package astavie.thermallogistics.tile;
 
 import astavie.thermallogistics.gui.client.GuiTerminal;
 import astavie.thermallogistics.gui.client.GuiTerminalItem;
+import astavie.thermallogistics.gui.client.delegate.DelegateItemStack;
 import astavie.thermallogistics.gui.container.ContainerTerminal;
 import astavie.thermallogistics.gui.container.ContainerTerminalItem;
 import astavie.thermallogistics.process.ProcessItem;
@@ -199,6 +200,11 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 	@Override
 	public ItemStack[] getInputs(ProcessItem process) {
 		return new ItemStack[] {process.getOutput()};
+	}
+
+	@Override
+	public DelegateItemStack getDelegate() {
+		return DelegateItemStack.INSTANCE;
 	}
 
 }

@@ -3,6 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.event.EventHandler;
+import astavie.thermallogistics.gui.client.delegate.DelegateItemStack;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.util.IDestination;
 import astavie.thermallogistics.util.IProcessLoader;
@@ -195,6 +196,11 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	@Override
 	public boolean itemsIdentical(ItemStack a, ItemStack b) {
 		return !values[4] && a.getItem().getRegistryName().getNamespace().equals(b.getItem().getRegistryName().getNamespace()) || !values[3] && !Collections.disjoint(Arrays.asList(OreDictionary.getOreIDs(a)), Arrays.asList(OreDictionary.getOreIDs(b))) || a.getItem() == b.getItem() && (values[1] || a.getItemDamage() == b.getItemDamage()) && (values[2] || ItemStack.areItemStackTagsEqual(a, b));
+	}
+
+	@Override
+	public DelegateItemStack getDelegate() {
+		return DelegateItemStack.INSTANCE;
 	}
 
 	@Override

@@ -1,17 +1,6 @@
 package astavie.thermallogistics.proxy;
 
 import astavie.thermallogistics.ThermalLogistics;
-import astavie.thermallogistics.attachment.Crafter;
-import astavie.thermallogistics.attachment.CrafterFluid;
-import astavie.thermallogistics.attachment.CrafterItem;
-import astavie.thermallogistics.gui.client.GuiCrafter;
-import astavie.thermallogistics.gui.client.slots.CrafterFluidSlots;
-import astavie.thermallogistics.gui.client.slots.CrafterItemSlots;
-import astavie.thermallogistics.gui.client.slots.ICrafterSlots;
-import astavie.thermallogistics.gui.client.summary.CrafterFluidSummary;
-import astavie.thermallogistics.gui.client.summary.CrafterItemSummary;
-import astavie.thermallogistics.gui.client.summary.ICrafterSummary;
-import cofh.core.gui.GuiContainerCore;
 import cofh.core.render.IModelRegister;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -22,16 +11,11 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 @SideOnly(Side.CLIENT)
 public class ProxyClient extends Proxy {
-
-	private static final Map<Class, ICrafterSlots> SLOT_REGISTRY = new HashMap<>();
-	private static final Map<Class, ICrafterSummary> SUMMARY_REGISTRY = new HashMap<>();
 
 	public static final TextureAtlasSprite[][] REQUESTER = new TextureAtlasSprite[2][];
 	public static final TextureAtlasSprite[][] CRAFTER = new TextureAtlasSprite[2][];
@@ -46,22 +30,6 @@ public class ProxyClient extends Proxy {
 	public void preInit() {
 		MinecraftForge.EVENT_BUS.register(this);
 		models.forEach(IModelRegister::registerModels);
-
-		SLOT_REGISTRY.put(CrafterItem.class, new CrafterItemSlots());
-		SLOT_REGISTRY.put(CrafterFluid.class, new CrafterFluidSlots());
-
-		SUMMARY_REGISTRY.put(CrafterItem.class, new CrafterItemSummary());
-		SUMMARY_REGISTRY.put(CrafterFluid.class, new CrafterFluidSummary());
-	}
-
-	public static void addSlots(Crafter crafter, GuiCrafter gui) {
-		//noinspection unchecked,SuspiciousMethodCalls
-		SLOT_REGISTRY.get(crafter.getClass()).addSlots(crafter, gui);
-	}
-
-	public static void renderSummary(Crafter crafter, GuiContainerCore gui, int x, int y, int text) {
-		//noinspection unchecked,SuspiciousMethodCalls
-		SUMMARY_REGISTRY.get(crafter.getClass()).renderSummary(crafter, gui, x, y, text);
 	}
 
 	@SubscribeEvent

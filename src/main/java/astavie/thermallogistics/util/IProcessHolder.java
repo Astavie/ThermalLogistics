@@ -1,6 +1,7 @@
 package astavie.thermallogistics.util;
 
 import astavie.thermallogistics.attachment.Crafter;
+import astavie.thermallogistics.gui.client.delegate.IDelegate;
 import astavie.thermallogistics.process.IProcess;
 import cofh.core.block.TileCore;
 import cofh.thermaldynamics.duct.Attachment;
@@ -10,23 +11,22 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.List;
 import java.util.Set;
 
 public interface IProcessHolder<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> {
 
 	TileCore getTile();
 
-	boolean isInvalid();
+	Set<Crafter> getLinked();
 
-	List<P> getProcesses();
+	boolean isInvalid();
 
 	void addProcess(P process);
 
 	void removeProcess(P process);
-
-	Set<Crafter> getLinked();
 
 	T getDuct();
 
@@ -39,6 +39,9 @@ public interface IProcessHolder<P extends IProcess<P, T, I>, T extends DuctUnit<
 	boolean itemsIdentical(I one, I two);
 
 	I[] getInputs(P process);
+
+	@SideOnly(Side.CLIENT)
+	IDelegate<I, ?> getDelegate();
 
 	static IProcessHolder read(World world, NBTTagCompound nbt) {
 		TileEntity tile = world.getTileEntity(new BlockPos(nbt.getInteger("x"), nbt.getInteger("y"), nbt.getInteger("z")));
