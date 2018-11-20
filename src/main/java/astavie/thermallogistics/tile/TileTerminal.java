@@ -7,7 +7,7 @@ import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.util.IProcessHolder;
-import astavie.thermallogistics.util.IProcessLoader;
+import astavie.thermallogistics.util.Request;
 import cofh.CoFHCore;
 import cofh.core.block.TileCore;
 import cofh.core.block.TileNameable;
@@ -32,7 +32,7 @@ import net.minecraftforge.fml.relauncher.Side;
 
 import java.util.*;
 
-public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> extends TileNameable implements IProcessHolder<P, T, I>, IProcessLoader, ITickable {
+public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> extends TileNameable implements IProcessHolder<P, T, I>, ITickable {
 
 	public final InventorySpecial requester = new InventorySpecial(1, i -> i.getItem() instanceof ItemRequester, null);
 
@@ -64,6 +64,11 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 	}
 
 	@Override
+	public ItemStack getDisplayStack() {
+		return new ItemStack(ThermalLogistics.terminal);
+	}
+
+	@Override
 	public TileCore getTile() {
 		return this;
 	}
@@ -74,7 +79,7 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 	}
 
 	@Override
-	public void addProcess(P process) {
+	public void addProcess(P process, int index) {
 		processes.add(process);
 	}
 
@@ -209,5 +214,19 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 
 	@Override
 	public abstract Object getGuiServer(InventoryPlayer inventory);
+
+	@Override
+	public Collection<Request<T, I>> getRequests() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public void removeLeftover(I leftover) {
+	}
+
+	@Override
+	public List<P> getProcesses() {
+		return processes;
+	}
 
 }

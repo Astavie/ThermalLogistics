@@ -8,6 +8,9 @@ import astavie.thermallogistics.process.ProcessFluid;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.IDestination;
 import astavie.thermallogistics.util.IProcessLoader;
+import astavie.thermallogistics.util.Request;
+import astavie.thermallogistics.util.delegate.DelegateClientFluid;
+import astavie.thermallogistics.util.delegate.DelegateFluid;
 import codechicken.lib.fluid.FluidUtils;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
@@ -38,8 +41,10 @@ public class RequesterFluid extends RetrieverFluid implements IDestination<DuctU
 
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MODID, "requester_fluid");
 
+	private final Map<IDestination<DuctUnitFluid, FluidStack>, Collection<FluidStack>> wait = new HashMap<>();
 	private final Set<FluidStack> leftovers = new HashSet<>();
 	private final List<ProcessFluid> processes = new LinkedList<>();
+
 	private NBTTagList _processes;
 
 	public RequesterFluid(TileGrid tile, byte side) {
@@ -77,6 +82,26 @@ public class RequesterFluid extends RetrieverFluid implements IDestination<DuctU
 
 		tag.setTag("leftovers", leftovers);
 		tag.setTag("Processes", processes);
+	}
+
+	@Override
+	public ItemStack getDisplayStack() {
+		return getPickBlock();
+	}
+
+	@Override
+	public Collection<Request<DuctUnitFluid, FluidStack>> getRequests() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public DelegateFluid getDelegate() {
+		return DelegateFluid.INSTANCE;
+	}
+
+	@Override
+	public DelegateClientFluid getClientDelegate() {
+		return DelegateClientFluid.INSTANCE;
 	}
 
 	@Override

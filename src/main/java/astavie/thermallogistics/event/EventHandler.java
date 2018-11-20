@@ -17,6 +17,7 @@ public class EventHandler {
 	public void onTick(TickEvent.ServerTickEvent event) {
 		if (event.phase == TickEvent.Phase.START) {
 			LOADERS.forEach(IProcessLoader::loadProcesses);
+			LOADERS.forEach(IProcessLoader::postLoad);
 			LOADERS.clear();
 		} else if (event.phase == TickEvent.Phase.END) {
 			// Remove processes that are done or have failed

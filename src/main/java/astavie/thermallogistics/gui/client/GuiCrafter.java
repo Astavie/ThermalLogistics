@@ -4,10 +4,10 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.attachment.CrafterFluid;
 import astavie.thermallogistics.compat.ICrafterWrapper;
-import astavie.thermallogistics.gui.client.delegate.IDelegate;
 import astavie.thermallogistics.gui.client.tab.TabFluid;
 import astavie.thermallogistics.gui.client.tab.TabLink;
 import astavie.thermallogistics.gui.container.ContainerCrafter;
+import astavie.thermallogistics.util.delegate.IDelegateClient;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.gui.element.ElementButton;
@@ -98,9 +98,9 @@ public class GuiCrafter extends GuiContainerCore {
 		setButtons();
 	}
 
-	private <C extends Crafter<?, ?, ?>, D extends IDelegate<?, C>> ElementBase createSlot(int x, int y, int slot, boolean input) {
+	private <C extends Crafter<?, ?, ?>, D extends IDelegateClient<?, C>> ElementBase createSlot(int x, int y, int slot, boolean input) {
 		//noinspection unchecked
-		return ((D) crafter.getDelegate()).createSlot(this, x, y, slot, (C) crafter, input);
+		return ((D) crafter.getClientDelegate()).createSlot(this, x, y, slot, (C) crafter, input);
 	}
 
 	@Override

@@ -6,8 +6,12 @@ import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.proxy.ProxyClient;
+import astavie.thermallogistics.util.IDestination;
 import astavie.thermallogistics.util.IProcessLoader;
 import astavie.thermallogistics.util.NetworkUtils;
+import astavie.thermallogistics.util.Request;
+import astavie.thermallogistics.util.delegate.DelegateClientItem;
+import astavie.thermallogistics.util.delegate.DelegateItem;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
@@ -32,7 +36,7 @@ import net.minecraftforge.items.IItemHandler;
 
 import java.util.*;
 
-public class RequesterItem extends RetrieverItem implements IProcessLoader, astavie.thermallogistics.util.IDestination<DuctUnitItem, ItemStack> {
+public class RequesterItem extends RetrieverItem implements IProcessLoader, IDestination<DuctUnitItem, ItemStack> {
 
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MODID, "requester_item");
 
@@ -75,6 +79,26 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, asta
 
 		tag.setTag("leftovers", leftovers);
 		tag.setTag("Processes", processes);
+	}
+
+	@Override
+	public ItemStack getDisplayStack() {
+		return getPickBlock();
+	}
+
+	@Override
+	public Collection<Request<DuctUnitItem, ItemStack>> getRequests() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public DelegateItem getDelegate() {
+		return DelegateItem.INSTANCE;
+	}
+
+	@Override
+	public DelegateClientItem getClientDelegate() {
+		return DelegateClientItem.INSTANCE;
 	}
 
 	@Override

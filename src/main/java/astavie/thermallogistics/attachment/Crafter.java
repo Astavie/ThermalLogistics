@@ -8,6 +8,7 @@ import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.IProcessHolder;
+import astavie.thermallogistics.util.Request;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Translation;
@@ -52,7 +53,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	public final LinkedList<Integer> flags = new LinkedList<>();
 	public final boolean[] values = FilterLogic.defaultflags.clone();
 
-	public final List<P> processes = new LinkedList<>();
+	public final List<P> processes = new ArrayList<>();
 	public Set<Crafter> linked;
 
 	public int type;
@@ -104,6 +105,11 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	public abstract I[] getOutputs();
 
 	@Override
+	public ItemStack getDisplayStack() {
+		return getPickBlock();
+	}
+
+	@Override
 	public TileCore getTile() {
 		return baseTile;
 	}
@@ -119,13 +125,29 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	}
 
 	@Override
-	public void addProcess(P process) {
-		processes.add(process);
+	public void addProcess(P process, int index) {
+		if (index < 0) {
+			processes.add(process);
+		} else {
+			while (index >= processes.size())
+				processes.add(null);
+			processes.set(index, process);
+		}
 	}
 
 	@Override
 	public void removeProcess(P process) {
 		processes.remove(process);
+	}
+
+	@Override
+	public List<P> getProcesses() {
+		return processes;
+	}
+
+	@Override
+	public void postLoad() {
+		processes.removeIf(Objects::isNull);
 	}
 
 	@Override
@@ -296,9 +318,13 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 							linked.add(c);
 							c.linked = linked;
 						}
-					} catch (IOException ignore) {
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
 				}
+			case 5:
+
+				break;
 			default:
 				handleInfoPacket(message, payload);
 				break;
@@ -343,6 +369,15 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	@Override
 	public boolean respondsToSignalum() {
 		return true;
+	}
+
+	@Override
+	public Collection<Request<T, I>> getRequests() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public void removeLeftover(I leftover) {
 	}
 
 	@Override

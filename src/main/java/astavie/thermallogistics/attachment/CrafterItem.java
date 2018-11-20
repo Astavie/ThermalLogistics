@@ -3,11 +3,12 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.event.EventHandler;
-import astavie.thermallogistics.gui.client.delegate.DelegateItemStack;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.util.IDestination;
 import astavie.thermallogistics.util.IProcessLoader;
 import astavie.thermallogistics.util.NetworkUtils;
+import astavie.thermallogistics.util.delegate.DelegateClientItem;
+import astavie.thermallogistics.util.delegate.DelegateItem;
 import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.ItemHelper;
@@ -87,7 +88,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 			NBTTagCompound nbt = new NBTTagCompound();
 			if (pair.getLeft() != null)
 				nbt.setTag("item", pair.getLeft().writeToNBT(new NBTTagCompound()));
-			nbt.setTag("destination", IDestination.writeDestination(pair.getRight()));
+			nbt.setTag("destination", IDestination.write(pair.getRight()));
 		}
 
 		tag.setTag("leftovers", leftovers);
@@ -142,7 +143,8 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	}
 
 	@Override
-	public void loadProcesses() {
+	public void postLoad() {
+		super.postLoad();
 		if (_registry != null) {
 			for (int i = 0; i < _registry.tagCount(); i++) {
 				NBTTagCompound tag = _registry.getCompoundTagAt(i);
@@ -150,15 +152,15 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 				NBTTagCompound destination = tag.getCompoundTag("destination");
 
 				//noinspection unchecked
-				this.registry.add(Pair.of(item.isEmpty() ? null : new ItemStack(item), IDestination.readDestination(baseTile.world(), destination)));
+				this.registry.add(Pair.of(item.isEmpty() ? null : new ItemStack(item), IDestination.read(baseTile.world(), destination)));
 			}
 			_registry = null;
 		}
 	}
 
 	@Override
-	public void addProcess(ProcessItem process) {
-		super.addProcess(process);
+	public void addProcess(ProcessItem process, int index) {
+		super.addProcess(process, index);
 		if (!process.getOutput().isEmpty())
 			registry.add(Pair.of(null, process));
 	}
@@ -199,8 +201,13 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	}
 
 	@Override
-	public DelegateItemStack getDelegate() {
-		return DelegateItemStack.INSTANCE;
+	public DelegateItem getDelegate() {
+		return DelegateItem.INSTANCE;
+	}
+
+	@Override
+	public DelegateClientItem getClientDelegate() {
+		return DelegateClientItem.INSTANCE;
 	}
 
 	@Override
@@ -216,7 +223,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	public PacketBase getPacket(ItemStack stack, boolean input, int slot) {
 		try {
 			PacketBase packet = getNewPacket();
-			packet.addByte(5);
+			packet.addByte(6);
 			packet.writeNBT(stack == null ? null : stack.writeToNBT(new NBTTagCompound()));
 			packet.addBool(input);
 			packet.addInt(slot);
@@ -230,7 +237,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	@Override
 	protected void handleInfoPacket(byte message, PacketBase payload) {
 		switch (message) {
-			case 5:
+			case 6:
 				try {
 					NBTTagCompound compound = payload.readNBT();
 					ItemStack stack = compound == null ? ItemStack.EMPTY : new ItemStack(compound);
@@ -488,6 +495,11 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	@Override
 	public IFilterFluid getFluidFilter() {
 		return null;
+	}
+
+	@Override
+	public boolean isTick() {
+		return baseTile.getWorld().getTotalWorldTime() % ServoItem.tickDelays[getType()] == 0;
 	}
 
 	private class FilterItem implements IFilterItems {

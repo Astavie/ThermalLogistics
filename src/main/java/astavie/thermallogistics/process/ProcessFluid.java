@@ -57,22 +57,12 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 
 	public ProcessFluid(World world, NBTTagCompound tag) {
 		super(world, tag);
-		this.start = readItem(tag.getCompoundTag("start"));
+		this.start = FluidStack.loadFluidStackFromNBT(tag.getCompoundTag("start"));
 		this.progress = tag.getBoolean("progress");
 
 		NBTTagList fluidStacks = tag.getTagList("fluidStacks", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < fluidStacks.tagCount(); i++)
-			this.fluidStacks.add(readItem(fluidStacks.getCompoundTagAt(i)));
-	}
-
-	@Override
-	protected FluidStack readItem(NBTTagCompound tag) {
-		return FluidStack.loadFluidStackFromNBT(tag);
-	}
-
-	@Override
-	protected NBTTagCompound writeItem(FluidStack output) {
-		return output.writeToNBT(new NBTTagCompound());
+			this.fluidStacks.add(FluidStack.loadFluidStackFromNBT(fluidStacks.getCompoundTagAt(i)));
 	}
 
 	@Override
@@ -337,11 +327,11 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 	public NBTTagCompound save() {
 		NBTTagList fluidStacks = new NBTTagList();
 		for (FluidStack stack : this.fluidStacks)
-			fluidStacks.appendTag(writeItem(stack));
+			fluidStacks.appendTag(stack.writeToNBT(new NBTTagCompound()));
 
 		NBTTagCompound tag = super.save();
 		if (start != null)
-			tag.setTag("start", writeItem(start));
+			tag.setTag("start", start.writeToNBT(new NBTTagCompound()));
 		tag.setBoolean("progress", progress);
 		tag.setTag("fluidStacks", fluidStacks);
 		return tag;

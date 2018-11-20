@@ -2,11 +2,12 @@ package astavie.thermallogistics.tile;
 
 import astavie.thermallogistics.gui.client.GuiTerminal;
 import astavie.thermallogistics.gui.client.GuiTerminalItem;
-import astavie.thermallogistics.gui.client.delegate.DelegateItemStack;
 import astavie.thermallogistics.gui.container.ContainerTerminal;
 import astavie.thermallogistics.gui.container.ContainerTerminalItem;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.util.NetworkUtils;
+import astavie.thermallogistics.util.delegate.DelegateClientItem;
+import astavie.thermallogistics.util.delegate.DelegateItem;
 import codechicken.lib.inventory.InventorySimple;
 import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
@@ -203,8 +204,18 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 	}
 
 	@Override
-	public DelegateItemStack getDelegate() {
-		return DelegateItemStack.INSTANCE;
+	public DelegateItem getDelegate() {
+		return DelegateItem.INSTANCE;
+	}
+
+	@Override
+	public DelegateClientItem getClientDelegate() {
+		return DelegateClientItem.INSTANCE;
+	}
+
+	@Override
+	public boolean isTick() {
+		return getWorld().getTotalWorldTime() % ServoItem.tickDelays[getType()] == 0;
 	}
 
 }

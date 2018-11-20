@@ -2,6 +2,10 @@ package astavie.thermallogistics.util;
 
 public interface IProcessLoader {
 
-	void loadProcesses();
+	default void loadProcesses() {
+	}
+
+	default void postLoad() {
+	}
 
 }

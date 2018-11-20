@@ -3,11 +3,11 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.event.EventHandler;
-import astavie.thermallogistics.gui.client.delegate.DelegateFluidStack;
 import astavie.thermallogistics.process.ProcessFluid;
 import astavie.thermallogistics.util.IDestination;
-import astavie.thermallogistics.util.IProcessLoader;
 import astavie.thermallogistics.util.NetworkUtils;
+import astavie.thermallogistics.util.delegate.DelegateClientFluid;
+import astavie.thermallogistics.util.delegate.DelegateFluid;
 import codechicken.lib.fluid.FluidUtils;
 import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
@@ -39,7 +39,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStack> implements IProcessLoader {
+public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStack> {
 
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MODID, "crafter_fluid");
 
@@ -84,8 +84,13 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	}
 
 	@Override
-	public DelegateFluidStack getDelegate() {
-		return DelegateFluidStack.INSTANCE;
+	public DelegateFluid getDelegate() {
+		return DelegateFluid.INSTANCE;
+	}
+
+	@Override
+	public DelegateClientFluid getClientDelegate() {
+		return DelegateClientFluid.INSTANCE;
 	}
 
 	@Override
@@ -101,7 +106,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	public PacketBase getPacket(FluidStack stack, boolean input, int slot) {
 		try {
 			PacketBase packet = getNewPacket();
-			packet.addByte(5);
+			packet.addByte(6);
 			packet.writeNBT(stack == null ? null : stack.writeToNBT(new NBTTagCompound()));
 			packet.addBool(input);
 			packet.addInt(slot);
@@ -142,7 +147,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	@Override
 	protected void handleInfoPacket(byte message, PacketBase payload) {
 		switch (message) {
-			case 5:
+			case 6:
 				try {
 					FluidStack stack = FluidStack.loadFluidStackFromNBT(payload.readNBT());
 					FluidStack[] inventory = payload.getBool() ? inputs : outputs;
@@ -180,7 +185,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 			NBTTagCompound nbt = new NBTTagCompound();
 			if (pair.getLeft() != null)
 				nbt.setTag("item", pair.getLeft().writeToNBT(new NBTTagCompound()));
-			nbt.setTag("destination", IDestination.writeDestination(pair.getRight()));
+			nbt.setTag("destination", IDestination.write(pair.getRight()));
 		}
 
 		tag.setTag("leftovers", leftovers);
@@ -188,7 +193,8 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	}
 
 	@Override
-	public void loadProcesses() {
+	public void postLoad() {
+		super.postLoad();
 		if (_registry != null) {
 			for (int i = 0; i < _registry.tagCount(); i++) {
 				NBTTagCompound tag = _registry.getCompoundTagAt(i);
@@ -196,7 +202,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 				NBTTagCompound destination = tag.getCompoundTag("destination");
 
 				//noinspection unchecked
-				this.registry.add(Pair.of(item.isEmpty() ? null : FluidStack.loadFluidStackFromNBT(item), IDestination.readDestination(baseTile.world(), destination)));
+				this.registry.add(Pair.of(item.isEmpty() ? null : FluidStack.loadFluidStackFromNBT(item), IDestination.read(baseTile.world(), destination)));
 			}
 			_registry = null;
 		}
@@ -283,8 +289,8 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	}
 
 	@Override
-	public void addProcess(ProcessFluid process) {
-		super.addProcess(process);
+	public void addProcess(ProcessFluid process, int index) {
+		super.addProcess(process, index);
 		registry.add(Pair.of(null, process));
 	}
 
@@ -338,13 +344,13 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 					baseTile.markChunkDirty();
 					break;
 				}
-				/*if ((!leftovers.isEmpty() || !registry.isEmpty()) && processes.isEmpty() && NetworkUtils.isEmpty(handler)) { // TODO: Optimise NetworkUtils.isEmpty
+				if ((!leftovers.isEmpty() || !registry.isEmpty()) && processes.isEmpty() && NetworkUtils.isEmpty(handler)) { // TODO: Optimise NetworkUtils.isEmpty
 					// Reset leftovers
 					leftovers.clear();
 					registry.forEach(pair -> pair.getRight().removeLeftover(pair.getLeft()));
 					registry.clear();
 					baseTile.markChunkDirty();
-				}*/
+				}
 			} else {
 				// Reset leftovers
 				leftovers.clear();
@@ -392,6 +398,11 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	@Override
 	public IFilterFluid getFluidFilter() {
 		return filter;
+	}
+
+	@Override
+	public boolean isTick() {
+		return true;
 	}
 
 	private class FilterFluid implements IFilterFluid {

@@ -2,8 +2,8 @@ package astavie.thermallogistics.gui.client.tab;
 
 import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.gui.client.GuiCrafter;
-import astavie.thermallogistics.gui.client.delegate.DelegateItemStack;
 import astavie.thermallogistics.proxy.ProxyClient;
+import astavie.thermallogistics.util.delegate.DelegateClientItem;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.tab.TabBase;
 import cofh.core.init.CoreTextures;
@@ -100,7 +100,7 @@ public class TabLink extends TabBase {
 		}
 
 		if (blockSelect != null)
-			DelegateItemStack.INSTANCE.drawHover(gui, mouseX, mouseY, blockSelect);
+			DelegateClientItem.INSTANCE.drawHover(gui, mouseX, mouseY, blockSelect);
 		else if (stackSelect != null)
 			stackSelect.run();
 
@@ -138,24 +138,24 @@ public class TabLink extends TabBase {
 			}
 		}
 		if (input != null)
-			crafter.getDelegate().drawStack(gui, x, y, input);
+			crafter.getClientDelegate().drawStack(gui, x, y, input);
 		if (bI)
 			gui.getFontRenderer().drawString("...", x + 19, y + 4, textColor);
 
 		gui.drawIcon(ProxyClient.ICON_ARROW_RIGHT, x + 26, y);
 
 		if (output != null)
-			crafter.getDelegate().drawStack(gui, x + 44, y, output);
+			crafter.getClientDelegate().drawStack(gui, x + 44, y, output);
 		if (bO)
 			gui.getFontRenderer().drawString("...", x + 63, y + 4, textColor);
 
 		if (!crafter.getDelegate().isNull(input) && mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17) {
 			final I i = input;
-			return () -> crafter.getDelegate().drawHover(gui, mouseX, mouseY, i);
+			return () -> crafter.getClientDelegate().drawHover(gui, mouseX, mouseY, i);
 		}
 		if (!crafter.getDelegate().isNull(output) && mouseX >= x + 43 && mouseX < x + 61 && mouseY >= y - 1 && mouseY < y + 17) {
 			final I i = output;
-			return () -> crafter.getDelegate().drawHover(gui, mouseX, mouseY, i);
+			return () -> crafter.getClientDelegate().drawHover(gui, mouseX, mouseY, i);
 		}
 		return null;
 	}

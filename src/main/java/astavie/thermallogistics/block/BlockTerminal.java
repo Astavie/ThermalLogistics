@@ -116,6 +116,11 @@ public abstract class BlockTerminal extends BlockCoreTile {
 	}
 
 	@Override
+	public ItemStack getItem(World worldIn, BlockPos pos, IBlockState state) {
+		return new ItemStack(ThermalLogistics.terminal);
+	}
+
+	@Override
 	public IBlockState getStateForPlacement(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta, EntityLivingBase placer, EnumHand hand) {
 		return getDefaultState().withProperty(DIRECTION, Direction.getDirection(pos, placer));
 	}

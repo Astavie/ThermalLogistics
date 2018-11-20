@@ -1,4 +1,4 @@
-package astavie.thermallogistics.gui.client.delegate;
+package astavie.thermallogistics.util.delegate;
 
 import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.gui.client.element.ElementSlotItem;
@@ -10,9 +10,9 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.client.config.GuiUtils;
 
-public class DelegateItemStack implements IDelegate<ItemStack, CrafterItem> {
+public class DelegateClientItem extends DelegateItem implements IDelegateClient<ItemStack, CrafterItem> {
 
-	public static final DelegateItemStack INSTANCE = new DelegateItemStack();
+	public static final DelegateClientItem INSTANCE = new DelegateClientItem();
 
 	@Override
 	public void drawStack(GuiContainerCore gui, int x, int y, ItemStack stack) {
@@ -31,11 +31,6 @@ public class DelegateItemStack implements IDelegate<ItemStack, CrafterItem> {
 				font = gui.getFontRenderer();
 			GuiUtils.drawHoveringText(stack, gui.getItemToolTip(stack), mouseX, mouseY, gui.width, gui.height, -1, font);
 		}
-	}
-
-	@Override
-	public boolean isNull(ItemStack stack) {
-		return stack == null || stack.isEmpty();
 	}
 
 	@Override

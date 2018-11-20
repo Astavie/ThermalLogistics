@@ -5,13 +5,18 @@ import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.util.IDestination;
 import astavie.thermallogistics.util.IProcessHolder;
+import astavie.thermallogistics.util.Request;
+import astavie.thermallogistics.util.delegate.IDelegate;
+import astavie.thermallogistics.util.delegate.IDelegateClient;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -42,7 +47,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		this.sum = sum;
 
 		//noinspection unchecked
-		crafter.addProcess((P) this);
+		crafter.addProcess((P) this, -1);
 		crafter.getTile().markChunkDirty();
 
 		EventHandler.PROCESSES.add(this);
@@ -61,11 +66,11 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	public Process(World world, NBTTagCompound tag) {
 		//noinspection unchecked
 		this.crafter = (C) IProcessHolder.read(world, tag.getCompoundTag("crafter"));
-		this.output = tag.hasKey("output") ? readItem(tag.getCompoundTag("output")) : null;
+		this.output = tag.hasKey("output") ? getDelegate().readStack(tag.getCompoundTag("output")) : null;
 		this.sum = tag.getInteger("sum");
 
 		//noinspection unchecked
-		crafter.addProcess((P) this);
+		crafter.addProcess((P) this, tag.getInteger("index"));
 		crafter.getTile().markChunkDirty();
 
 		EventHandler.PROCESSES.add(this);
@@ -84,11 +89,31 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 		NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < sent.tagCount(); i++)
-			this.sent.add(readItem(sent.getCompoundTagAt(i)));
+			this.sent.add(getDelegate().readStack(sent.getCompoundTagAt(i)));
 
 		NBTTagList leftovers = tag.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < leftovers.tagCount(); i++)
-			this.leftovers.add(readItem(leftovers.getCompoundTagAt(i)));
+			this.leftovers.add(getDelegate().readStack(leftovers.getCompoundTagAt(i)));
+	}
+
+	@Override
+	public Collection<Request<T, I>> getRequests() {
+		return null;
+	}
+
+	@Override
+	public IDelegate<I> getDelegate() {
+		return crafter.getDelegate();
+	}
+
+	@Override
+	public IDelegateClient<I, ?> getClientDelegate() {
+		return crafter.getClientDelegate();
+	}
+
+	@Override
+	public ItemStack getDisplayStack() {
+		return crafter.getDisplayStack();
 	}
 
 	@Override
@@ -100,10 +125,6 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	public void fail() {
 		dependent.forEach(IProcess::setFailed);
 	}
-
-	protected abstract I readItem(NBTTagCompound tag);
-
-	protected abstract NBTTagCompound writeItem(I output);
 
 	protected abstract ResourceLocation getId();
 
@@ -173,7 +194,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	@Override
 	public NBTTagCompound save() {
-		NBTTagCompound c = crafter.write();
+		NBTTagCompound c = IProcessHolder.write(crafter);
 
 		NBTTagList linked = new NBTTagList();
 		for (IProcess process : this.linked)
@@ -185,17 +206,18 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 		NBTTagList sent = new NBTTagList();
 		for (I stack : this.sent)
-			sent.appendTag(writeItem(stack));
+			sent.appendTag(getDelegate().writeStack(stack));
 
 		NBTTagList leftovers = new NBTTagList();
 		for (I stack : this.leftovers)
-			leftovers.appendTag(writeItem(stack));
+			leftovers.appendTag(getDelegate().writeStack(stack));
 
 		NBTTagCompound tag = new NBTTagCompound();
 		tag.setString("id", getId().toString());
 		tag.setTag("crafter", c);
+		tag.setInteger("index", getIndex());
 		if (output != null)
-			tag.setTag("output", writeItem(output));
+			tag.setTag("output", getDelegate().writeStack(output));
 		tag.setInteger("sum", sum);
 		tag.setTag("linked", linked);
 		tag.setTag("sub", sub);
@@ -214,6 +236,12 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	@Override
 	public T getDuct() {
 		return crafter.getDuct();
+	}
+
+	@Override
+	public int getIndex() {
+		//noinspection SuspiciousMethodCalls
+		return crafter.getProcesses().indexOf(this);
 	}
 
 	@Override

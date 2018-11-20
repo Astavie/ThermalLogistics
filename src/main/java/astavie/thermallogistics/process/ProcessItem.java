@@ -57,16 +57,6 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	}
 
 	@Override
-	protected ItemStack readItem(NBTTagCompound tag) {
-		return new ItemStack(tag);
-	}
-
-	@Override
-	protected NBTTagCompound writeItem(ItemStack output) {
-		return output.writeToNBT(new NBTTagCompound());
-	}
-
-	@Override
 	protected ResourceLocation getId() {
 		return new ResourceLocation("item");
 	}
