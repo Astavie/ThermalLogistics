@@ -1,5 +1,6 @@
-package astavie.thermallogistics.util;
+package astavie.thermallogistics.util.request;
 
+import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.delegate.IDelegate;
 import cofh.core.network.PacketBase;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;

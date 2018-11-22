@@ -7,8 +7,8 @@ import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.util.IProcessHolder;
-import astavie.thermallogistics.util.IRequest;
 import astavie.thermallogistics.util.IRequester;
+import astavie.thermallogistics.util.request.IRequest;
 import cofh.CoFHCore;
 import cofh.core.block.TileCore;
 import cofh.core.block.TileNameable;
@@ -134,7 +134,10 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 
 	@Override
 	public void update() {
-		processes.removeIf(IProcess::isRemoved);
+		if (processes.size() > 0) {
+			processes.removeIf(IProcess::isRemoved);
+			markChunkDirty();
+		}
 	}
 
 	@Override

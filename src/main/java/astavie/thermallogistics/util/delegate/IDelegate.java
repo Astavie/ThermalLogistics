@@ -7,6 +7,8 @@ public interface IDelegate<I> {
 
 	boolean isNull(I stack);
 
+	I copy(I stack);
+
 	NBTTagCompound writeNbt(I stack);
 
 	void writePacket(PacketBase packet, I stack);

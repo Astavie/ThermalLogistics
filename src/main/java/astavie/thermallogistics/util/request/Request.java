@@ -1,5 +1,6 @@
-package astavie.thermallogistics.util;
+package astavie.thermallogistics.util.request;
 
+import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.delegate.IDelegate;
 import cofh.core.network.PacketBase;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
@@ -14,15 +15,15 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 
 	private final World world;
-	private final long birth;
-
 	private final IRequester<T, I> start;
-
 	private final List<I> stacks = NonNullList.create();
+
+	private long birth;
 
 	public Request(World world, @Nullable IRequester<T, I> start, Collection<I> stacks) {
 		//noinspection unchecked
@@ -84,6 +85,12 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 	public long getAge() {
 		//noinspection unchecked
 		return world.getTotalWorldTime() - birth;
+	}
+
+	public Request<T, I> copy(IDelegate<I> delegate) {
+		Request<T, I> clone = new Request<>(world, start, stacks.stream().map(delegate::copy).collect(Collectors.toList()));
+		clone.birth = birth;
+		return clone;
 	}
 
 }

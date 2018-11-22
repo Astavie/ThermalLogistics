@@ -4,11 +4,11 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.util.IProcessHolder;
-import astavie.thermallogistics.util.IRequest;
 import astavie.thermallogistics.util.IRequester;
-import astavie.thermallogistics.util.Request;
 import astavie.thermallogistics.util.delegate.IDelegate;
 import astavie.thermallogistics.util.delegate.IDelegateClient;
+import astavie.thermallogistics.util.request.IRequest;
+import astavie.thermallogistics.util.request.Request;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -29,7 +29,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	protected final Set<IProcess> linked = new HashSet<>();
 	protected final Set<P> sub = new HashSet<>();
 
-	protected final Set<I> sent = new HashSet<>();
+	protected final Request<T, I> input;
 	protected final List<IRequest<T, I>> leftovers = new LinkedList<>();
 
 	protected final long birth;
@@ -46,8 +46,12 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		this.destination = destination;
 		this.crafter = crafter;
 		this.output = output;
-		this.birth = crafter.getTile().getWorld().getTotalWorldTime();
+
 		this.sum = sum;
+		this.birth = crafter.getTile().getWorld().getTotalWorldTime();
+
+		//noinspection unchecked
+		this.input = new Request<>(crafter.getTile().getWorld(), crafter, crafter.getInputs((P) this));
 
 		//noinspection unchecked
 		crafter.addProcess((P) this, -1);
@@ -70,6 +74,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		//noinspection unchecked
 		this.crafter = (C) IProcessHolder.read(world, tag.getCompoundTag("crafter"));
 		this.output = tag.hasKey("output") ? getDelegate().readNbt(tag.getCompoundTag("output")) : null;
+		this.input = new Request<>(world, getDelegate(), tag.getCompoundTag("input"));
 		this.birth = tag.getLong("birth");
 		this.sum = tag.getInteger("sum");
 
@@ -90,10 +95,6 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		for (int i = 0; i < sub.tagCount(); i++)
 			//noinspection unchecked
 			this.sub.add((P) ThermalLogistics.readProcess(world, sub.getCompoundTagAt(i)).setDestination(this));
-
-		NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < sent.tagCount(); i++)
-			this.sent.add(getDelegate().readNbt(sent.getCompoundTagAt(i)));
 
 		NBTTagList leftovers = tag.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < leftovers.tagCount(); i++)
@@ -181,6 +182,11 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	protected abstract void updateInput();
 
 	@Override
+	public boolean isDone() {
+		return sub.stream().allMatch(IProcess::isDone) && linked.stream().allMatch(IProcess::isDone) && (destination == null || getDelegate().isNull(output)) && input.getStacks().isEmpty();
+	}
+
+	@Override
 	public I getOutput() {
 		return output;
 	}
@@ -220,10 +226,6 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		for (IProcess<P, T, I> process : this.sub)
 			sub.appendTag(process.save());
 
-		NBTTagList sent = new NBTTagList();
-		for (I stack : this.sent)
-			sent.appendTag(getDelegate().writeNbt(stack));
-
 		NBTTagList leftovers = new NBTTagList();
 		for (IRequest<T, I> stack : this.leftovers)
 			leftovers.appendTag(IRequest.writeNbt(stack, getDelegate()));
@@ -235,11 +237,11 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		if (output != null)
 			tag.setTag("output", getDelegate().writeNbt(output));
 
+		tag.setTag("input", IRequest.writeNbt(input, getDelegate()));
 		tag.setLong("birth", birth);
 		tag.setInteger("sum", sum);
 		tag.setTag("linked", linked);
 		tag.setTag("sub", sub);
-		tag.setTag("sent", sent);
 		tag.setTag("leftovers", leftovers);
 		return tag;
 	}
@@ -275,6 +277,10 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	@Override
 	public boolean isLoaded() {
 		return crafter.getTile().getWorld().isBlockLoaded(crafter.getTile().getPos());
+	}
+
+	public int getSum() {
+		return sum;
 	}
 
 }

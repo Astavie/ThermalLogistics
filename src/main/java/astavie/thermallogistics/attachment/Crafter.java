@@ -8,8 +8,8 @@ import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.IProcessHolder;
-import astavie.thermallogistics.util.IRequest;
 import astavie.thermallogistics.util.IRequester;
+import astavie.thermallogistics.util.request.IRequest;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Translation;
@@ -164,11 +164,6 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	@Override
 	public int amountRequired(P process, I item) {
 		return amountRequired(item);
-	}
-
-	@Override
-	public I[] getInputs(P process) {
-		return getInputs();
 	}
 
 	@Override

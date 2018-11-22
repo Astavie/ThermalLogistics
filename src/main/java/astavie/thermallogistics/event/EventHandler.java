@@ -16,10 +16,11 @@ public class EventHandler {
 	@SubscribeEvent
 	public void onTick(TickEvent.ServerTickEvent event) {
 		if (event.phase == TickEvent.Phase.START) {
+			// Update process loaders
 			LOADERS.forEach(IProcessLoader::loadProcesses);
 			LOADERS.forEach(IProcessLoader::postLoad);
 			LOADERS.clear();
-		} else if (event.phase == TickEvent.Phase.END) {
+
 			// Remove processes that are done or have failed
 			for (int i = 0; i < PROCESSES.size(); i++) {
 				IProcess process = PROCESSES.get(i);

@@ -217,6 +217,24 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	}
 
 	@Override
+	public Collection<ItemStack> getInputs(ProcessItem process) {
+		Collection<ItemStack> inputs = new LinkedList<>();
+		a:
+		for (ItemStack item : this.inputs) {
+			if (item.isEmpty())
+				continue;
+			for (ItemStack input : inputs) {
+				if (ItemHelper.itemsIdentical(item, input)) {
+					input.grow(item.getCount() * process.getSum());
+					continue a;
+				}
+			}
+			inputs.add(ItemHelper.cloneStack(item, item.getCount() * process.getSum()));
+		}
+		return inputs;
+	}
+
+	@Override
 	public ItemStack[] getOutputs() {
 		return outputs;
 	}

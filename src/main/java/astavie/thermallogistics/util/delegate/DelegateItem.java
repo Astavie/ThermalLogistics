@@ -14,6 +14,11 @@ public class DelegateItem implements IDelegate<ItemStack> {
 	}
 
 	@Override
+	public ItemStack copy(ItemStack stack) {
+		return stack.copy();
+	}
+
+	@Override
 	public NBTTagCompound writeNbt(ItemStack stack) {
 		return stack.writeToNBT(new NBTTagCompound());
 	}

@@ -34,10 +34,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStack> {
 
@@ -95,6 +92,24 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 
 	@Override
 	public FluidStack[] getInputs() {
+		return inputs;
+	}
+
+	@Override
+	public Collection<FluidStack> getInputs(ProcessFluid process) {
+		Collection<FluidStack> inputs = new LinkedList<>();
+		a:
+		for (FluidStack fluid : this.inputs) {
+			if (fluid == null || fluid.amount == 0)
+				continue;
+			for (FluidStack input : inputs) {
+				if (FluidHelper.isFluidEqual(fluid, input)) {
+					input.amount += fluid.amount * process.getSum();
+					continue a;
+				}
+			}
+			inputs.add(FluidUtils.copy(fluid, fluid.amount * process.getSum()));
+		}
 		return inputs;
 	}
 

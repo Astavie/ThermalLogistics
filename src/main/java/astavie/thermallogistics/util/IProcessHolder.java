@@ -11,6 +11,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -53,7 +54,7 @@ public interface IProcessHolder<P extends IProcess<P, T, I>, T extends DuctUnit<
 
 	boolean itemsIdentical(I one, I two);
 
-	I[] getInputs(P process);
+	Collection<I> getInputs(P process);
 
 	void addProcess(P process, int index);
 

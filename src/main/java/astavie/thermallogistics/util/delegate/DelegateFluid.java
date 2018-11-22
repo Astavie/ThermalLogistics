@@ -14,6 +14,11 @@ public class DelegateFluid implements IDelegate<FluidStack> {
 	}
 
 	@Override
+	public FluidStack copy(FluidStack stack) {
+		return stack.copy();
+	}
+
+	@Override
 	public NBTTagCompound writeNbt(FluidStack stack) {
 		return stack.writeToNBT(new NBTTagCompound());
 	}

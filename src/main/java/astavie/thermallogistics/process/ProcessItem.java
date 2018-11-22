@@ -1,7 +1,11 @@
 package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.CrafterItem;
-import astavie.thermallogistics.util.*;
+import astavie.thermallogistics.util.IProcessHolder;
+import astavie.thermallogistics.util.IRequester;
+import astavie.thermallogistics.util.NetworkUtils;
+import astavie.thermallogistics.util.request.IRequest;
+import astavie.thermallogistics.util.request.Request;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
@@ -16,14 +20,13 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.Set;
+import java.util.*;
 
 public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitItem, ItemStack>, ProcessItem, DuctUnitItem, ItemStack> {
 
 	private final int delay;
+	private boolean progress = false;
+	private boolean idle = true;
 
 	public ProcessItem(IRequester<DuctUnitItem, ItemStack> destination, CrafterItem crafter, ItemStack output, int sum) {
 		this(destination, (IProcessHolder<ProcessItem, DuctUnitItem, ItemStack>) crafter, output, sum);
@@ -52,6 +55,55 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	public ProcessItem(World world, NBTTagCompound tag) {
 		super(world, tag);
 		this.delay = tag.getInteger("delay");
+		this.progress = tag.getBoolean("progress");
+	}
+
+	@Override
+	public Collection<IRequest<DuctUnitItem, ItemStack>> getRequests() {
+		Collection<IRequest<DuctUnitItem, ItemStack>> collection = super.getRequests();
+		if (idle) {
+			IRequest<DuctUnitItem, ItemStack> input = this.input.copy(getDelegate());
+			for (ProcessItem process : sub) {
+				ItemStack output = process.output.copy();
+				Iterator<ItemStack> iterator = input.getStacks().iterator();
+				while (iterator.hasNext()) {
+					ItemStack stack = iterator.next();
+					if (crafter.itemsIdentical(output, stack)) {
+						int i = Math.min(output.getCount(), stack.getCount());
+
+						stack.shrink(i);
+						if (stack.isEmpty())
+							iterator.remove();
+
+						output.shrink(i);
+						if (output.isEmpty())
+							break;
+					}
+				}
+			}
+			for (IRequest<DuctUnitItem, ItemStack> request : leftovers) {
+				for (ItemStack leftover : request.getStacks()) {
+					ItemStack output = leftover.copy();
+					Iterator<ItemStack> iterator = input.getStacks().iterator();
+					while (iterator.hasNext()) {
+						ItemStack stack = iterator.next();
+						if (crafter.itemsIdentical(output, stack)) {
+							int i = Math.min(output.getCount(), stack.getCount());
+
+							stack.shrink(i);
+							if (stack.isEmpty())
+								iterator.remove();
+
+							output.shrink(i);
+							if (output.isEmpty())
+								break;
+						}
+					}
+				}
+			}
+			collection.add(input);
+		}
+		return collection;
 	}
 
 	@Override
@@ -61,38 +113,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 	@Override
 	public boolean isStuck() {
-		return sent.isEmpty() && !output.isEmpty() && (sub.isEmpty() || sub.stream().anyMatch(Process::isStuck));
-	}
-
-	@Override
-	public boolean isDone() {
-		if (!sub.stream().allMatch(IProcess::isDone))
-			return false;
-		if (!linked.stream().allMatch(IProcess::isDone))
-			return false;
-
-		if (destination == null || output.isEmpty()) {
-			Set<ItemStack> clone = new HashSet<>();
-			sent.forEach(i -> clone.add(i.copy()));
-			for (ItemStack stack : crafter.getInputs(this)) {
-				if (stack.isEmpty())
-					continue;
-
-				stack = ItemHelper.cloneStack(stack, stack.getCount() * sum);
-				for (ItemStack s : clone) {
-					if (!s.isEmpty() && crafter.itemsIdentical(stack, s)) {
-						int amt = Math.min(s.getCount(), stack.getCount());
-						stack.shrink(amt);
-						s.shrink(amt);
-					}
-					if (stack.isEmpty())
-						break;
-				}
-				if (!stack.isEmpty())
-					return false;
-			}
-			return true;
-		} else return false;
+		return !progress && !output.isEmpty() && (sub.isEmpty() || sub.stream().anyMatch(Process::isStuck));
 	}
 
 	@Override
@@ -159,13 +180,13 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Calculate amount required
-				int amt = crafter.amountRequired(this, item) * sum;
+				int amt = 0;
+				for (ItemStack stack : input.getStacks())
+					if (crafter.itemsIdentical(stack, item))
+						amt += stack.getCount();
 				if (amt == 0)
 					continue;
 
-				for (ItemStack stack : sent)
-					if (crafter.itemsIdentical(stack, item))
-						amt -= stack.getCount();
 				for (ProcessItem process : sub)
 					if (!process.output.isEmpty() && crafter.itemsIdentical(process.output, item))
 						amt -= process.output.getCount();
@@ -175,7 +196,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 				// Try to send it
 				TravelingItem ti = NetworkUtils.transfer(slot, end, side, crafter.getDuct(), crafter.getSide(), route1, amt, crafter.getType(), false);
 				if (ti != null) {
-					sent.add(ti.stack.copy());
+					send(ti.stack.copy());
 					return;
 				}
 			}
@@ -191,13 +212,13 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Calculate amount required
-				int amt = this.crafter.amountRequired(this, output) * sum;
+				int amt = 0;
+				for (ItemStack stack : input.getStacks())
+					if (crafter.itemsIdentical(stack, output))
+						amt += stack.getCount();
 				if (amt == 0)
 					continue;
 
-				for (ItemStack stack : sent)
-					if (this.crafter.itemsIdentical(stack, output))
-						amt -= stack.getCount();
 				for (IRequest<DuctUnitItem, ItemStack> request : leftovers)
 					for (ItemStack stack : request.getStacks())
 						if (this.crafter.itemsIdentical(stack, output))
@@ -219,6 +240,8 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Alright, let's do this!
+				idle = false;
+
 				this.leftovers.add(new Request<>(crafter.baseTile.getWorld(), crafter, crafter.registerLeftover(output, this, false)));
 				return;
 			}
@@ -236,13 +259,13 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Calculate amount required
-				int amt = this.crafter.amountRequired(this, output) * sum;
+				int amt = 0;
+				for (ItemStack stack : input.getStacks())
+					if (crafter.itemsIdentical(stack, output))
+						amt += stack.getCount();
 				if (amt == 0)
 					continue;
 
-				for (ItemStack stack : sent)
-					if (this.crafter.itemsIdentical(stack, output))
-						amt -= stack.getCount();
 				for (IRequest<DuctUnitItem, ItemStack> request : leftovers)
 					for (ItemStack stack : request.getStacks())
 						if (this.crafter.itemsIdentical(stack, output))
@@ -262,12 +285,16 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Alright, let's do this!
+				idle = false;
+
 				int sum = (int) Math.ceil((double) out.getCount() / output.getCount());
 				ProcessItem process = new ProcessItem(this, crafter, out, sum);
 				sub.add(process);
 				return;
 			}
 		}
+
+		idle = true;
 	}
 
 	public boolean addItem(ListIterator<TravelingItem> iterator, TravelingItem item) {
@@ -281,7 +308,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 			// Notify our parent
 			if (destination instanceof ProcessItem)
-				((ProcessItem) destination).sent.add(ItemHelper.cloneStack(output, Math.min(item.stack.getCount(), output.getCount())));
+				((ProcessItem) destination).send(ItemHelper.cloneStack(output, Math.min(item.stack.getCount(), output.getCount())));
 
 			if (item.stack.getCount() > output.getCount()) {
 				int amt = item.stack.getCount() - output.getCount();
@@ -330,6 +357,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	public NBTTagCompound save() {
 		NBTTagCompound tag = super.save();
 		tag.setInteger("delay", delay);
+		tag.setBoolean("progress", progress);
 		return tag;
 	}
 
@@ -363,7 +391,22 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	}
 
 	public void send(ItemStack item) {
-		sent.add(item);
+		idle = false;
+		progress = true;
+		for (Iterator<ItemStack> iterator = input.getStacks().iterator(); iterator.hasNext(); ) {
+			ItemStack sent = iterator.next();
+			if (crafter.itemsIdentical(sent, item)) {
+				int i = Math.min(sent.getCount(), item.getCount());
+
+				sent.shrink(i);
+				if (sent.isEmpty())
+					iterator.remove();
+
+				item.shrink(i);
+				if (item.isEmpty())
+					return;
+			}
+		}
 	}
 
 }

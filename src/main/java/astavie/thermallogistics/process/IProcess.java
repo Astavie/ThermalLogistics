@@ -1,7 +1,7 @@
 package astavie.thermallogistics.process;
 
-import astavie.thermallogistics.util.IRequest;
 import astavie.thermallogistics.util.IRequester;
+import astavie.thermallogistics.util.request.IRequest;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import net.minecraft.nbt.NBTTagCompound;
 

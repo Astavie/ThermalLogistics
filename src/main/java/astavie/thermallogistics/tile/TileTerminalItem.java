@@ -34,6 +34,8 @@ import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, ItemStack> {
 
@@ -199,8 +201,8 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 	}
 
 	@Override
-	public ItemStack[] getInputs(ProcessItem process) {
-		return new ItemStack[] {process.getOutput()};
+	public Collection<ItemStack> getInputs(ProcessItem process) {
+		return Collections.singleton(process.getOutput());
 	}
 
 	@Override

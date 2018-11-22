@@ -2,6 +2,7 @@ package astavie.thermallogistics.util;
 
 import astavie.thermallogistics.util.delegate.IDelegate;
 import astavie.thermallogistics.util.delegate.IDelegateClient;
+import astavie.thermallogistics.util.request.IRequest;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
