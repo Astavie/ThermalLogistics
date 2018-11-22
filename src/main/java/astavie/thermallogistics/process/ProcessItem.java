@@ -1,9 +1,7 @@
 package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.CrafterItem;
-import astavie.thermallogistics.util.IDestination;
-import astavie.thermallogistics.util.IProcessHolder;
-import astavie.thermallogistics.util.NetworkUtils;
+import astavie.thermallogistics.util.*;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
@@ -27,7 +25,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 	private final int delay;
 
-	public ProcessItem(IDestination<DuctUnitItem, ItemStack> destination, CrafterItem crafter, ItemStack output, int sum) {
+	public ProcessItem(IRequester<DuctUnitItem, ItemStack> destination, CrafterItem crafter, ItemStack output, int sum) {
 		this(destination, (IProcessHolder<ProcessItem, DuctUnitItem, ItemStack>) crafter, output, sum);
 
 		ItemStack stack = output.copy();
@@ -46,7 +44,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 		}
 	}
 
-	public ProcessItem(IDestination<DuctUnitItem, ItemStack> destination, IProcessHolder<ProcessItem, DuctUnitItem, ItemStack> crafter, ItemStack output, int sum) {
+	public ProcessItem(IRequester<DuctUnitItem, ItemStack> destination, IProcessHolder<ProcessItem, DuctUnitItem, ItemStack> crafter, ItemStack output, int sum) {
 		super(destination, crafter, output, sum);
 		this.delay = (int) (crafter.getTile().getWorld().getTotalWorldTime() % ServoItem.tickDelays[crafter.getType()]) + 1;
 	}
@@ -200,9 +198,10 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 				for (ItemStack stack : sent)
 					if (this.crafter.itemsIdentical(stack, output))
 						amt -= stack.getCount();
-				for (ItemStack stack : leftovers)
-					if (this.crafter.itemsIdentical(stack, output))
-						amt -= stack.getCount();
+				for (IRequest<DuctUnitItem, ItemStack> request : leftovers)
+					for (ItemStack stack : request.getStacks())
+						if (this.crafter.itemsIdentical(stack, output))
+							amt -= stack.getCount();
 				for (ProcessItem process : sub)
 					if (!process.output.isEmpty() && this.crafter.itemsIdentical(process.output, output))
 						amt -= process.output.getCount();
@@ -220,14 +219,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Alright, let's do this!
-				output = crafter.registerLeftover(output, this, false);
-				for (ItemStack leftover : leftovers) {
-					if (ItemHelper.itemsIdentical(output, leftover)) {
-						leftover.grow(output.getCount());
-						return;
-					}
-				}
-				this.leftovers.add(output);
+				this.leftovers.add(new Request<>(crafter.baseTile.getWorld(), crafter, crafter.registerLeftover(output, this, false)));
 				return;
 			}
 		}
@@ -251,9 +243,10 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 				for (ItemStack stack : sent)
 					if (this.crafter.itemsIdentical(stack, output))
 						amt -= stack.getCount();
-				for (ItemStack stack : leftovers)
-					if (this.crafter.itemsIdentical(stack, output))
-						amt -= stack.getCount();
+				for (IRequest<DuctUnitItem, ItemStack> request : leftovers)
+					for (ItemStack stack : request.getStacks())
+						if (this.crafter.itemsIdentical(stack, output))
+							amt -= stack.getCount();
 				for (ProcessItem process : sub) {
 					if (process.getCrafter() == crafter && process.isStuck())
 						continue a;
@@ -346,14 +339,24 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	}
 
 	@Override
-	public void removeLeftover(ItemStack leftover) {
-		Iterator<ItemStack> iterator = leftovers.iterator();
+	public void removeLeftover(IRequester<DuctUnitItem, ItemStack> requester, ItemStack leftover) {
+		Iterator<IRequest<DuctUnitItem, ItemStack>> iterator = leftovers.iterator();
 		while (iterator.hasNext()) {
-			ItemStack next = iterator.next();
-			if (ItemHelper.itemsIdentical(next, leftover)) {
-				next.shrink(leftover.getCount());
-				if (next.isEmpty())
-					iterator.remove();
+			IRequest<DuctUnitItem, ItemStack> next = iterator.next();
+			if (next.getStart() == requester) {
+				Iterator<ItemStack> it = next.getStacks().iterator();
+				while (it.hasNext()) {
+					ItemStack stack = it.next();
+					if (ItemHelper.itemsIdentical(stack, leftover)) {
+						stack.shrink(leftover.getCount());
+						if (stack.isEmpty()) {
+							it.remove();
+							if (next.getStacks().isEmpty())
+								iterator.remove();
+						}
+						return;
+					}
+				}
 				return;
 			}
 		}

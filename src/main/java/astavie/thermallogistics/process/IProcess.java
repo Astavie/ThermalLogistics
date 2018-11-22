@@ -1,10 +1,14 @@
 package astavie.thermallogistics.process;
 
-import astavie.thermallogistics.util.IDestination;
+import astavie.thermallogistics.util.IRequest;
+import astavie.thermallogistics.util.IRequester;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import net.minecraft.nbt.NBTTagCompound;
 
-public interface IProcess<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> {
+import java.util.Collection;
+import java.util.Collections;
+
+public interface IProcess<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> extends IRequest<T, I>, IRequester<T, I> {
 
 	boolean isDone();
 
@@ -22,12 +26,22 @@ public interface IProcess<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, 
 
 	NBTTagCompound save();
 
-	P setDestination(IDestination<T, I> destination);
+	P setDestination(IRequester<T, I> destination);
 
 	boolean isLoaded();
 
 	void addDependent(IProcess other);
 
 	void fail();
+
+	@Override
+	default Collection<I> getStacks() {
+		return Collections.singleton(getOutput());
+	}
+
+	@Override
+	default IRequester<T, I> getStart() {
+		return this;
+	}
 
 }

@@ -25,7 +25,6 @@ import java.io.IOException;
 
 public class GuiCrafter extends GuiContainerCore {
 
-
 	private static final String TEX_PATH = "thermaldynamics:textures/gui/connection.png";
 	private static final ResourceLocation TEXTURE = new ResourceLocation(TEX_PATH);
 

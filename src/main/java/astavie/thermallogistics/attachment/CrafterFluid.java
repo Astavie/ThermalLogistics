@@ -4,7 +4,7 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.process.ProcessFluid;
-import astavie.thermallogistics.util.IDestination;
+import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.NetworkUtils;
 import astavie.thermallogistics.util.delegate.DelegateClientFluid;
 import astavie.thermallogistics.util.delegate.DelegateFluid;
@@ -44,7 +44,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MODID, "crafter_fluid");
 
 	public final List<FluidStack> leftovers = new LinkedList<>();
-	public final List<Pair<FluidStack, IDestination<DuctUnitFluid, FluidStack>>> registry = new LinkedList<>();
+	public final List<Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>>> registry = new LinkedList<>();
 
 	private final IFilterFluid filter = new FilterFluid();
 	public FluidStack[] inputs;
@@ -181,11 +181,12 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 			leftovers.appendTag(stack.writeToNBT(new NBTTagCompound()));
 
 		NBTTagList registry = new NBTTagList();
-		for (Pair<FluidStack, IDestination<DuctUnitFluid, FluidStack>> pair : this.registry) {
+		for (Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>> pair : this.registry) {
 			NBTTagCompound nbt = new NBTTagCompound();
 			if (pair.getLeft() != null)
 				nbt.setTag("item", pair.getLeft().writeToNBT(new NBTTagCompound()));
-			nbt.setTag("destination", IDestination.write(pair.getRight()));
+			nbt.setTag("destination", IRequester.write(pair.getRight()));
+			registry.appendTag(nbt);
 		}
 
 		tag.setTag("leftovers", leftovers);
@@ -194,7 +195,6 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 
 	@Override
 	public void postLoad() {
-		super.postLoad();
 		if (_registry != null) {
 			for (int i = 0; i < _registry.tagCount(); i++) {
 				NBTTagCompound tag = _registry.getCompoundTagAt(i);
@@ -202,10 +202,11 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 				NBTTagCompound destination = tag.getCompoundTag("destination");
 
 				//noinspection unchecked
-				this.registry.add(Pair.of(item.isEmpty() ? null : FluidStack.loadFluidStackFromNBT(item), IDestination.read(baseTile.world(), destination)));
+				this.registry.add(Pair.of(item.isEmpty() ? null : FluidStack.loadFluidStackFromNBT(item), IRequester.read(baseTile.world(), destination)));
 			}
 			_registry = null;
 		}
+		super.postLoad();
 	}
 
 	public void addLeftover(FluidStack stack) {
@@ -220,7 +221,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 		baseTile.markChunkDirty();
 	}
 
-	public FluidStack registerLeftover(FluidStack stack, IDestination<DuctUnitFluid, FluidStack> destination, boolean simulate) {
+	public FluidStack registerLeftover(FluidStack stack, IRequester<DuctUnitFluid, FluidStack> destination, boolean simulate) {
 		Iterator<FluidStack> iterator = leftovers.iterator();
 		while (iterator.hasNext()) {
 			FluidStack next = iterator.next();
@@ -297,7 +298,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	@Override
 	public void removeProcess(ProcessFluid process) {
 		super.removeProcess(process);
-		for (Iterator<Pair<FluidStack, IDestination<DuctUnitFluid, FluidStack>>> iterator = registry.iterator(); iterator.hasNext(); ) {
+		for (Iterator<Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>>> iterator = registry.iterator(); iterator.hasNext(); ) {
 			if (iterator.next().getRight() == process) {
 				iterator.remove();
 				break;
@@ -315,9 +316,9 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 			DuctUnitFluid.Cache cache = getDuct().tileCache[side];
 			if (cache != null) {
 				IFluidHandler handler = cache.getHandler(side ^ 1);
-				Iterator<Pair<FluidStack, IDestination<DuctUnitFluid, FluidStack>>> leftoverIterator = registry.iterator();
+				Iterator<Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>>> leftoverIterator = registry.iterator();
 				while (leftoverIterator.hasNext()) {
-					Pair<FluidStack, IDestination<DuctUnitFluid, FluidStack>> leftover = leftoverIterator.next();
+					Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>> leftover = leftoverIterator.next();
 					if (leftover.getLeft() == null || !leftover.getRight().isTick())
 						break;
 
@@ -337,7 +338,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 					if (leftover.getRight() instanceof ProcessFluid)
 						((ProcessFluid) leftover.getRight()).send(drained);
 
-					leftover.getRight().removeLeftover(drained);
+					leftover.getRight().removeLeftover(this, drained);
 					leftover.getLeft().amount -= drained.amount;
 					if (leftover.getLeft().amount <= 0)
 						leftoverIterator.remove();
@@ -347,14 +348,14 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 				if ((!leftovers.isEmpty() || !registry.isEmpty()) && processes.isEmpty() && NetworkUtils.isEmpty(handler)) { // TODO: Optimise NetworkUtils.isEmpty
 					// Reset leftovers
 					leftovers.clear();
-					registry.forEach(pair -> pair.getRight().removeLeftover(pair.getLeft()));
+					registry.forEach(pair -> pair.getRight().removeLeftover(this, pair.getLeft()));
 					registry.clear();
 					baseTile.markChunkDirty();
 				}
 			} else {
 				// Reset leftovers
 				leftovers.clear();
-				registry.forEach(pair -> pair.getRight().removeLeftover(pair.getLeft()));
+				registry.forEach(pair -> pair.getRight().removeLeftover(this, pair.getLeft()));
 				registry.clear();
 				baseTile.markChunkDirty();
 			}

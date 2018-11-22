@@ -4,8 +4,8 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.process.ProcessItem;
-import astavie.thermallogistics.util.IDestination;
 import astavie.thermallogistics.util.IProcessLoader;
+import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.NetworkUtils;
 import astavie.thermallogistics.util.delegate.DelegateClientItem;
 import astavie.thermallogistics.util.delegate.DelegateItem;
@@ -41,7 +41,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MODID, "crafter_item");
 
 	public final List<ItemStack> leftovers = new LinkedList<>();
-	public final List<Pair<ItemStack, IDestination<DuctUnitItem, ItemStack>>> registry = new LinkedList<>();
+	public final List<Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>>> registry = new LinkedList<>();
 
 	private final IFilterItems filter = new FilterItem();
 	public ItemStack[] inputs;
@@ -84,11 +84,12 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 			leftovers.appendTag(stack.writeToNBT(new NBTTagCompound()));
 
 		NBTTagList registry = new NBTTagList();
-		for (Pair<ItemStack, IDestination<DuctUnitItem, ItemStack>> pair : this.registry) {
+		for (Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>> pair : this.registry) {
 			NBTTagCompound nbt = new NBTTagCompound();
 			if (pair.getLeft() != null)
 				nbt.setTag("item", pair.getLeft().writeToNBT(new NBTTagCompound()));
-			nbt.setTag("destination", IDestination.write(pair.getRight()));
+			nbt.setTag("destination", IRequester.write(pair.getRight()));
+			registry.appendTag(nbt);
 		}
 
 		tag.setTag("leftovers", leftovers);
@@ -144,7 +145,6 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 
 	@Override
 	public void postLoad() {
-		super.postLoad();
 		if (_registry != null) {
 			for (int i = 0; i < _registry.tagCount(); i++) {
 				NBTTagCompound tag = _registry.getCompoundTagAt(i);
@@ -152,10 +152,11 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 				NBTTagCompound destination = tag.getCompoundTag("destination");
 
 				//noinspection unchecked
-				this.registry.add(Pair.of(item.isEmpty() ? null : new ItemStack(item), IDestination.read(baseTile.world(), destination)));
+				this.registry.add(Pair.of(item.isEmpty() ? null : new ItemStack(item), IRequester.read(baseTile.world(), destination)));
 			}
 			_registry = null;
 		}
+		super.postLoad();
 	}
 
 	@Override
@@ -168,7 +169,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	@Override
 	public void removeProcess(ProcessItem process) {
 		super.removeProcess(process);
-		for (Iterator<Pair<ItemStack, IDestination<DuctUnitItem, ItemStack>>> iterator = registry.iterator(); iterator.hasNext(); ) {
+		for (Iterator<Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>>> iterator = registry.iterator(); iterator.hasNext(); ) {
 			if (iterator.next().getRight() == process) {
 				iterator.remove();
 				break;
@@ -295,7 +296,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 		baseTile.markChunkDirty();
 	}
 
-	public ItemStack registerLeftover(ItemStack stack, IDestination<DuctUnitItem, ItemStack> destination, boolean simulate) {
+	public ItemStack registerLeftover(ItemStack stack, IRequester<DuctUnitItem, ItemStack> destination, boolean simulate) {
 		Iterator<ItemStack> iterator = leftovers.iterator();
 		while (iterator.hasNext()) {
 			ItemStack next = iterator.next();
@@ -328,9 +329,9 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 			while (iterator.hasNext()) {
 				TravelingItem item = iterator.next();
 				if (item.oldDirection == (side ^ 1)) {
-					Iterator<Pair<ItemStack, IDestination<DuctUnitItem, ItemStack>>> leftoverIterator = registry.iterator();
+					Iterator<Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>>> leftoverIterator = registry.iterator();
 					while (leftoverIterator.hasNext()) {
-						Pair<ItemStack, IDestination<DuctUnitItem, ItemStack>> leftover = leftoverIterator.next();
+						Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>> leftover = leftoverIterator.next();
 
 						//noinspection SuspiciousMethodCalls
 						if (processes.contains(leftover.getRight()) && ((ProcessItem) leftover.getRight()).addItem(iterator, item))
@@ -346,7 +347,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 							// Copied from ProcessItem TODO: Make this generic
 							Route pass = getDuct().getRoute(leftover.getRight().getDuct());
 							if (pass == null) {
-								leftover.getRight().removeLeftover(leftover.getLeft());
+								leftover.getRight().removeLeftover(this, leftover.getLeft());
 								addLeftover(leftover.getLeft());
 								leftoverIterator.remove();
 								baseTile.markChunkDirty();
@@ -359,7 +360,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 							if (item.stack.getCount() > leftover.getLeft().getCount()) {
 								int amt = item.stack.getCount() - leftover.getLeft().getCount();
 								item.stack.shrink(amt);
-								leftover.getRight().removeLeftover(leftover.getLeft());
+								leftover.getRight().removeLeftover(this, leftover.getLeft());
 								leftoverIterator.remove();
 
 								// Split the item
@@ -375,7 +376,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 								iterator.add(ti);
 								iterator.previous();
 							} else {
-								leftover.getRight().removeLeftover(ItemHelper.cloneStack(leftover.getLeft(), item.stack.getCount()));
+								leftover.getRight().removeLeftover(this, ItemHelper.cloneStack(leftover.getLeft(), item.stack.getCount()));
 								leftover.getLeft().shrink(item.stack.getCount());
 								if (leftover.getLeft().isEmpty())
 									leftoverIterator.remove();
@@ -416,15 +417,15 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 			if (getDuct().tileCache[side] != null) {
 				// Extract leftovers
 				IItemHandler handler = getDuct().tileCache[side].getItemHandler(side ^ 1);
-				Iterator<Pair<ItemStack, IDestination<DuctUnitItem, ItemStack>>> leftoverIterator = registry.iterator();
+				Iterator<Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>>> leftoverIterator = registry.iterator();
 				while (leftoverIterator.hasNext()) {
-					Pair<ItemStack, IDestination<DuctUnitItem, ItemStack>> leftover = leftoverIterator.next();
+					Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>> leftover = leftoverIterator.next();
 					if (leftover.getLeft() == null || !leftover.getRight().isTick())
 						break;
 
 					Route route = getDuct().getRoute(leftover.getRight().getDuct());
 					if (route == null) {
-						leftover.getRight().removeLeftover(leftover.getLeft());
+						leftover.getRight().removeLeftover(this, leftover.getLeft());
 						addLeftover(leftover.getLeft());
 						leftoverIterator.remove();
 						baseTile.markChunkDirty();
@@ -451,7 +452,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 					if (leftover.getRight() instanceof ProcessItem)
 						((ProcessItem) leftover.getRight()).send(ItemHelper.cloneStack(item));
 
-					leftover.getRight().removeLeftover(item);
+					leftover.getRight().removeLeftover(this, item);
 					leftover.getLeft().shrink(item.getCount());
 					baseTile.markChunkDirty();
 
@@ -468,14 +469,14 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 				if ((!leftovers.isEmpty() || !registry.isEmpty()) && processes.isEmpty() && NetworkUtils.isEmpty(handler)) { // TODO: Optimise NetworkUtils.isEmpty
 					// Reset leftovers
 					leftovers.clear();
-					registry.forEach(pair -> pair.getRight().removeLeftover(pair.getLeft()));
+					registry.forEach(pair -> pair.getRight().removeLeftover(this, pair.getLeft()));
 					registry.clear();
 					baseTile.markChunkDirty();
 				}
 			} else {
 				// Reset leftovers
 				leftovers.clear();
-				registry.forEach(pair -> pair.getRight().removeLeftover(pair.getLeft()));
+				registry.forEach(pair -> pair.getRight().removeLeftover(this, pair.getLeft()));
 				registry.clear();
 				baseTile.markChunkDirty();
 			}

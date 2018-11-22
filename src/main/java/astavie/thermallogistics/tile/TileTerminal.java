@@ -7,7 +7,8 @@ import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.util.IProcessHolder;
-import astavie.thermallogistics.util.Request;
+import astavie.thermallogistics.util.IRequest;
+import astavie.thermallogistics.util.IRequester;
 import cofh.CoFHCore;
 import cofh.core.block.TileCore;
 import cofh.core.block.TileNameable;
@@ -38,7 +39,7 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 
 	private final Set<Container> registry = new HashSet<>();
 
-	protected List<P> processes = new LinkedList<>();
+	protected List<P> processes = new ArrayList<>();
 	protected EnumFacing duct;
 	private NBTTagList _processes;
 
@@ -80,7 +81,13 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 
 	@Override
 	public void addProcess(P process, int index) {
-		processes.add(process);
+		if (index < 0) {
+			processes.add(process);
+		} else {
+			while (index >= processes.size())
+				processes.add(null);
+			processes.set(index, process);
+		}
 	}
 
 	@Override
@@ -216,12 +223,12 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 	public abstract Object getGuiServer(InventoryPlayer inventory);
 
 	@Override
-	public Collection<Request<T, I>> getRequests() {
-		return Collections.emptyList();
+	public Collection<IRequest<T, I>> getRequests() {
+		return new ArrayList<>(processes);
 	}
 
 	@Override
-	public void removeLeftover(I leftover) {
+	public void removeLeftover(IRequester<T, I> requester, I leftover) {
 	}
 
 	@Override

@@ -6,8 +6,9 @@ import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.process.ProcessFluid;
 import astavie.thermallogistics.proxy.ProxyClient;
-import astavie.thermallogistics.util.IDestination;
 import astavie.thermallogistics.util.IProcessLoader;
+import astavie.thermallogistics.util.IRequest;
+import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.Request;
 import astavie.thermallogistics.util.delegate.DelegateClientFluid;
 import astavie.thermallogistics.util.delegate.DelegateFluid;
@@ -30,6 +31,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
@@ -37,14 +39,14 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 
 import java.util.*;
 
-public class RequesterFluid extends RetrieverFluid implements IDestination<DuctUnitFluid, FluidStack>, IProcessLoader {
+public class RequesterFluid extends RetrieverFluid implements IRequester<DuctUnitFluid, FluidStack>, IProcessLoader {
 
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MODID, "requester_fluid");
 
-	private final Map<IDestination<DuctUnitFluid, FluidStack>, Collection<FluidStack>> wait = new HashMap<>();
-	private final Set<FluidStack> leftovers = new HashSet<>();
+	private final List<IRequest<DuctUnitFluid, FluidStack>> leftovers = new LinkedList<>();
 	private final List<ProcessFluid> processes = new LinkedList<>();
 
+	private NBTTagList _leftovers;
 	private NBTTagList _processes;
 
 	public RequesterFluid(TileGrid tile, byte side) {
@@ -60,10 +62,7 @@ public class RequesterFluid extends RetrieverFluid implements IDestination<DuctU
 	public void readFromNBT(NBTTagCompound tag) {
 		super.readFromNBT(tag);
 
-		NBTTagList leftovers = tag.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < leftovers.tagCount(); i++)
-			this.leftovers.add(FluidStack.loadFluidStackFromNBT(leftovers.getCompoundTagAt(i)));
-
+		_leftovers = tag.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
 		_processes = tag.getTagList("Processes", Constants.NBT.TAG_COMPOUND);
 		EventHandler.LOADERS.add(this);
 	}
@@ -73,8 +72,8 @@ public class RequesterFluid extends RetrieverFluid implements IDestination<DuctU
 		super.writeToNBT(tag);
 
 		NBTTagList leftovers = new NBTTagList();
-		for (FluidStack stack: this.leftovers)
-			leftovers.appendTag(stack.writeToNBT(new NBTTagCompound()));
+		for (IRequest<DuctUnitFluid, FluidStack> stack : this.leftovers)
+			leftovers.appendTag(IRequest.writeNbt(stack, getDelegate()));
 
 		NBTTagList processes = new NBTTagList();
 		for (IProcess process : this.processes)
@@ -85,13 +84,20 @@ public class RequesterFluid extends RetrieverFluid implements IDestination<DuctU
 	}
 
 	@Override
+	public BlockPos getBase() {
+		return baseTile.getPos();
+	}
+
+	@Override
 	public ItemStack getDisplayStack() {
 		return getPickBlock();
 	}
 
 	@Override
-	public Collection<Request<DuctUnitFluid, FluidStack>> getRequests() {
-		return Collections.emptyList();
+	public Collection<IRequest<DuctUnitFluid, FluidStack>> getRequests() {
+		Collection<IRequest<DuctUnitFluid, FluidStack>> collection = new ArrayList<>(processes);
+		collection.addAll(leftovers);
+		return collection;
 	}
 
 	@Override
@@ -121,6 +127,11 @@ public class RequesterFluid extends RetrieverFluid implements IDestination<DuctU
 
 	@Override
 	public void loadProcesses() {
+		if (_leftovers != null) {
+			for (int i = 0; i < _leftovers.tagCount(); i++)
+				this.leftovers.add(new Request<>(baseTile.world(), getDelegate(), _leftovers.getCompoundTagAt(i)));
+			_leftovers = null;
+		}
 		if (_processes != null) {
 			for (int i = 0; i < _processes.tagCount(); i++) {
 				ProcessFluid process = new ProcessFluid(baseTile.world(), _processes.getCompoundTagAt(i));
@@ -202,21 +213,16 @@ public class RequesterFluid extends RetrieverFluid implements IDestination<DuctU
 						if (FluidHelper.isFluidEqual(compare, output))
 							amount -= compare.amount;
 					}
-					for (FluidStack stack : leftovers)
-						if (FluidHelper.isFluidEqual(stack, output))
-							amount -= stack.amount;
+					for (IRequest<DuctUnitFluid, FluidStack> request : leftovers)
+						for (FluidStack stack : request.getStacks())
+							if (FluidHelper.isFluidEqual(stack, output))
+								amount -= stack.amount;
 
 					// Alright, let's do this!
 					output = crafter.registerLeftover(FluidUtils.copy(output, amount), this, false);
 					baseTile.markChunkDirty();
 
-					for (FluidStack leftover : leftovers) {
-						if (FluidHelper.isFluidEqual(output, leftover)) {
-							leftover.amount += output.amount;
-							return;
-						}
-					}
-					leftovers.add(output.copy());
+					this.leftovers.add(new Request<>(crafter.baseTile.getWorld(), crafter, output.copy()));
 					return;
 				}
 			}
@@ -236,9 +242,10 @@ public class RequesterFluid extends RetrieverFluid implements IDestination<DuctU
 						if (FluidHelper.isFluidEqual(compare, fluid))
 							fluid.amount += compare.amount;
 					}
-					for (FluidStack stack : leftovers)
-						if (FluidHelper.isFluidEqual(stack, fluid))
-							fluid.amount += stack.amount;
+					for (IRequest<DuctUnitFluid, FluidStack> request : leftovers)
+						for (FluidStack stack : request.getStacks())
+							if (FluidHelper.isFluidEqual(stack, fluid))
+								fluid.amount += stack.amount;
 
 					if (getFluidHandler().fill(fluid, false) < fluid.amount)
 						continue;
@@ -288,14 +295,24 @@ public class RequesterFluid extends RetrieverFluid implements IDestination<DuctU
 	}
 
 	@Override
-	public void removeLeftover(FluidStack leftover) {
-		Iterator<FluidStack> iterator = leftovers.iterator();
+	public void removeLeftover(IRequester<DuctUnitFluid, FluidStack> requester, FluidStack leftover) {
+		Iterator<IRequest<DuctUnitFluid, FluidStack>> iterator = leftovers.iterator();
 		while (iterator.hasNext()) {
-			FluidStack next = iterator.next();
-			if (FluidHelper.isFluidEqual(next, leftover)) {
-				next.amount -= leftover.amount;
-				if (next.amount <= 0)
-					iterator.remove();
+			IRequest<DuctUnitFluid, FluidStack> next = iterator.next();
+			if (next.getStart() == requester) {
+				Iterator<FluidStack> it = next.getStacks().iterator();
+				while (it.hasNext()) {
+					FluidStack stack = it.next();
+					if (FluidHelper.isFluidEqual(stack, leftover)) {
+						stack.amount -= leftover.amount;
+						if (stack.amount <= 0) {
+							it.remove();
+							if (next.getStacks().isEmpty())
+								iterator.remove();
+						}
+						return;
+					}
+				}
 				return;
 			}
 		}

@@ -1,5 +1,6 @@
 package astavie.thermallogistics.util.delegate;
 
+import cofh.core.network.PacketBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -13,13 +14,23 @@ public class DelegateFluid implements IDelegate<FluidStack> {
 	}
 
 	@Override
-	public NBTTagCompound writeStack(FluidStack stack) {
+	public NBTTagCompound writeNbt(FluidStack stack) {
 		return stack.writeToNBT(new NBTTagCompound());
 	}
 
 	@Override
-	public FluidStack readStack(NBTTagCompound tag) {
+	public void writePacket(PacketBase packet, FluidStack stack) {
+		packet.addFluidStack(stack);
+	}
+
+	@Override
+	public FluidStack readNbt(NBTTagCompound tag) {
 		return FluidStack.loadFluidStackFromNBT(tag);
+	}
+
+	@Override
+	public FluidStack readPacket(PacketBase packet) {
+		return packet.getFluidStack();
 	}
 
 }

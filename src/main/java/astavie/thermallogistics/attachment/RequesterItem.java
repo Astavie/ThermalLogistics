@@ -6,10 +6,7 @@ import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.proxy.ProxyClient;
-import astavie.thermallogistics.util.IDestination;
-import astavie.thermallogistics.util.IProcessLoader;
-import astavie.thermallogistics.util.NetworkUtils;
-import astavie.thermallogistics.util.Request;
+import astavie.thermallogistics.util.*;
 import astavie.thermallogistics.util.delegate.DelegateClientItem;
 import astavie.thermallogistics.util.delegate.DelegateItem;
 import codechicken.lib.render.CCRenderState;
@@ -30,18 +27,21 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.items.IItemHandler;
 
 import java.util.*;
 
-public class RequesterItem extends RetrieverItem implements IProcessLoader, IDestination<DuctUnitItem, ItemStack> {
+public class RequesterItem extends RetrieverItem implements IProcessLoader, IRequester<DuctUnitItem, ItemStack> {
 
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MODID, "requester_item");
 
-	private final Set<ItemStack> leftovers = new HashSet<>();
+	private final List<IRequest<DuctUnitItem, ItemStack>> leftovers = new LinkedList<>();
 	private final List<ProcessItem> processes = new LinkedList<>();
+
+	private NBTTagList _leftovers;
 	private NBTTagList _processes;
 
 	public RequesterItem(TileGrid tile, byte side) {
@@ -57,10 +57,7 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IDes
 	public void readFromNBT(NBTTagCompound tag) {
 		super.readFromNBT(tag);
 
-		NBTTagList leftovers = tag.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < leftovers.tagCount(); i++)
-			this.leftovers.add(new ItemStack(leftovers.getCompoundTagAt(i))); // TODO: leftovers is useless in this class
-
+		_leftovers = tag.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
 		_processes = tag.getTagList("Processes", Constants.NBT.TAG_COMPOUND);
 		EventHandler.LOADERS.add(this);
 	}
@@ -70,8 +67,8 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IDes
 		super.writeToNBT(tag);
 
 		NBTTagList leftovers = new NBTTagList();
-		for (ItemStack stack: this.leftovers)
-			leftovers.appendTag(stack.writeToNBT(new NBTTagCompound()));
+		for (IRequest<DuctUnitItem, ItemStack> stack : this.leftovers)
+			leftovers.appendTag(IRequest.writeNbt(stack, getDelegate()));
 
 		NBTTagList processes = new NBTTagList();
 		for (ProcessItem process : this.processes)
@@ -82,13 +79,20 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IDes
 	}
 
 	@Override
+	public BlockPos getBase() {
+		return baseTile.getPos();
+	}
+
+	@Override
 	public ItemStack getDisplayStack() {
 		return getPickBlock();
 	}
 
 	@Override
-	public Collection<Request<DuctUnitItem, ItemStack>> getRequests() {
-		return Collections.emptyList();
+	public Collection<IRequest<DuctUnitItem, ItemStack>> getRequests() {
+		Collection<IRequest<DuctUnitItem, ItemStack>> collection = new ArrayList<>(processes);
+		collection.addAll(leftovers);
+		return collection;
 	}
 
 	@Override
@@ -174,13 +178,7 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IDes
 				output = crafter.registerLeftover(output, this, false);
 				baseTile.markChunkDirty();
 
-				for (ItemStack leftover : leftovers) {
-					if (ItemHelper.itemsIdentical(output, leftover)) {
-						leftover.grow(output.getCount());
-						return;
-					}
-				}
-				leftovers.add(output.copy());
+				this.leftovers.add(new Request<>(crafter.baseTile.getWorld(), crafter, output.copy()));
 				return;
 			}
 		}
@@ -210,6 +208,11 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IDes
 
 	@Override
 	public void loadProcesses() {
+		if (_leftovers != null) {
+			for (int i = 0; i < _leftovers.tagCount(); i++)
+				this.leftovers.add(new Request<>(baseTile.world(), getDelegate(), _leftovers.getCompoundTagAt(i)));
+			_leftovers = null;
+		}
 		if (_processes != null) {
 			for (int i = 0; i < _processes.tagCount(); i++) {
 				ProcessItem process = new ProcessItem(baseTile.world(), _processes.getCompoundTagAt(i));
@@ -269,14 +272,25 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IDes
 	}
 
 	@Override
-	public void removeLeftover(ItemStack leftover) {
-		Iterator<ItemStack> iterator = leftovers.iterator();
+	public void removeLeftover(IRequester<DuctUnitItem, ItemStack> requester, ItemStack leftover) {
+		Iterator<IRequest<DuctUnitItem, ItemStack>> iterator = leftovers.iterator();
 		while (iterator.hasNext()) {
-			ItemStack next = iterator.next();
-			if (ItemHelper.itemsIdentical(next, leftover)) {
-				next.shrink(leftover.getCount());
-				if (next.isEmpty())
-					iterator.remove();
+			IRequest<DuctUnitItem, ItemStack> next = iterator.next();
+			if (next.getStart() == requester) {
+				Iterator<ItemStack> it = next.getStacks().iterator();
+				while (it.hasNext()) {
+					ItemStack stack = it.next();
+					if (ItemHelper.itemsIdentical(stack, leftover)) {
+						stack.shrink(leftover.getCount());
+						if (stack.isEmpty()) {
+							it.remove();
+							if (next.getStacks().isEmpty())
+								iterator.remove();
+						}
+						return;
+					}
+				}
+				return;
 			}
 		}
 	}

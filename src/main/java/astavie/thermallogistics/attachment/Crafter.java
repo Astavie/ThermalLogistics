@@ -8,7 +8,8 @@ import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.IProcessHolder;
-import astavie.thermallogistics.util.Request;
+import astavie.thermallogistics.util.IRequest;
+import astavie.thermallogistics.util.IRequester;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Translation;
@@ -372,12 +373,15 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	}
 
 	@Override
-	public Collection<Request<T, I>> getRequests() {
-		return Collections.emptyList();
+	public Collection<IRequest<T, I>> getRequests() {
+		Collection<IRequest<T, I>> collection = new LinkedList<>();
+		for (P process : processes)
+			collection.addAll(process.getRequests());
+		return collection;
 	}
 
 	@Override
-	public void removeLeftover(I leftover) {
+	public void removeLeftover(IRequester<T, I> requester, I leftover) {
 	}
 
 	@Override

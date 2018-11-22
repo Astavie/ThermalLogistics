@@ -14,11 +14,16 @@ import net.minecraft.world.World;
 import java.util.List;
 import java.util.Set;
 
-public interface IProcessHolder<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> extends IDestination<T, I>, IProcessLoader {
+public interface IProcessHolder<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> extends IRequester<T, I>, IProcessLoader {
 
 	TileCore getTile();
 
 	Set<Crafter> getLinked();
+
+	@Override
+	default BlockPos getBase() {
+		return getTile().getPos();
+	}
 
 	@SuppressWarnings("unchecked")
 	static <P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> IProcessHolder<P, T, I> read(World world, NBTTagCompound nbt) {

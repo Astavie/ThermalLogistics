@@ -58,7 +58,7 @@ public class NetworkUtils {
 			Set<ProcessItem> processes = new HashSet<>();
 			for (CrafterItem crafter : getAttachments(duct.getGrid(), CrafterItem.class)) {
 				processes.addAll(crafter.processes);
-				for (Pair<ItemStack, IDestination<DuctUnitItem, ItemStack>> registry : crafter.registry)
+				for (Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>> registry : crafter.registry)
 					if (registry.getLeft() != null && registry.getRight().getDuct() == duct && registry.getRight().getSide() == side)
 						travelingItems.addItemstack(registry.getLeft(), side);
 			}

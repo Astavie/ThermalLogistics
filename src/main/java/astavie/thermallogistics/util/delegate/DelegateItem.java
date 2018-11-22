@@ -1,5 +1,6 @@
 package astavie.thermallogistics.util.delegate;
 
+import cofh.core.network.PacketBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
@@ -13,13 +14,23 @@ public class DelegateItem implements IDelegate<ItemStack> {
 	}
 
 	@Override
-	public NBTTagCompound writeStack(ItemStack stack) {
+	public NBTTagCompound writeNbt(ItemStack stack) {
 		return stack.writeToNBT(new NBTTagCompound());
 	}
 
 	@Override
-	public ItemStack readStack(NBTTagCompound tag) {
+	public void writePacket(PacketBase packet, ItemStack stack) {
+		packet.addItemStack(stack);
+	}
+
+	@Override
+	public ItemStack readNbt(NBTTagCompound tag) {
 		return new ItemStack(tag);
+	}
+
+	@Override
+	public ItemStack readPacket(PacketBase packet) {
+		return packet.getItemStack();
 	}
 
 }
