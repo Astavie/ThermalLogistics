@@ -6,6 +6,7 @@ import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.NetworkUtils;
 import astavie.thermallogistics.util.request.IRequest;
 import astavie.thermallogistics.util.request.Request;
+import astavie.thermallogistics.util.request.Requests;
 import codechicken.lib.fluid.FluidUtils;
 import cofh.core.util.helpers.FluidHelper;
 import cofh.thermaldynamics.duct.Attachment;
@@ -22,9 +23,9 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitFluid, FluidStack>, ProcessFluid, DuctUnitFluid, FluidStack> {
@@ -33,7 +34,6 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 
 	private final FluidStack start;
 	private boolean progress = false;
-	private boolean idle = true;
 
 	public ProcessFluid(IRequester<DuctUnitFluid, FluidStack> destination, CrafterFluid crafter, FluidStack output, int sum) {
 		this(destination, (IProcessHolder<ProcessFluid, DuctUnitFluid, FluidStack>) crafter, output, sum);
@@ -70,10 +70,10 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 	}
 
 	@Override
-	public Collection<IRequest<DuctUnitFluid, FluidStack>> getRequests() {
-		Collection<IRequest<DuctUnitFluid, FluidStack>> collection = super.getRequests();
-		if (idle) {
-			IRequest<DuctUnitFluid, FluidStack> input = this.input.copy(getDelegate());
+	public List<Requests<DuctUnitFluid, FluidStack>> getRequests() {
+		List<Requests<DuctUnitFluid, FluidStack>> list = super.getRequests();
+		if (!this.input.getStacks().isEmpty()) {
+			IRequest<DuctUnitFluid, FluidStack> input = this.input.copyFaceless(getDelegate());
 			for (ProcessFluid process : sub) {
 				FluidStack output = process.output.copy();
 				Iterator<FluidStack> iterator = input.getStacks().iterator();
@@ -112,9 +112,10 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 					}
 				}
 			}
-			collection.add(input);
+			if (!input.getStacks().isEmpty())
+				list.get(0).getRequests().add(input);
 		}
-		return collection;
+		return list;
 	}
 
 	@Override
@@ -213,8 +214,6 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 			}
 		}
 		if (maxInput == c) {
-			idle = true;
-
 			// No fluid found, let's see if any process has some leftovers
 			for (CrafterFluid crafter : crafters) {
 				if (crafter == this.crafter)
@@ -252,8 +251,6 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 						continue;
 
 					// Alright, let's do this!
-					idle = false;
-
 					this.leftovers.add(new Request<>(crafter.baseTile.getWorld(), crafter, output.copy()));
 					return;
 				}
@@ -295,8 +292,6 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 						continue;
 
 					// Alright, let's do this!
-					idle = false;
-
 					int sum = (int) Math.ceil((double) required / fluid.amount);
 					sub.add(new ProcessFluid(this, crafter, FluidUtils.copy(fluid, required), sum));
 					return;
@@ -304,7 +299,6 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 			}
 		} else {
 			progress = true;
-			idle = false;
 		}
 	}
 
@@ -328,8 +322,6 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 				required += stack.amount;
 
 		if (required > 0) {
-			idle = false;
-
 			int i = Math.min(required, fluid.amount);
 			if (fill) {
 				for (Iterator<FluidStack> iterator = fluidStacks.iterator(); iterator.hasNext(); ) {
@@ -407,7 +399,6 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 	}
 
 	public void send(FluidStack drained) {
-		idle = false;
 		for (FluidStack sent : fluidStacks) {
 			if (FluidHelper.isFluidEqual(sent, drained)) {
 				sent.amount += drained.amount;

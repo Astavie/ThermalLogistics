@@ -8,16 +8,19 @@ import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.IRequester;
-import astavie.thermallogistics.util.request.IRequest;
+import astavie.thermallogistics.util.request.Requests;
 import cofh.CoFHCore;
 import cofh.core.block.TileCore;
 import cofh.core.block.TileNameable;
 import cofh.core.network.PacketBase;
+import cofh.core.network.PacketHandler;
+import cofh.core.network.PacketTileInfo;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
@@ -36,6 +39,9 @@ import java.util.*;
 public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> extends TileNameable implements IProcessHolder<P, T, I>, ITickable {
 
 	public final InventorySpecial requester = new InventorySpecial(1, i -> i.getItem() instanceof ItemRequester, null);
+
+	// Client-only
+	public final List<Requests<T, I>> requests = new LinkedList<>();
 
 	private final Set<Container> registry = new HashSet<>();
 
@@ -62,11 +68,6 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 		IBlockState state = world.getBlockState(pos);
 		if (state.getValue(BlockTerminal.ACTIVE) != active)
 			world.setBlockState(pos, state.withProperty(BlockTerminal.ACTIVE, active), 2);
-	}
-
-	@Override
-	public ItemStack getDisplayStack() {
-		return new ItemStack(ThermalLogistics.terminal);
 	}
 
 	@Override
@@ -131,6 +132,35 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 			return duct.getGrid();
 		return null;
 	}
+
+	public void sendRequestsPacket() {
+		PacketHandler.sendToServer(PacketTileInfo.newPacket(this).addByte(0));
+	}
+
+	@Override
+	public void handleTileInfoPacket(PacketBase payload, boolean isServer, EntityPlayer player) {
+		byte message = payload.getByte();
+		if (message != 0) {
+			handlePacket(payload, message, isServer, player);
+		} else if (isServer) {
+			// Send requests
+			PacketBase packet = PacketTileInfo.newPacket(this).addByte(0);
+
+			Collection<Requests<T, I>> requests = getRequests();
+			packet.addInt(requests.size());
+			for (Requests<T, I> request : requests)
+				request.writePacket(getDelegate(), packet);
+
+			PacketHandler.sendTo(packet, player);
+		} else {
+			requests.clear();
+			int size = payload.getInt();
+			for (int i = 0; i < size; i++)
+				requests.add(new Requests<>(world, getDelegate(), payload));
+		}
+	}
+
+	protected abstract void handlePacket(PacketBase payload, byte message, boolean isServer, EntityPlayer player);
 
 	@Override
 	public void update() {
@@ -226,8 +256,11 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 	public abstract Object getGuiServer(InventoryPlayer inventory);
 
 	@Override
-	public Collection<IRequest<T, I>> getRequests() {
-		return new ArrayList<>(processes);
+	public List<Requests<T, I>> getRequests() {
+		List<Requests<T, I>> list = new LinkedList<>();
+		for (P process : processes)
+			list.addAll(process.getRequests());
+		return list;
 	}
 
 	@Override

@@ -12,11 +12,14 @@ import astavie.thermallogistics.util.delegate.DelegateClientFluid;
 import astavie.thermallogistics.util.delegate.DelegateFluid;
 import astavie.thermallogistics.util.request.IRequest;
 import astavie.thermallogistics.util.request.Request;
+import astavie.thermallogistics.util.request.Requests;
 import codechicken.lib.fluid.FluidUtils;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
 import codechicken.lib.vec.uv.IconTransformation;
+import cofh.core.network.PacketBase;
+import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.FluidHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.attachments.retriever.RetrieverFluid;
@@ -26,6 +29,7 @@ import cofh.thermaldynamics.duct.fluid.FluidTankGrid;
 import cofh.thermaldynamics.duct.fluid.GridFluid;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.render.RenderDuct;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -42,6 +46,9 @@ import java.util.*;
 public class RequesterFluid extends RetrieverFluid implements IRequester<DuctUnitFluid, FluidStack>, IProcessLoader {
 
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MODID, "requester_fluid");
+
+	// Client-only
+	private final List<Requests<DuctUnitFluid, FluidStack>> requests = new LinkedList<>();
 
 	private final List<IRequest<DuctUnitFluid, FluidStack>> leftovers = new LinkedList<>();
 	private final List<ProcessFluid> processes = new LinkedList<>();
@@ -89,15 +96,12 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<DuctUni
 	}
 
 	@Override
-	public ItemStack getDisplayStack() {
-		return getPickBlock();
-	}
-
-	@Override
-	public Collection<IRequest<DuctUnitFluid, FluidStack>> getRequests() {
-		Collection<IRequest<DuctUnitFluid, FluidStack>> collection = new ArrayList<>(processes);
-		collection.addAll(leftovers);
-		return collection;
+	public List<Requests<DuctUnitFluid, FluidStack>> getRequests() {
+		List<Requests<DuctUnitFluid, FluidStack>> list = new LinkedList<>();
+		for (ProcessFluid process : processes)
+			if (!getDelegate().isNull(process.getOutput()))
+				list.add(new Requests<>(process, Collections.singletonList(process)));
+		return list;
 	}
 
 	@Override
@@ -229,7 +233,7 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<DuctUni
 
 			for (CrafterFluid crafter : crafters) {
 				a:
-				for (FluidStack fluid: crafter.outputs) {
+				for (FluidStack fluid : crafter.outputs) {
 					if (fluid == null || !fluidPassesFiltering(fluid))
 						continue;
 
@@ -257,6 +261,32 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<DuctUni
 					return;
 				}
 			}
+		}
+	}
+
+	public void sendRequestsPacket() {
+		PacketHandler.sendToServer(getNewPacket().addByte(0));
+	}
+
+	@Override
+	public void handleInfoPacketType(byte a, PacketBase payload, boolean isServer, EntityPlayer player) {
+		if (a != 0) {
+			super.handleInfoPacketType(a, payload, isServer, player);
+		} else if (isServer) {
+			// Send requests
+			PacketBase packet = getNewPacket().addByte(0);
+
+			List<Requests<DuctUnitFluid, FluidStack>> requests = getRequests();
+			packet.addInt(requests.size());
+			for (Requests<DuctUnitFluid, FluidStack> request : requests)
+				request.writePacket(getDelegate(), packet);
+
+			PacketHandler.sendTo(packet, player);
+		} else {
+			requests.clear();
+			int size = payload.getInt();
+			for (int i = 0; i < size; i++)
+				requests.add(new Requests<>(baseTile.world(), getDelegate(), payload));
 		}
 	}
 

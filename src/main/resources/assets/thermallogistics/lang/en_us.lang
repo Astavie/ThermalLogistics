@@ -33,6 +33,7 @@ info.logistics.networks=Connected Networks
 
 info.logistics.tab.link=Linked Crafters
 info.logistics.tab.fluid=Add Fluid
+info.logistics.tab.requests=Requests
 
 info.logistics.manager.a.0=Use on a servo to monitor the system.
 info.logistics.manager.a.1=Use on two crafters to link them.

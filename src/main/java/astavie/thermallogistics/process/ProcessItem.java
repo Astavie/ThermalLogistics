@@ -6,6 +6,7 @@ import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.NetworkUtils;
 import astavie.thermallogistics.util.request.IRequest;
 import astavie.thermallogistics.util.request.Request;
+import astavie.thermallogistics.util.request.Requests;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
@@ -26,7 +27,6 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 	private final int delay;
 	private boolean progress = false;
-	private boolean idle = true;
 
 	public ProcessItem(IRequester<DuctUnitItem, ItemStack> destination, CrafterItem crafter, ItemStack output, int sum) {
 		this(destination, (IProcessHolder<ProcessItem, DuctUnitItem, ItemStack>) crafter, output, sum);
@@ -59,10 +59,10 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	}
 
 	@Override
-	public Collection<IRequest<DuctUnitItem, ItemStack>> getRequests() {
-		Collection<IRequest<DuctUnitItem, ItemStack>> collection = super.getRequests();
-		if (idle) {
-			IRequest<DuctUnitItem, ItemStack> input = this.input.copy(getDelegate());
+	public List<Requests<DuctUnitItem, ItemStack>> getRequests() {
+		List<Requests<DuctUnitItem, ItemStack>> list = super.getRequests();
+		if (!this.input.getStacks().isEmpty()) {
+			IRequest<DuctUnitItem, ItemStack> input = this.input.copyFaceless(getDelegate());
 			for (ProcessItem process : sub) {
 				ItemStack output = process.output.copy();
 				Iterator<ItemStack> iterator = input.getStacks().iterator();
@@ -101,9 +101,10 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					}
 				}
 			}
-			collection.add(input);
+			if (!input.getStacks().isEmpty())
+				list.get(0).getRequests().add(input);
 		}
-		return collection;
+		return list;
 	}
 
 	@Override
@@ -194,7 +195,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Try to send it
-				TravelingItem ti = NetworkUtils.transfer(slot, end, side, crafter.getDuct(), crafter.getSide(), route1, amt, crafter.getType(), false);
+				TravelingItem ti = NetworkUtils.transfer(slot, end, side, crafter.getDuct(), crafter.getSide(), route1, amt, crafter.getType(), true);
 				if (ti != null) {
 					send(ti.stack.copy());
 					return;
@@ -235,13 +236,11 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Calculate maximum transfer
-				output = NetworkUtils.maxTransfer(ItemHelper.cloneStack(output, amt), this.crafter.getDuct(), this.crafter.getSide(), this.crafter.getType(), false);
+				output = NetworkUtils.maxTransfer(ItemHelper.cloneStack(output, amt), this.crafter.getDuct(), this.crafter.getSide(), this.crafter.getType(), true);
 				if (output.isEmpty())
 					continue;
 
 				// Alright, let's do this!
-				idle = false;
-
 				this.leftovers.add(new Request<>(crafter.baseTile.getWorld(), crafter, crafter.registerLeftover(output, this, false)));
 				return;
 			}
@@ -280,21 +279,17 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Calculate maximum transfer
-				ItemStack out = NetworkUtils.maxTransfer(ItemHelper.cloneStack(output, amt), this.crafter.getDuct(), this.crafter.getSide(), this.crafter.getType(), false);
+				ItemStack out = NetworkUtils.maxTransfer(ItemHelper.cloneStack(output, amt), this.crafter.getDuct(), this.crafter.getSide(), this.crafter.getType(), true);
 				if (out.isEmpty())
 					continue;
 
 				// Alright, let's do this!
-				idle = false;
-
 				int sum = (int) Math.ceil((double) out.getCount() / output.getCount());
 				ProcessItem process = new ProcessItem(this, crafter, out, sum);
 				sub.add(process);
 				return;
 			}
 		}
-
-		idle = true;
 	}
 
 	public boolean addItem(ListIterator<TravelingItem> iterator, TravelingItem item) {
@@ -391,7 +386,6 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	}
 
 	public void send(ItemStack item) {
-		idle = false;
 		progress = true;
 		for (Iterator<ItemStack> iterator = input.getStacks().iterator(); iterator.hasNext(); ) {
 			ItemStack sent = iterator.next();

@@ -6,6 +6,7 @@ import astavie.thermallogistics.attachment.CrafterFluid;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.gui.client.tab.TabFluid;
 import astavie.thermallogistics.gui.client.tab.TabLink;
+import astavie.thermallogistics.gui.client.tab.TabRequests;
 import astavie.thermallogistics.gui.container.ContainerCrafter;
 import astavie.thermallogistics.util.delegate.IDelegateClient;
 import cofh.core.gui.GuiContainerCore;
@@ -65,6 +66,9 @@ public class GuiCrafter extends GuiContainerCore {
 			addElement(createSlot(container.output + i * 18, container.y + (int) (18 * 2.5), i, false));
 
 		addTab(new TabLink(this));
+		//noinspection unchecked
+		addTab(new TabRequests(this, crafter.getClientDelegate(), crafter.requests, crafter::sendRequestsPacket));
+
 		if (crafter instanceof CrafterFluid) {
 			tab = new TabFluid(this);
 			addTab(tab);

@@ -8,16 +8,15 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Collection;
+import java.util.List;
 
-public interface IRequest<T extends DuctUnit<T, ?, ?>, I> {
+public interface IRequest<T extends DuctUnit<T, ?, ?>, I> extends Comparable<IRequest<T, I>> {
 
 	static <T extends DuctUnit<T, ?, ?>, I> NBTTagCompound writeNbt(IRequest<T, I> request, IDelegate<I> delegate) {
 		NBTTagCompound tag = new NBTTagCompound();
 		tag.setLong("age", request.getAge());
 		if (request.getStart() != null)
-			tag.setTag("start", IRequester.write(request.getStart()));
+			tag.setTag("start", IRequester.writeNbt(request.getStart(), true));
 
 		NBTTagList list = new NBTTagList();
 		for (I stack : request.getStacks())
@@ -30,23 +29,24 @@ public interface IRequest<T extends DuctUnit<T, ?, ?>, I> {
 	static <T extends DuctUnit<T, ?, ?>, I> void writePacket(IRequest<T, I> request, IDelegate<I> delegate, PacketBase packet) {
 		packet.addLong(request.getAge());
 		packet.addBool(request.getStart() != null);
-		if (request.getStart() != null) {
-			try {
-				packet.writeNBT(IRequester.write(request.getStart()));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+		if (request.getStart() != null)
+			IRequester.writePacket(packet, request.getStart());
+
 		packet.addInt(request.getStacks().size());
 		for (I stack : request.getStacks())
 			delegate.writePacket(packet, stack);
 	}
 
-	Collection<I> getStacks();
+	List<I> getStacks();
 
 	@Nullable
 	IRequester<T, I> getStart();
 
 	long getAge();
+
+	@Override
+	default int compareTo(IRequest<T, I> o) {
+		return Long.compare(getAge(), o.getAge());
+	}
 
 }

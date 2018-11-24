@@ -4,6 +4,7 @@ import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.delegate.IDelegate;
 import cofh.core.network.PacketBase;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
+import com.google.common.collect.Iterables;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.NonNullList;
@@ -11,9 +12,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,7 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 		this.birth = world.getTotalWorldTime() - tag.getLong("birth");
 
 		if (tag.hasKey("start"))
-			this.start = IRequester.read(world, tag.getCompoundTag("start"));
+			this.start = IRequester.readNbt(world, tag.getCompoundTag("start"));
 		else
 			this.start = null;
 
@@ -55,15 +56,10 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 		this.world = world;
 		this.birth = world.getTotalWorldTime() - packet.getLong();
 
-		if (packet.getBool()) {
-			NBTTagCompound tag = null;
-			try {
-				tag = packet.readNBT();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			this.start = IRequester.read(world, tag);
-		} else this.start = null;
+		if (packet.getBool())
+			this.start = IRequester.readPacket(world, packet);
+		else
+			this.start = null;
 
 		int size = packet.getInt();
 		for (int i = 0; i < size; i++)
@@ -89,6 +85,23 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 
 	public Request<T, I> copy(IDelegate<I> delegate) {
 		Request<T, I> clone = new Request<>(world, start, stacks.stream().map(delegate::copy).collect(Collectors.toList()));
+		clone.birth = birth;
+		return clone;
+	}
+
+	public static <T extends DuctUnit<T, ?, ?>, I> Request<T, I> combine(World world, IDelegate<I> delegate, IRequest<T, I> a, IRequest<T, I> b) {
+		List<I> list = new LinkedList<>();
+		for (I stack : Iterables.concat(a.getStacks(), b.getStacks()))
+			list.add(delegate.copy(stack));
+		delegate.truncate(list);
+
+		Request<T, I> combine = new Request<>(world, a.getStart(), list);
+		combine.birth = world.getTotalWorldTime() - Math.max(a.getAge(), b.getAge());
+		return combine;
+	}
+
+	public Request<T, I> copyFaceless(IDelegate<I> delegate) {
+		Request<T, I> clone = new Request<T, I>(world, null, stacks.stream().map(delegate::copy).collect(Collectors.toList()));
 		clone.birth = birth;
 		return clone;
 	}

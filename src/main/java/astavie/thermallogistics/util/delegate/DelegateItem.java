@@ -1,8 +1,11 @@
 package astavie.thermallogistics.util.delegate;
 
 import cofh.core.network.PacketBase;
+import cofh.core.util.helpers.ItemHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+
+import java.util.Iterator;
 
 public class DelegateItem implements IDelegate<ItemStack> {
 
@@ -16,6 +19,24 @@ public class DelegateItem implements IDelegate<ItemStack> {
 	@Override
 	public ItemStack copy(ItemStack stack) {
 		return stack.copy();
+	}
+
+	@Override
+	public void truncate(Iterable<ItemStack> iterable) {
+		Iterator<ItemStack> a = iterable.iterator();
+		while (a.hasNext()) {
+			ItemStack fa = a.next();
+			for (ItemStack fb : iterable) {
+				if (fa == fb)
+					break;
+
+				if (ItemHelper.itemsIdentical(fa, fb)) {
+					fb.grow(fa.getCount());
+					a.remove();
+					break;
+				}
+			}
+		}
 	}
 
 	@Override

@@ -9,8 +9,8 @@ import astavie.thermallogistics.util.delegate.IDelegate;
 import astavie.thermallogistics.util.delegate.IDelegateClient;
 import astavie.thermallogistics.util.request.IRequest;
 import astavie.thermallogistics.util.request.Request;
+import astavie.thermallogistics.util.request.Requests;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.ResourceLocation;
@@ -112,10 +112,16 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	}
 
 	@Override
-	public Collection<IRequest<T, I>> getRequests() {
-		Collection<IRequest<T, I>> collection = new ArrayList<>(sub);
-		collection.addAll(leftovers);
-		return collection;
+	public List<Requests<T, I>> getRequests() {
+		List<IRequest<T, I>> list = new LinkedList<>();
+		for (P process : sub)
+			if (!getDelegate().isNull(process.getOutput()))
+				list.add(process);
+		list.addAll(leftovers);
+
+		Requests<T, I> requests = new Requests<>(this, list);
+		requests.condense(crafter.getTile().getWorld(), getDelegate());
+		return Collections.singletonList(requests);
 	}
 
 	@Override
@@ -126,11 +132,6 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	@Override
 	public IDelegateClient<I, ?> getClientDelegate() {
 		return crafter.getClientDelegate();
-	}
-
-	@Override
-	public ItemStack getDisplayStack() {
-		return crafter.getDisplayStack();
 	}
 
 	@Override

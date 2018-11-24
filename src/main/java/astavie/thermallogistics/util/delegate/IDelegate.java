@@ -9,6 +9,8 @@ public interface IDelegate<I> {
 
 	I copy(I stack);
 
+	void truncate(Iterable<I> iterable);
+
 	NBTTagCompound writeNbt(I stack);
 
 	void writePacket(PacketBase packet, I stack);

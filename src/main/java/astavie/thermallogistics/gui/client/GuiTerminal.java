@@ -1,6 +1,7 @@
 package astavie.thermallogistics.gui.client;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.gui.client.tab.TabRequests;
 import astavie.thermallogistics.gui.container.ContainerTerminal;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementButtonManaged;
@@ -8,6 +9,7 @@ import cofh.core.gui.element.ElementSlider;
 import cofh.core.gui.element.ElementTextField;
 import cofh.core.gui.element.ElementTextFieldLimited;
 import cofh.core.gui.element.listbox.SliderVertical;
+import cofh.core.gui.element.tab.TabBase;
 import cofh.core.util.helpers.StringHelper;
 import net.minecraft.inventory.Slot;
 import net.minecraft.util.ResourceLocation;
@@ -47,6 +49,11 @@ public abstract class GuiTerminal extends GuiContainerCore {
 
 		elements.add(search);
 		elements.add(slider);
+
+		//noinspection unchecked
+		TabBase tab = new TabRequests(this, terminal.tile.getClientDelegate(), terminal.tile.requests, terminal.tile::sendRequestsPacket);
+		addTab(tab);
+		tab.setOffsets(-18, 74);
 
 		boolean visible = requester().getHasStack();
 		amount.setVisible(visible);

@@ -5,8 +5,8 @@ import astavie.thermallogistics.util.request.IRequest;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import net.minecraft.nbt.NBTTagCompound;
 
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 public interface IProcess<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> extends IRequest<T, I>, IRequester<T, I> {
 
@@ -35,8 +35,8 @@ public interface IProcess<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, 
 	void fail();
 
 	@Override
-	default Collection<I> getStacks() {
-		return Collections.singleton(getOutput());
+	default List<I> getStacks() {
+		return Collections.singletonList(getOutput());
 	}
 
 	@Override

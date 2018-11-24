@@ -35,7 +35,7 @@ public class TabLink extends TabBase {
 
 	public TabLink(GuiCrafter gui) {
 		super(gui);
-		this.maxHeight = 92;
+		this.maxHeight = 96;
 		this.backgroundColor = 0xc46d00;
 
 		//noinspection unchecked
@@ -48,13 +48,13 @@ public class TabLink extends TabBase {
 
 	@Override
 	protected void drawForeground() {
-		int mouseX = gui.getMouseX() - posX();
-		int mouseY = gui.getMouseY() - posY;
-
 		GlStateManager.disableLighting();
 		drawTabIcon(ProxyClient.ICON_LINK);
 		if (!isFullyOpened())
 			return;
+
+		int mouseX = gui.getMouseX() - posX();
+		int mouseY = gui.getMouseY() - posY;
 
 		if (first > 0)
 			gui.drawIcon(CoreTextures.ICON_ARROW_UP, sideOffset() + maxWidth - 20, 16);
@@ -82,7 +82,6 @@ public class TabLink extends TabBase {
 			BlockPos pos = link.baseTile.getPos().offset(EnumFacing.VALUES[link.side]);
 			IBlockState state = link.baseTile.world().getBlockState(pos);
 
-			//noinspection deprecation
 			ItemStack item = state.getBlock().getItem(link.baseTile.world(), pos, state);
 
 			if (mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17)

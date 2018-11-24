@@ -9,7 +9,7 @@ import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.IRequester;
-import astavie.thermallogistics.util.request.IRequest;
+import astavie.thermallogistics.util.request.Requests;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Translation;
@@ -51,10 +51,14 @@ import java.util.*;
 
 public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> extends Attachment implements IProcessHolder<P, T, I>, IPortableData, IFilterAttachment {
 
-	public final LinkedList<Integer> flags = new LinkedList<>();
+	public final List<Integer> flags = new LinkedList<>();
 	public final boolean[] values = FilterLogic.defaultflags.clone();
 
 	public final List<P> processes = new ArrayList<>();
+
+	// Client-only
+	public final List<Requests<T, I>> requests = new LinkedList<>();
+
 	public Set<Crafter> linked;
 
 	public int type;
@@ -104,11 +108,6 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	public abstract I[] getInputs();
 
 	public abstract I[] getOutputs();
-
-	@Override
-	public ItemStack getDisplayStack() {
-		return getPickBlock();
-	}
 
 	@Override
 	public TileCore getTile() {
@@ -279,10 +278,21 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 
 	protected abstract void setAutoOutput(ICrafterWrapper wrapper);
 
+	private PacketBase getRequestsPacket() {
+		PacketBase payload = getNewPacket();
+		payload.addByte(5);
+		return payload;
+	}
+
+	public void sendRequestsPacket() {
+		PacketHandler.sendToServer(getRequestsPacket());
+	}
+
 	@Override
 	public void handleInfoPacket(PacketBase payload, boolean isServer, EntityPlayer player) {
 		byte message = payload.getByte();
 		switch (message) {
+			// SERVER
 			case 0:
 				swapFlag(payload.getByte());
 				break;
@@ -292,7 +302,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 			case 2:
 				autoOutput();
 				break;
-			case 3:
+			case 3: {
 				List<Crafter> crafters = new ArrayList<>(linked);
 				crafters.remove(this);
 
@@ -302,7 +312,10 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 				crafter.linked = new LinkedHashSet<>();
 				crafter.linked.add(crafter);
 				break;
-			case 4:
+			}
+
+			// CLIENT
+			case 4: {
 				linked = new LinkedHashSet<>();
 				linked.add(this);
 
@@ -318,9 +331,28 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 						e.printStackTrace();
 					}
 				}
-			case 5:
-
 				break;
+			}
+			case 5: {
+				if (isServer) {
+					PacketBase packet = getRequestsPacket();
+
+					List<Requests<T, I>> requests = getRequests();
+					packet.addInt(requests.size());
+					for (Requests<T, I> request : requests)
+						request.writePacket(getDelegate(), packet);
+
+					PacketHandler.sendTo(packet, player);
+				} else {
+					requests.clear();
+					int size = payload.getInt();
+					for (int i = 0; i < size; i++)
+						requests.add(new Requests<>(baseTile.world(), getDelegate(), payload));
+					break;
+				}
+			}
+
+			// SERVER / CLIENT
 			default:
 				handleInfoPacket(message, payload);
 				break;
@@ -368,11 +400,11 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	}
 
 	@Override
-	public Collection<IRequest<T, I>> getRequests() {
-		Collection<IRequest<T, I>> collection = new LinkedList<>();
+	public List<Requests<T, I>> getRequests() {
+		List<Requests<T, I>> list = new LinkedList<>();
 		for (P process : processes)
-			collection.addAll(process.getRequests());
-		return collection;
+			list.addAll(process.getRequests());
+		return list;
 	}
 
 	@Override

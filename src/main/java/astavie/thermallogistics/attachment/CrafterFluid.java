@@ -33,7 +33,6 @@ import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.*;
 
 public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStack> {
@@ -119,17 +118,12 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	}
 
 	public PacketBase getPacket(FluidStack stack, boolean input, int slot) {
-		try {
-			PacketBase packet = getNewPacket();
-			packet.addByte(6);
-			packet.writeNBT(stack == null ? null : stack.writeToNBT(new NBTTagCompound()));
-			packet.addBool(input);
-			packet.addInt(slot);
-			return packet;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
+		PacketBase packet = getNewPacket();
+		packet.addByte(6);
+		packet.addFluidStack(stack);
+		packet.addBool(input);
+		packet.addInt(slot);
+		return packet;
 	}
 
 	@Override
@@ -163,14 +157,10 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	protected void handleInfoPacket(byte message, PacketBase payload) {
 		switch (message) {
 			case 6:
-				try {
-					FluidStack stack = FluidStack.loadFluidStackFromNBT(payload.readNBT());
-					FluidStack[] inventory = payload.getBool() ? inputs : outputs;
-					inventory[payload.getInt()] = stack;
-					baseTile.markChunkDirty();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				FluidStack stack = payload.getFluidStack();
+				FluidStack[] inventory = payload.getBool() ? inputs : outputs;
+				inventory[payload.getInt()] = stack;
+				baseTile.markChunkDirty();
 				break;
 		}
 	}
@@ -200,7 +190,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 			NBTTagCompound nbt = new NBTTagCompound();
 			if (pair.getLeft() != null)
 				nbt.setTag("item", pair.getLeft().writeToNBT(new NBTTagCompound()));
-			nbt.setTag("destination", IRequester.write(pair.getRight()));
+			nbt.setTag("destination", IRequester.writeNbt(pair.getRight(), true));
 			registry.appendTag(nbt);
 		}
 
@@ -217,7 +207,7 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 				NBTTagCompound destination = tag.getCompoundTag("destination");
 
 				//noinspection unchecked
-				this.registry.add(Pair.of(item.isEmpty() ? null : FluidStack.loadFluidStackFromNBT(item), IRequester.read(baseTile.world(), destination)));
+				this.registry.add(Pair.of(item.isEmpty() ? null : FluidStack.loadFluidStackFromNBT(item), IRequester.readNbt(baseTile.world(), destination)));
 			}
 			_registry = null;
 		}
@@ -313,12 +303,9 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 	@Override
 	public void removeProcess(ProcessFluid process) {
 		super.removeProcess(process);
-		for (Iterator<Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>>> iterator = registry.iterator(); iterator.hasNext(); ) {
-			if (iterator.next().getRight() == process) {
+		for (Iterator<Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>>> iterator = registry.iterator(); iterator.hasNext(); )
+			if (iterator.next().getRight() == process)
 				iterator.remove();
-				break;
-			}
-		}
 	}
 
 	@Override

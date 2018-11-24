@@ -34,7 +34,7 @@ public class GuiTerminalItem extends GuiTerminal {
 
 	@Override
 	protected void request() {
-		PacketBase payload = PacketTileInfo.newPacket(terminal.tile).addByte(1);
+		PacketBase payload = PacketTileInfo.newPacket(terminal.tile).addByte(2);
 		try {
 			payload.addShort(Item.getIdFromItem(selected.getItem()));
 			payload.addInt(Integer.parseInt(amount.getText()));
@@ -50,7 +50,7 @@ public class GuiTerminalItem extends GuiTerminal {
 	public void initGui() {
 		super.initGui();
 		((TileTerminalItem) terminal.tile).terminal = NonNullList.create();
-		PacketHandler.sendToServer(PacketTileInfo.newPacket(terminal.tile).addByte(0));
+		PacketHandler.sendToServer(PacketTileInfo.newPacket(terminal.tile).addByte(1));
 	}
 
 	@Override
@@ -74,7 +74,7 @@ public class GuiTerminalItem extends GuiTerminal {
 
 		ticks++;
 		if (ticks >= 10) { // Update terminal every half second
-			PacketHandler.sendToServer(PacketTileInfo.newPacket(terminal.tile).addByte(0));
+			PacketHandler.sendToServer(PacketTileInfo.newPacket(terminal.tile).addByte(1));
 			ticks = 0;
 		}
 
@@ -210,7 +210,7 @@ public class GuiTerminalItem extends GuiTerminal {
 
 		if (mouseX >= 0 && mouseX < 9 * 18 && mouseY >= 0 && mouseY < 3 * 18) {
 			if (!mc.player.inventory.getItemStack().isEmpty()) {
-				PacketHandler.sendToServer(PacketTileInfo.newPacket(terminal.tile).addByte(2));
+				PacketHandler.sendToServer(PacketTileInfo.newPacket(terminal.tile).addByte(3));
 				mc.player.inventory.setItemStack(ItemStack.EMPTY);
 			} else {
 				int posX = mouseX / 18;

@@ -33,7 +33,6 @@ import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.oredict.OreDictionary;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.io.IOException;
 import java.util.*;
 
 public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> implements IProcessLoader {
@@ -88,7 +87,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 			NBTTagCompound nbt = new NBTTagCompound();
 			if (pair.getLeft() != null)
 				nbt.setTag("item", pair.getLeft().writeToNBT(new NBTTagCompound()));
-			nbt.setTag("destination", IRequester.write(pair.getRight()));
+			nbt.setTag("destination", IRequester.writeNbt(pair.getRight(), true));
 			registry.appendTag(nbt);
 		}
 
@@ -152,7 +151,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 				NBTTagCompound destination = tag.getCompoundTag("destination");
 
 				//noinspection unchecked
-				this.registry.add(Pair.of(item.isEmpty() ? null : new ItemStack(item), IRequester.read(baseTile.world(), destination)));
+				this.registry.add(Pair.of(item.isEmpty() ? null : new ItemStack(item), IRequester.readNbt(baseTile.world(), destination)));
 			}
 			_registry = null;
 		}
@@ -169,12 +168,9 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	@Override
 	public void removeProcess(ProcessItem process) {
 		super.removeProcess(process);
-		for (Iterator<Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>>> iterator = registry.iterator(); iterator.hasNext(); ) {
-			if (iterator.next().getRight() == process) {
+		for (Iterator<Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>>> iterator = registry.iterator(); iterator.hasNext(); )
+			if (iterator.next().getRight() == process)
 				iterator.remove();
-				break;
-			}
-		}
 	}
 
 	@Override
@@ -240,32 +236,22 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	}
 
 	public PacketBase getPacket(ItemStack stack, boolean input, int slot) {
-		try {
-			PacketBase packet = getNewPacket();
-			packet.addByte(6);
-			packet.writeNBT(stack == null ? null : stack.writeToNBT(new NBTTagCompound()));
-			packet.addBool(input);
-			packet.addInt(slot);
-			return packet;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
+		PacketBase packet = getNewPacket();
+		packet.addByte(6);
+		packet.addItemStack(stack);
+		packet.addBool(input);
+		packet.addInt(slot);
+		return packet;
 	}
 
 	@Override
 	protected void handleInfoPacket(byte message, PacketBase payload) {
 		switch (message) {
 			case 6:
-				try {
-					NBTTagCompound compound = payload.readNBT();
-					ItemStack stack = compound == null ? ItemStack.EMPTY : new ItemStack(compound);
-					ItemStack[] inventory = payload.getBool() ? inputs : outputs;
-					inventory[payload.getInt()] = stack;
-					baseTile.markChunkDirty();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				ItemStack stack = payload.getItemStack();
+				ItemStack[] inventory = payload.getBool() ? inputs : outputs;
+				inventory[payload.getInt()] = stack;
+				baseTile.markChunkDirty();
 				break;
 		}
 	}

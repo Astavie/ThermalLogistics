@@ -24,6 +24,9 @@ public class ProxyClient extends Proxy {
 	public static TextureAtlasSprite ICON_ARROW_RIGHT;
 	public static TextureAtlasSprite ICON_FLUID;
 
+	public static TextureAtlasSprite ICON_REQUESTS_OFF;
+	public static TextureAtlasSprite ICON_REQUESTS_ON;
+
 	private final Set<IModelRegister> models = new HashSet<>();
 
 	@Override
@@ -40,6 +43,9 @@ public class ProxyClient extends Proxy {
 		ICON_LINK = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MODID, "items/manager_1"));
 		ICON_ARROW_RIGHT = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MODID, "gui/icons/arrow_right"));
 		ICON_FLUID = event.getMap().registerSprite(new ResourceLocation("items/bucket_water"));
+
+		ICON_REQUESTS_OFF = event.getMap().registerSprite(new ResourceLocation("blocks/redstone_torch_off"));
+		ICON_REQUESTS_ON = event.getMap().registerSprite(new ResourceLocation("blocks/redstone_torch_on"));
 	}
 
 	private void registerAttachment(TextureMap map, TextureAtlasSprite[][] array, String name) {

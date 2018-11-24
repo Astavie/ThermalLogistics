@@ -39,10 +39,11 @@ import java.util.Collections;
 
 public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, ItemStack> {
 
-	private boolean refreshed = false;
-
 	public final InventorySimple inventory = new InventorySimple(27);
+
 	public NonNullList<Triple<ItemStack, Long, Boolean>> terminal;
+
+	private boolean refreshed = false;
 
 	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
@@ -79,12 +80,12 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 	}
 
 	@Override
-	public void handleTileInfoPacket(PacketBase payload, boolean isServer, EntityPlayer thePlayer) {
+	public void handlePacket(PacketBase payload, byte message, boolean isServer, EntityPlayer player) {
 		if (isServer) {
-			switch (payload.getByte()) {
-				case 0:
+			switch (message) {
+				case 1:
 					// Send list of items
-					PacketBase p = PacketTileInfo.newPacket(this);
+					PacketBase p = PacketTileInfo.newPacket(this).addByte(1);
 					GridItem grid = getGrid(DuctToken.ITEMS);
 					if (grid != null) {
 						if (!refreshed) {
@@ -103,10 +104,10 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 								e.printStackTrace();
 							}
 						}
-						PacketHandler.sendTo(p, thePlayer);
+						PacketHandler.sendTo(p, player);
 					} else onNeighborBlockChange();
 					break;
-				case 1:
+				case 2:
 					// New request
 					ItemStack stack = ItemStack.EMPTY;
 					try {
@@ -120,42 +121,47 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 					}
 					new ProcessItem(null, this, stack, 1);
 					break;
-				case 2:
+				case 3:
 					// Send item into network
 					DuctUnitItem duct = getDuct();
 
-					TravelingItem item = ServoItem.findRouteForItem(thePlayer.inventory.getItemStack(), NetworkUtils.getRoutes(duct, getSide()).iterator(), duct, getSide(), ServoItem.range[getType()], ServoItem.speedBoost[getType()]);
+					TravelingItem item = ServoItem.findRouteForItem(player.inventory.getItemStack(), NetworkUtils.getRoutes(duct, getSide()).iterator(), duct, getSide(), ServoItem.range[getType()], ServoItem.speedBoost[getType()]);
 					if (item == null) {
 						Route route = new Route<>(duct);
 						route.endPoint = null;
 						route.pathDirections.add((byte) this.duct.getIndex());
 
-						item = new TravelingItem(thePlayer.inventory.getItemStack(), duct, route, (byte) this.duct.getIndex(), ServoItem.speedBoost[getType()]);
+						item = new TravelingItem(player.inventory.getItemStack(), duct, route, (byte) this.duct.getIndex(), ServoItem.speedBoost[getType()]);
 						item.reRoute = true;
 					}
 
 					duct.insertNewItem(item);
-					thePlayer.inventory.setItemStack(ItemStack.EMPTY);
+					player.inventory.setItemStack(ItemStack.EMPTY);
 					break;
 			}
 		} else {
-			terminal = NonNullList.create();
-			int size = payload.getInt();
-			for (int i = 0; i < size; i++) {
-				ItemStack stack = ItemStack.EMPTY;
-				short itemID = payload.getShort();
-				long stackSize = payload.getLong();
+			switch (message) {
+				case 1: {
+					terminal = NonNullList.create();
+					int size = payload.getInt();
+					for (int i = 0; i < size; i++) {
+						ItemStack stack = ItemStack.EMPTY;
+						short itemID = payload.getShort();
+						long stackSize = payload.getLong();
 
-				try {
-					short damage = payload.getShort();
-					stack = new ItemStack(Item.getItemById(itemID), 1, damage);
-					stack.setTagCompound(payload.readNBT());
-				} catch (IOException e) {
-					e.printStackTrace();
+						try {
+							short damage = payload.getShort();
+							stack = new ItemStack(Item.getItemById(itemID), 1, damage);
+							stack.setTagCompound(payload.readNBT());
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+
+						boolean craft = payload.getBool();
+						terminal.add(Triple.of(stack, stackSize, craft));
+					}
+					break;
 				}
-
-				boolean craft = payload.getBool();
-				terminal.add(Triple.of(stack, stackSize, craft));
 			}
 		}
 	}
