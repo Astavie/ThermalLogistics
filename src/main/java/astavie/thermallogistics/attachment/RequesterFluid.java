@@ -2,6 +2,7 @@ package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.event.EventHandler;
+import astavie.thermallogistics.gui.client.GuiRequester;
 import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.process.ProcessFluid;
@@ -30,6 +31,7 @@ import cofh.thermaldynamics.duct.fluid.GridFluid;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.render.RenderDuct;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -88,6 +90,11 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<DuctUni
 
 		tag.setTag("leftovers", leftovers);
 		tag.setTag("Processes", processes);
+	}
+
+	@Override
+	public Object getGuiClient(InventoryPlayer inventory) {
+		return new GuiRequester<>(inventory, this, getClientDelegate(), requests, this::sendRequestsPacket);
 	}
 
 	@Override
@@ -222,6 +229,9 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<DuctUni
 							if (FluidHelper.isFluidEqual(stack, output))
 								amount -= stack.amount;
 
+					if (amount <= 0)
+						continue;
+
 					// Alright, let's do this!
 					output = crafter.registerLeftover(FluidUtils.copy(output, amount), this, false);
 					baseTile.markChunkDirty();
@@ -237,26 +247,26 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<DuctUni
 					if (fluid == null || !fluidPassesFiltering(fluid))
 						continue;
 
-					fluid = fluid.copy();
-					int amount = fluid.amount;
+					int amount = getFluidHandler().fill(FluidUtils.copy(fluid, Integer.MAX_VALUE), false);
 					for (ProcessFluid process : processes) {
-						if (process.getCrafter() == crafter && process.isStuck())
-							continue a;
 						FluidStack compare = process.getOutput();
-						if (FluidHelper.isFluidEqual(compare, fluid))
-							fluid.amount += compare.amount;
+						if (FluidHelper.isFluidEqual(compare, fluid)) {
+							if (process.getCrafter() == crafter && process.isStuck())
+								continue a;
+							amount -= compare.amount;
+						}
 					}
 					for (IRequest<DuctUnitFluid, FluidStack> request : leftovers)
 						for (FluidStack stack : request.getStacks())
 							if (FluidHelper.isFluidEqual(stack, fluid))
-								fluid.amount += stack.amount;
+								amount -= stack.amount;
 
-					if (getFluidHandler().fill(fluid, false) < fluid.amount)
+					if (amount <= 0)
 						continue;
 
 					// Alright, let's do this!
-					fluid.amount = amount;
-					processes.add(new ProcessFluid(this, crafter, fluid, 1));
+					int sum = (int) Math.ceil((double) amount / fluid.amount);
+					processes.add(new ProcessFluid(this, crafter, FluidUtils.copy(fluid, amount), sum));
 					baseTile.markChunkDirty();
 					return;
 				}

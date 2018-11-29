@@ -20,6 +20,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 
@@ -101,8 +102,11 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					}
 				}
 			}
-			if (!input.getStacks().isEmpty())
+			if (!input.getStacks().isEmpty()) {
+				if (list.isEmpty())
+					return Collections.singletonList(new Requests<>(this, Collections.singletonList(input)));
 				list.get(0).getRequests().add(input);
+			}
 		}
 		return list;
 	}
@@ -120,8 +124,14 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	@Override
 	public void updateOutput() {
 		if (!output.isEmpty()) {
-			if (crafter instanceof CrafterItem && ((CrafterItem) crafter).registry.get(0).getRight() != this)
-				return;
+			if (crafter instanceof CrafterItem) {
+				for (Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>> pair : ((CrafterItem) crafter).registry) {
+					if (pair.getRight() == this)
+						break;
+					if (pair.getLeft() != null || (pair.getRight() instanceof ProcessItem && !((ProcessItem) pair.getRight()).output.isEmpty()))
+						return;
+				}
+			}
 
 			Route route = crafter.getDuct().getRoute(destination.getDuct());
 			if (route == null) {

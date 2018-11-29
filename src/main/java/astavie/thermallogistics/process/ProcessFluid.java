@@ -22,11 +22,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
+import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitFluid, FluidStack>, ProcessFluid, DuctUnitFluid, FluidStack> {
 
@@ -112,8 +110,11 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 					}
 				}
 			}
-			if (!input.getStacks().isEmpty())
+			if (!input.getStacks().isEmpty()) {
+				if (list.isEmpty())
+					return Collections.singletonList(new Requests<>(this, Collections.singletonList(input)));
 				list.get(0).getRequests().add(input);
+			}
 		}
 		return list;
 	}
@@ -132,8 +133,14 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 	public void updateOutput() {
 		// Copied from ServoFluid
 		if (output != null && output.amount > 0) {
-			if (crafter instanceof CrafterFluid && ((CrafterFluid) crafter).registry.get(0).getRight() != this)
-				return;
+			if (crafter instanceof CrafterFluid) {
+				for (Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>> pair : ((CrafterFluid) crafter).registry) {
+					if (pair.getRight() == this)
+						break;
+					if (pair.getLeft() != null || (pair.getRight() instanceof ProcessFluid && !getDelegate().isNull(((ProcessFluid) pair.getRight()).output)))
+						return;
+				}
+			}
 
 			FluidTankGrid myTank = getDuct().getGrid().myTank;
 			int maxInput = Math.min((int) Math.ceil(myTank.fluidThroughput * ServoFluid.throttle[destination.getType()]), output.amount);

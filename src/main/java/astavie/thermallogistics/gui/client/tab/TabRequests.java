@@ -1,5 +1,6 @@
 package astavie.thermallogistics.gui.client.tab;
 
+import astavie.thermallogistics.network.PacketCancelProcess;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.delegate.DelegateClientItem;
@@ -9,6 +10,7 @@ import astavie.thermallogistics.util.request.Requests;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.tab.TabBase;
 import cofh.core.init.CoreTextures;
+import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.MathHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
@@ -23,6 +25,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 
@@ -94,7 +97,7 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 		else
 			gui.drawIcon(CoreTextures.ICON_ARROW_DOWN_INACTIVE, sideOffset() + maxWidth - 20, 76);
 
-		getFontRenderer().drawStringWithShadow(getTitle(), sideOffset() + 18, 6, headerColor);
+		getFontRenderer().drawString(getTitle(), sideOffset() + 18, 6, 0xFF373737);
 
 		RenderHelper.disableStandardItemLighting();
 		RenderHelper.enableGUIStandardItemLighting();
@@ -127,9 +130,17 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 			}
 
 			if (j == i) {
-				// Render line separator
-				if (f && i > first)
-					Gui.drawRect(x - 1, y - 1, sideOffset() + maxWidth - 20, y, 0xFFA0A0A0);
+				if (f) {
+					// Render line separator
+					if (i > first)
+						Gui.drawRect(x - 1, y - 1, sideOffset() + maxWidth - 20, y, 0xFF373737);
+
+					// Render cancel button
+					if (mouseX >= x + 90 && mouseX < x + 106 && mouseY >= y && mouseY < y + 16)
+						gui.drawIcon(CoreTextures.ICON_CANCEL, x + 90, y);
+					else
+						gui.drawIcon(CoreTextures.ICON_CANCEL_INACTIVE, x + 90, y);
+				}
 
 				// Render block
 				IRequester<T, I> start = request.getStart();
@@ -183,6 +194,49 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 		first = Math.min(first, sum - num);
 		if (first < 0)
 			first = 0;
+	}
+
+	@Override
+	public boolean onMousePressed(int mouseX, int mouseY, int mouseButton) throws IOException {
+		if (!isFullyOpened())
+			return false;
+
+		int shiftedMouseX = mouseX - this.posX();
+		int shiftedMouseY = mouseY - this.posY;
+
+		if (shiftedMouseX < 108) {
+			int x = shiftedMouseX - sideOffset() - 2;
+			int y = shiftedMouseY - 22;
+			if (x >= 90 && y >= 0 && y < HEIGHT * num) {
+				int n = first + (y / HEIGHT);
+
+				int i = 0;
+				Requests<T, I> requests = null;
+				for (Requests<T, I> list : this.requests) {
+					if (i == n) {
+						requests = list;
+						break;
+					} else for (IRequest<T, I> request : list.getRequests())
+						i += request.getStacks().size();
+				}
+
+				if (requests != null) {
+					PacketHandler.sendToServer(new PacketCancelProcess(requests));
+					GuiContainerCore.playClickSound(1.0F);
+					return true;
+				}
+			}
+			return super.onMousePressed(mouseX, mouseY, mouseButton);
+		}
+
+		if (shiftedMouseY < 52)
+			first = MathHelper.clamp(first - 1, 0, sum - num);
+		else
+			first = MathHelper.clamp(first + 1, 0, sum - num);
+		if (first < 0)
+			first = 0;
+
+		return true;
 	}
 
 	@Override

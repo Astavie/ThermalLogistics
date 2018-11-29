@@ -2,6 +2,7 @@ package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.event.EventHandler;
+import astavie.thermallogistics.gui.client.GuiRequester;
 import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.process.ProcessItem;
@@ -30,6 +31,7 @@ import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.render.RenderDuct;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -87,6 +89,11 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IReq
 
 		tag.setTag("leftovers", leftovers);
 		tag.setTag("Processes", processes);
+	}
+
+	@Override
+	public Object getGuiClient(InventoryPlayer inventory) {
+		return new GuiRequester<>(inventory, this, getClientDelegate(), requests, this::sendRequestsPacket);
 	}
 
 	@Override
@@ -174,7 +181,7 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IReq
 					continue;
 
 				output = output.copy();
-				output = crafter.registerLeftover(output, this, true);
+				output = crafter.registerLeftover(ItemHelper.cloneStack(output, 64), this, true);
 				if (output.isEmpty())
 					continue;
 
@@ -201,12 +208,13 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IReq
 					continue;
 
 				// Calculate maximum transfer
-				output = NetworkUtils.maxTransfer(output, itemDuct, side, type, false);
-				if (output.isEmpty())
+				ItemStack out = NetworkUtils.maxTransfer(ItemHelper.cloneStack(output, 64), itemDuct, side, type, false);
+				if (out.isEmpty())
 					continue;
 
 				// Alright, let's do this!
-				ProcessItem process = new ProcessItem(this, crafter, output, 1);
+				int sum = (int) Math.ceil((double) out.getCount() / output.getCount());
+				ProcessItem process = new ProcessItem(this, crafter, out, sum);
 				processes.add(process);
 				baseTile.markChunkDirty();
 				return;

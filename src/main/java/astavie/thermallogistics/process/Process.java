@@ -119,6 +119,9 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 				list.add(process);
 		list.addAll(leftovers);
 
+		if (list.isEmpty())
+			return Collections.emptyList();
+
 		Requests<T, I> requests = new Requests<>(this, list);
 		requests.condense(crafter.getTile().getWorld(), getDelegate());
 		return Collections.singletonList(requests);
