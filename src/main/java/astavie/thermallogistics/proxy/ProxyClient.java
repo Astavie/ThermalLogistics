@@ -1,6 +1,13 @@
 package astavie.thermallogistics.proxy;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.attachment.CrafterFluid;
+import astavie.thermallogistics.attachment.CrafterItem;
+import astavie.thermallogistics.util.delegate.DelegateClientFluid;
+import astavie.thermallogistics.util.delegate.DelegateClientItem;
+import astavie.thermallogistics.util.link.ILink;
+import astavie.thermallogistics.util.link.Link;
+import cofh.core.network.PacketBase;
 import cofh.core.render.IModelRegister;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -11,11 +18,13 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 
 @SideOnly(Side.CLIENT)
 public class ProxyClient extends Proxy {
+
+	public static final Map<ResourceLocation, Function<PacketBase, ILink>> registry = new HashMap<>();
 
 	public static final TextureAtlasSprite[][] REQUESTER = new TextureAtlasSprite[2][];
 	public static final TextureAtlasSprite[][] CRAFTER = new TextureAtlasSprite[2][];
@@ -29,10 +38,21 @@ public class ProxyClient extends Proxy {
 
 	private final Set<IModelRegister> models = new HashSet<>();
 
+	public static void registerLink(ResourceLocation crafter, Function<PacketBase, ILink> function) {
+		registry.put(crafter, function);
+	}
+
+	public static ILink getLink(ResourceLocation crafter, PacketBase packet) {
+		return Optional.ofNullable(registry.get(crafter)).map(f -> f.apply(packet)).orElse(null);
+	}
+
 	@Override
 	public void preInit() {
 		MinecraftForge.EVENT_BUS.register(this);
 		models.forEach(IModelRegister::registerModels);
+
+		registerLink(CrafterItem.ID, p -> new Link<>(p.getItemStack(), p.getItemStack(), p.getBool(), p.getItemStack(), p.getBool(), DelegateClientItem.INSTANCE));
+		registerLink(CrafterFluid.ID, p -> new Link<>(p.getItemStack(), p.getFluidStack(), p.getBool(), p.getFluidStack(), p.getBool(), DelegateClientFluid.INSTANCE));
 	}
 
 	@SubscribeEvent

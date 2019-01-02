@@ -9,6 +9,7 @@ import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.IRequester;
+import astavie.thermallogistics.util.link.ILink;
 import astavie.thermallogistics.util.reference.CrafterReference;
 import astavie.thermallogistics.util.request.Requests;
 import codechicken.lib.render.CCRenderState;
@@ -41,6 +42,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -59,6 +61,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 
 	// Client-only
 	public final List<Requests<T, I>> requests = new LinkedList<>();
+	public final List<ILink> links = new LinkedList<>(); // haha "linked" list
 
 	public Set<CrafterReference> linked;
 
@@ -68,21 +71,16 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	private ICrafterWrapper wrapper;
 
 	private int flagByte;
-	private NBTTagList _linked;
+	private NBTTagList _linked = new NBTTagList();
 
 	public Crafter(TileGrid tile, byte side) {
 		super(tile, side);
-		linked = new LinkedHashSet<>();
-		linked.add(new CrafterReference<>(this));
 	}
 
 	public Crafter(TileGrid tile, byte side, int type) {
 		super(tile, side);
 		this.type = type;
 		updateFlags();
-
-		linked = new LinkedHashSet<>();
-		linked.add(new CrafterReference<>(this));
 	}
 
 	public static Crafter readCrafter(World world, NBTTagCompound tag) {
@@ -292,6 +290,43 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 
 	protected abstract void setAutoOutput(ICrafterWrapper wrapper);
 
+	protected void addLink(PacketBase packet) {
+		packet.addItemStack(getPickBlock());
+
+		I input = null, output = null;
+		boolean bI = false, bO = false;
+
+		boolean b = false;
+		for (I stack : getInputs()) {
+			if (!getDelegate().isNull(stack)) {
+				if (input == null)
+					input = stack;
+				if (b) {
+					bI = true;
+					break;
+				} else b = true;
+			}
+		}
+
+		b = false;
+		for (I stack : getOutputs()) {
+			if (!getDelegate().isNull(stack)) {
+				if (output == null)
+					output = stack;
+				if (b) {
+					bI = true;
+					break;
+				} else b = true;
+			}
+		}
+
+		getDelegate().writePacket(packet, input);
+		packet.addBool(bI);
+
+		getDelegate().writePacket(packet, output);
+		packet.addBool(bO);
+	}
+
 	private PacketBase getRequestsPacket() {
 		PacketBase payload = getNewPacket();
 		payload.addByte(5);
@@ -331,21 +366,10 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 
 			// CLIENT
 			case 4: {
-				linked = new LinkedHashSet<>();
-				linked.add(new CrafterReference<>(this));
-
+				links.clear();
 				int size = payload.getInt();
-				for (int i = 0; i < size; i++) {
-					try {
-						Crafter<?, ?, ?> c = readCrafter(baseTile.world(), payload.readNBT());
-						if (c != null) {
-							linked.add(new CrafterReference<>(c));
-							c.linked = linked;
-						}
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
+				for (int i = 0; i < size; i++)
+					links.add(ProxyClient.getLink(new ResourceLocation(payload.getString()), payload));
 				break;
 			}
 			case 5: {
@@ -508,13 +532,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 			for (CrafterReference crafter : this.linked) {
 				if (crafter.equals(new CrafterReference<>(this)))
 					continue;
-				try {
-					NBTTagCompound link = new NBTTagCompound();
-					writeCrafter(crafter, link);
-					packet.writeNBT(link);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				crafter.getCrafter().addLink(packet);
 			}
 
 			PacketHandler.sendTo(packet, player);

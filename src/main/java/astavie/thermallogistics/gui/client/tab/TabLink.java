@@ -3,8 +3,6 @@ package astavie.thermallogistics.gui.client.tab;
 import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.gui.client.GuiCrafter;
 import astavie.thermallogistics.proxy.ProxyClient;
-import astavie.thermallogistics.util.delegate.DelegateClientItem;
-import astavie.thermallogistics.util.reference.CrafterReference;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.tab.TabBase;
 import cofh.core.init.CoreTextures;
@@ -12,15 +10,10 @@ import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
 import cofh.core.util.helpers.MathHelper;
 import cofh.core.util.helpers.StringHelper;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class TabLink extends TabBase {
@@ -28,7 +21,6 @@ public class TabLink extends TabBase {
 	private static final int HEIGHT = 18;
 
 	private final Crafter<?, ?, ?> crafter;
-	private final List<CrafterReference> linked;
 	private int num;
 	private int max;
 
@@ -41,10 +33,8 @@ public class TabLink extends TabBase {
 
 		//noinspection unchecked
 		this.crafter = gui.crafter;
-		this.linked = new ArrayList<>(crafter.linked);
-		this.linked.remove(new CrafterReference<>(crafter));
-		this.num = Math.min((maxHeight - 24) / HEIGHT, linked.size());
-		this.max = linked.size() - num;
+		this.num = Math.min((maxHeight - 24) / HEIGHT, crafter.links.size());
+		this.max = crafter.links.size() - num;
 	}
 
 	@Override
@@ -72,26 +62,15 @@ public class TabLink extends TabBase {
 		RenderHelper.disableStandardItemLighting();
 		RenderHelper.enableGUIStandardItemLighting();
 
-		ItemStack blockSelect = null;
-		Runnable stackSelect = null;
+		Runnable select = null;
 
 		for (int i = first; i < first + num; i++) {
 			int x = sideOffset() + 2;
 			int y = 21 + (i - first) * HEIGHT;
 
-			Crafter<?, ?, ?> link = linked.get(i).getCrafter();
-			BlockPos pos = link.baseTile.getPos().offset(EnumFacing.VALUES[link.side]);
-			IBlockState state = link.baseTile.world().getBlockState(pos);
-
-			ItemStack item = state.getBlock().getItem(link.baseTile.world(), pos, state);
-
-			if (mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17)
-				blockSelect = item;
-			gui.drawItemStack(item, x, y, false, null);
-
-			Runnable run = drawSummary(link, x + 18, y);
+			Runnable run = crafter.links.get(i).drawSummary(this, x, y, mouseX, mouseY);
 			if (run != null)
-				stackSelect = run;
+				select = run;
 
 			if (mouseX >= x + 90 && mouseX < x + 106 && mouseY >= y && mouseY < y + 16)
 				gui.drawIcon(CoreTextures.ICON_CANCEL, x + 90, y);
@@ -99,65 +78,10 @@ public class TabLink extends TabBase {
 				gui.drawIcon(CoreTextures.ICON_CANCEL_INACTIVE, x + 90, y);
 		}
 
-		if (blockSelect != null)
-			DelegateClientItem.INSTANCE.drawHover(gui, mouseX, mouseY, blockSelect);
-		else if (stackSelect != null)
-			stackSelect.run();
+		if (select != null)
+			select.run();
 
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-	}
-
-	private <I, C extends Crafter<?, ?, I>> Runnable drawSummary(C crafter, int x, int y) {
-		int mouseX = gui.getMouseX() - posX();
-		int mouseY = gui.getMouseY() - posY;
-
-		I input = null, output = null;
-		boolean bI = false, bO = false;
-
-		boolean b = false;
-		for (I stack : crafter.getInputs()) {
-			if (!crafter.getDelegate().isNull(stack)) {
-				if (input == null)
-					input = stack;
-				if (b) {
-					bI = true;
-					break;
-				} else b = true;
-			}
-		}
-
-		b = false;
-		for (I stack : crafter.getOutputs()) {
-			if (!crafter.getDelegate().isNull(stack)) {
-				if (output == null)
-					output = stack;
-				if (b) {
-					bI = true;
-					break;
-				} else b = true;
-			}
-		}
-		if (input != null)
-			crafter.getClientDelegate().drawStack(gui, x, y, input);
-		if (bI)
-			gui.getFontRenderer().drawString("...", x + 19, y + 4, textColor);
-
-		gui.drawIcon(ProxyClient.ICON_ARROW_RIGHT, x + 26, y);
-
-		if (output != null)
-			crafter.getClientDelegate().drawStack(gui, x + 44, y, output);
-		if (bO)
-			gui.getFontRenderer().drawString("...", x + 63, y + 4, textColor);
-
-		if (!crafter.getDelegate().isNull(input) && mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17) {
-			final I i = input;
-			return () -> crafter.getClientDelegate().drawHover(gui, mouseX, mouseY, i);
-		}
-		if (!crafter.getDelegate().isNull(output) && mouseX >= x + 43 && mouseX < x + 61 && mouseY >= y - 1 && mouseY < y + 17) {
-			final I i = output;
-			return () -> crafter.getClientDelegate().drawHover(gui, mouseX, mouseY, i);
-		}
-		return null;
 	}
 
 	@Override
@@ -183,9 +107,9 @@ public class TabLink extends TabBase {
 			int y = shiftedMouseY - 22;
 			if (x >= 90 && y >= 0 && y < HEIGHT * num) {
 				int n = first + (y / HEIGHT);
-				linked.remove(n);
-				num = Math.min((maxHeight - 24) / HEIGHT, linked.size());
-				max = linked.size() - num;
+				crafter.links.remove(n);
+				num = Math.min((maxHeight - 24) / HEIGHT, crafter.links.size());
+				max = crafter.links.size() - num;
 				if (first > max)
 					first = max;
 				PacketTileInfo packet = crafter.getNewPacket();

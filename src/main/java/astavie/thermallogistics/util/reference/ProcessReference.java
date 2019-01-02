@@ -15,8 +15,8 @@ public class ProcessReference<P extends IProcess<?, ?, ?>> {
 	public final byte side;
 	public final int index;
 
-	private P cache;
-	private long tick;
+	private P cache = null;
+	private long tick = -1;
 
 	public ProcessReference(P process) {
 		this.world = process.getDuct().world();
@@ -26,6 +26,13 @@ public class ProcessReference<P extends IProcess<?, ?, ?>> {
 
 		cache = process;
 		tick = world.getTotalWorldTime();
+	}
+
+	public ProcessReference(World world, BlockPos pos, byte side, int index) {
+		this.world = world;
+		this.pos = pos;
+		this.side = side;
+		this.index = index;
 	}
 
 	public boolean isLoaded() {

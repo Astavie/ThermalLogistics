@@ -2,7 +2,6 @@ package astavie.thermallogistics.gui.client.tab;
 
 import astavie.thermallogistics.network.PacketCancelProcess;
 import astavie.thermallogistics.proxy.ProxyClient;
-import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.delegate.DelegateClientItem;
 import astavie.thermallogistics.util.delegate.IDelegateClient;
 import astavie.thermallogistics.util.request.IRequest;
@@ -14,16 +13,10 @@ import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.MathHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
-import cofh.thermaldynamics.duct.tiles.TileGrid;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -142,29 +135,17 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 						gui.drawIcon(CoreTextures.ICON_CANCEL_INACTIVE, x + 90, y);
 				}
 
-				// Render block
-				IRequester<T, I> start = request.getStart();
-				if (start != null) {
-					BlockPos pos = start.getBase();
-
-					TileEntity tile = Minecraft.getMinecraft().player.world.getTileEntity(pos);
-					if (tile instanceof TileGrid)
-						pos = pos.offset(EnumFacing.byIndex(start.getSide()));
-
-					IBlockState state = Minecraft.getMinecraft().player.world.getBlockState(pos);
-					ItemStack item = state.getBlock().getItem(Minecraft.getMinecraft().player.world, pos, state);
-
-					gui.drawItemStack(item, x, y, false, null);
+				// Render block and attachment
+				if (!request.getBlock().isEmpty()) {
+					gui.drawItemStack(request.getBlock(), x, y, false, null);
 					if (mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17)
-						select = item;
+						select = request.getBlock();
+				}
 
-					// Render attachment
-					if (tile instanceof TileGrid) {
-						ItemStack attachment = ((TileGrid) tile).getAttachment(start.getSide()).getPickBlock();
-						gui.drawItemStack(attachment, x + 18, y, false, null);
-						if (mouseX >= x + 17 && mouseX < x + 35 && mouseY >= y - 1 && mouseY < y + 17)
-							select = attachment;
-					}
+				if (!request.getAttachment().isEmpty()) {
+					gui.drawItemStack(request.getAttachment(), x + 18, y, false, null);
+					if (mouseX >= x + 17 && mouseX < x + 35 && mouseY >= y - 1 && mouseY < y + 17)
+						select = request.getAttachment();
 				}
 			}
 

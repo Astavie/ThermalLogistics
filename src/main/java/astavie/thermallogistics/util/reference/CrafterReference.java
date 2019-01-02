@@ -13,10 +13,22 @@ public class CrafterReference<C extends Crafter<?, ?, ?>> {
 	public final BlockPos pos;
 	public final byte side;
 
+	private C cache = null;
+	private long tick = -1;
+
 	public CrafterReference(C crafter) {
 		this.world = crafter.getTile().getWorld();
 		this.pos = crafter.getBase();
 		this.side = crafter.getSide();
+
+		cache = crafter;
+		tick = world.getTotalWorldTime();
+	}
+
+	public CrafterReference(World world, BlockPos pos, byte side) {
+		this.world = world;
+		this.pos = pos;
+		this.side = side;
 	}
 
 	public boolean isLoaded() {
@@ -25,13 +37,24 @@ public class CrafterReference<C extends Crafter<?, ?, ?>> {
 
 	@SuppressWarnings("unchecked")
 	public C getCrafter() {
+		if (world.getTotalWorldTime() == tick)
+			return cache;
+
+		C crafter = null;
+
 		TileEntity tile = world.getTileEntity(pos);
 		if (tile instanceof TileGrid) {
 			Attachment attachment = ((TileGrid) tile).getAttachment(side);
 			if (attachment instanceof Crafter)
-				return (C) attachment;
+				crafter = (C) attachment;
 		}
-		return null;
+
+		if (crafter != null) {
+			cache = crafter;
+			tick = world.getTotalWorldTime();
+		}
+
+		return crafter;
 	}
 
 	@Override
