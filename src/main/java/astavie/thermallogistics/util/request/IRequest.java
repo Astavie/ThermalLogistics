@@ -104,7 +104,7 @@ public interface IRequest<T extends DuctUnit<T, ?, ?>, I> extends Comparable<IRe
 		return Long.compare(getAge(), o.getAge());
 	}
 
-	// Client only
+	// Client-only
 
 	default ItemStack getBlock() {
 		return ItemStack.EMPTY;

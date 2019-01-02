@@ -10,6 +10,9 @@ import cofh.core.util.core.IInitializer;
 import cofh.core.util.helpers.ChatHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.Attachment;
+import cofh.thermaldynamics.duct.item.DuctUnitItem;
+import cofh.thermaldynamics.duct.item.StackMap;
+import cofh.thermaldynamics.duct.tiles.DuctToken;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermalfoundation.item.ItemMaterial;
 import net.minecraft.client.util.ITooltipFlag;
@@ -26,6 +29,7 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -95,65 +99,92 @@ public class ItemManager extends ItemMultiRF implements IInitializer {
 	@Override
 	public EnumActionResult onItemUseFirst(EntityPlayer player, World world, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ, EnumHand hand) {
 		ItemStack stack = player.getHeldItem(hand);
-		Attachment attachment = getAttachment(player, world, pos);
+
+		Pair<TileGrid, Byte> pair = getSide(player, world, pos);
+		Attachment attachment = pair == null ? null : pair.getLeft().getAttachment(pair.getRight());
+
 		switch (getMode(stack)) {
 			case 0:
-				if (attachment != null) {
-					// TODO: Monitor network
+				if (pair == null)
+					return EnumActionResult.PASS;
+
+				DuctUnitItem duct = pair.getLeft().getDuct(DuctToken.ITEMS);
+				if (duct == null)
+					return EnumActionResult.PASS;
+
+				if (world.isRemote)
+					return EnumActionResult.SUCCESS;
+
+				StackMap map = duct.getGrid().travelingItems.get(duct.pos().offset(EnumFacing.VALUES[pair.getRight()]));
+				if (map == null || map.isEmpty()) {
+					player.sendMessage(new TextComponentTranslation("info.logistics.manager.e.2"));
+				} else {
+					player.sendMessage(new TextComponentTranslation("info.logistics.manager.e.0"));
+					for (ItemStack item : map.getItems())
+						player.sendMessage(new TextComponentTranslation("info.logistics.manager.e.1", item.getCount(), item.getTextComponent()));
 				}
-				break;
+
+				return EnumActionResult.SUCCESS;
 			case 1:
-				if (attachment != null && attachment instanceof Crafter) {
-					if (!world.isRemote) {
-						if (getEnergyStored(stack) >= ENERGY_PER_USE || player.capabilities.isCreativeMode || stack.getItemDamage() == CREATIVE) {
-							Crafter<?, ?, ?> crafter = (Crafter<?, ?, ?>) attachment;
-							ActionResult<Crafter<?, ?, ?>> result = getCrafter(world, stack);
-							if (result.getType() == EnumActionResult.PASS || (result.getType() == EnumActionResult.SUCCESS && result.getResult() == crafter)) {
-								player.sendMessage(new TextComponentTranslation("info.logistics.manager.d.0"));
-								saveCrafter(crafter, stack);
-							} else {
-								stack.removeSubCompound("Link");
-								if (result.getType() == EnumActionResult.FAIL) {
-									player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
-									player.sendMessage(new TextComponentTranslation("info.logistics.manager.d.1"));
-								} else {
-									if (result.getResult().linked.contains(new CrafterReference<>(crafter))) {
-										player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
-										player.sendMessage(new TextComponentTranslation("info.logistics.manager.d.2"));
-									} else {
-										if (!player.capabilities.isCreativeMode && stack.getItemDamage() != CREATIVE)
-											extractEnergy(stack, ENERGY_PER_USE, false);
+				if (!(attachment instanceof Crafter))
+					return EnumActionResult.PASS;
 
-										player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_ARROW_HIT_PLAYER, SoundCategory.PLAYERS, 0.4F, 0.45F);
-										player.sendMessage(new TextComponentTranslation("info.logistics.manager.d.3"));
+				if (world.isRemote)
+					return EnumActionResult.SUCCESS;
 
-										crafter.linked.addAll(result.getResult().linked);
-										result.getResult().linked.forEach(c -> c.getCrafter().linked = crafter.linked);
-
-										crafter.linked.forEach(c -> c.getCrafter().baseTile.markChunkDirty());
-									}
-								}
-							}
-						} else {
+				if (getEnergyStored(stack) >= ENERGY_PER_USE || player.capabilities.isCreativeMode || stack.getItemDamage() == CREATIVE) {
+					Crafter<?, ?, ?> crafter = (Crafter<?, ?, ?>) attachment;
+					ActionResult<Crafter<?, ?, ?>> result = getCrafter(world, stack);
+					if (result.getType() == EnumActionResult.PASS || (result.getType() == EnumActionResult.SUCCESS && result.getResult() == crafter)) {
+						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.0"));
+						saveCrafter(crafter, stack);
+					} else {
+						stack.removeSubCompound("Link");
+						if (result.getType() == EnumActionResult.FAIL) {
 							player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+							ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.1"));
+						} else {
+							if (result.getResult().linked.contains(new CrafterReference<>(crafter))) {
+								player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+								ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.2"));
+							} else {
+								if (!player.capabilities.isCreativeMode && stack.getItemDamage() != CREATIVE)
+									extractEnergy(stack, ENERGY_PER_USE, false);
+
+								player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_ARROW_HIT_PLAYER, SoundCategory.PLAYERS, 0.4F, 0.45F);
+								ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.3"));
+
+								crafter.linked.addAll(result.getResult().linked);
+								result.getResult().linked.forEach(c -> c.getCrafter().linked = crafter.linked);
+
+								crafter.linked.forEach(c -> c.getCrafter().baseTile.markChunkDirty());
+							}
 						}
 					}
-					return EnumActionResult.SUCCESS;
+				} else {
+					player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
 				}
-				break;
+				return EnumActionResult.SUCCESS;
 		}
 		return EnumActionResult.PASS;
 	}
 
-	private Attachment getAttachment(EntityPlayer player, World world, BlockPos pos) {
+	private Pair<TileGrid, Byte> getSide(EntityPlayer player, World world, BlockPos pos) {
 		TileEntity tile = world.getTileEntity(pos);
 		if (tile != null && tile instanceof TileGrid) {
 			TileGrid grid = (TileGrid) tile;
 			RayTraceResult target = RayTracer.retraceBlock(world, player, pos);
-			if (target != null && target.subHit >= 14 && target.subHit < 20) {
-				Attachment attachment = grid.getAttachment(target.subHit - 14);
-				if (attachment != null)
-					return attachment;
+			if (target != null) {
+				int s = -1;
+				int subHit = target.subHit;
+
+				if (subHit < 6)
+					s = subHit;
+				else if (subHit >= 14 && subHit < 20)
+					s = subHit - 14;
+
+				if (s != -1)
+					return Pair.of(grid, (byte) s);
 			}
 		}
 		return null;

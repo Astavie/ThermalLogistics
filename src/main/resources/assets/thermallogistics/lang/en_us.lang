@@ -38,8 +38,10 @@ info.logistics.tab.requests=Requests
 info.logistics.manager.a.0=Use on a servo to monitor the system.
 info.logistics.manager.a.1=Use on two crafters to link them.
 info.logistics.manager.a.2=Interacts with servos.
+
 info.logistics.manager.b.0=§ePress (%s) to enable linking.§r
 info.logistics.manager.b.1=§ePress (%s) to enable monitoring.§r
+
 info.logistics.manager.c.0=Monitoring Enabled
 info.logistics.manager.c.1=Linking Enabled
 
@@ -47,5 +49,9 @@ info.logistics.manager.d.0=Starting link...
 info.logistics.manager.d.1=Crafters are too far away.
 info.logistics.manager.d.2=These crafters are already linked.
 info.logistics.manager.d.3=Linked successfully!
+
+info.logistics.manager.e.0=Items travelling to this duct
+info.logistics.manager.e.1=%s x %s
+info.logistics.manager.e.2=No items are travelling to this duct
 
 gui.logistics.terminal.request=Request
