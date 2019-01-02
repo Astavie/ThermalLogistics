@@ -21,14 +21,16 @@ public class EventHandler {
 			LOADERS.forEach(IProcessLoader::postLoad);
 			LOADERS.clear();
 
-			// Remove processes that are done or have failed
+			// Remove processes that are unloaded, done or have failed
 			for (int i = 0; i < PROCESSES.size(); i++) {
 				IProcess process = PROCESSES.get(i);
-				if (process.isDone()) {
+				if (process.shouldUnload()) {
+					PROCESSES.remove(process);
+					i--;
+				} else if (process.isDone()) {
 					process.remove();
 					i--;
-				}
-				if (process.hasFailed()) {
+				} else if (process.hasFailed()) {
 					process.fail();
 					process.remove();
 					i--;

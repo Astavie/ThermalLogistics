@@ -7,6 +7,7 @@ import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.delegate.IDelegate;
 import astavie.thermallogistics.util.delegate.IDelegateClient;
+import astavie.thermallogistics.util.reference.RequesterReference;
 import astavie.thermallogistics.util.request.IRequest;
 import astavie.thermallogistics.util.request.Request;
 import astavie.thermallogistics.util.request.Requests;
@@ -23,7 +24,7 @@ import java.util.*;
 
 public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, ?>, I> implements IProcess<P, T, I> {
 
-	protected final C crafter;
+	protected final RequesterReference<C> crafter;
 	protected final I output;
 
 	protected final Set<IProcess> linked = new HashSet<>();
@@ -44,7 +45,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	public Process(@Nullable IRequester<T, I> destination, C crafter, I output, int sum) {
 		this.destination = destination;
-		this.crafter = crafter;
+		this.crafter = new RequesterReference<>(crafter);
 		this.output = output;
 
 		this.sum = sum;
@@ -72,15 +73,17 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	public Process(World world, NBTTagCompound tag) {
 		//noinspection unchecked
-		this.crafter = (C) IProcessHolder.read(world, tag.getCompoundTag("crafter"));
+		C holder = (C) IProcessHolder.read(world, tag.getCompoundTag("crafter"));
+
+		this.crafter = new RequesterReference<>(holder);
 		this.output = tag.hasKey("output") ? getDelegate().readNbt(tag.getCompoundTag("output")) : null;
 		this.input = new Request<>(world, getDelegate(), tag.getCompoundTag("input"));
 		this.birth = tag.getLong("birth");
 		this.sum = tag.getInteger("sum");
 
 		//noinspection unchecked
-		crafter.addProcess((P) this, tag.getInteger("index"));
-		crafter.getTile().markChunkDirty();
+		holder.addProcess((P) this, tag.getInteger("index"));
+		holder.getTile().markChunkDirty();
 
 		EventHandler.PROCESSES.add(this);
 
@@ -103,12 +106,12 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	@Override
 	public BlockPos getBase() {
-		return crafter.getBase();
+		return crafter.pos;
 	}
 
 	@Override
 	public long getAge() {
-		return crafter.getTile().getWorld().getTotalWorldTime() - birth;
+		return crafter.world.getTotalWorldTime() - birth;
 	}
 
 	@Override
@@ -123,18 +126,18 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 			return Collections.emptyList();
 
 		Requests<T, I> requests = new Requests<>(this, list);
-		requests.condense(crafter.getTile().getWorld(), getDelegate());
+		requests.condense(crafter.world, getDelegate());
 		return Collections.singletonList(requests);
 	}
 
 	@Override
 	public IDelegate<I> getDelegate() {
-		return crafter.getDelegate();
+		return crafter.getRequester().getDelegate();
 	}
 
 	@Override
 	public IDelegateClient<I, ?> getClientDelegate() {
-		return crafter.getClientDelegate();
+		return crafter.getRequester().getClientDelegate();
 	}
 
 	@Override
@@ -151,13 +154,13 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	public abstract boolean isStuck();
 
-	public C getCrafter() {
+	public RequesterReference<C> getCrafter() {
 		return crafter;
 	}
 
 	@Override
 	public boolean hasFailed() {
-		return failed || crafter.isInvalid() || (destination != null && destination.isInvalid());
+		return failed || crafter.getRequester() == null || (destination != null && destination.isInvalid());
 	}
 
 	@Override
@@ -173,7 +176,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 		if (isTick()) {
 			updateInput();
-			crafter.getTile().markChunkDirty();
+			crafter.getRequester().getTile().markChunkDirty();
 		}
 		if (destination != null && destination.isTick() && !hasFailed()) {
 			updateOutput();
@@ -200,7 +203,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		removed = true;
 
 		//noinspection SuspiciousMethodCalls, unchecked
-		crafter.removeProcess((P) this);
+		crafter.getRequester().removeProcess((P) this);
 		EventHandler.PROCESSES.remove(this);
 
 		linked.forEach(IProcess::remove);
@@ -259,28 +262,34 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	@Override
 	public T getDuct() {
-		return crafter.getDuct();
+		return crafter.getRequester().getDuct();
 	}
 
 	@Override
 	public int getIndex() {
 		//noinspection SuspiciousMethodCalls
-		return crafter.getProcesses().indexOf(this);
+		return crafter.getRequester().getProcesses().indexOf(this);
 	}
 
 	@Override
 	public byte getSide() {
-		return crafter.getSide();
+		return crafter.side;
 	}
 
 	@Override
 	public int getType() {
-		return crafter.getType();
+		return crafter.getRequester().getType();
 	}
 
 	@Override
 	public boolean isLoaded() {
-		return crafter.getTile().getWorld().isBlockLoaded(crafter.getTile().getPos());
+		return crafter.isLoaded();
+	}
+
+	@Override
+	public boolean shouldUnload() {
+		//noinspection unchecked
+		return destination != null && !(destination instanceof IProcess) && !destination.getDuct().world().isBlockLoaded(destination.getBase());
 	}
 
 	public int getSum() {

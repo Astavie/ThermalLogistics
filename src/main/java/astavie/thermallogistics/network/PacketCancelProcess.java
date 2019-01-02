@@ -33,9 +33,9 @@ public class PacketCancelProcess extends PacketBase {
 
 		TileEntity tile = player.world.getTileEntity(new BlockPos(x, y, z));
 		if (tile != null) {
-			if (tile instanceof IProcessHolder)
+			if (tile instanceof IProcessHolder) {
 				((IProcessHolder<?, ?, ?>) tile).getProcesses().get(index).setFailed();
-			else if (tile instanceof TileGrid) {
+			} else if (tile instanceof TileGrid) {
 				Attachment attachment = ((TileGrid) tile).getAttachment(side);
 				if (attachment instanceof IProcessHolder)
 					((IProcessHolder<?, ?, ?>) attachment).getProcesses().get(index).setFailed();

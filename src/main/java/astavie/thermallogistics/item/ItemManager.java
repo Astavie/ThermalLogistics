@@ -2,6 +2,7 @@ package astavie.thermallogistics.item;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.Crafter;
+import astavie.thermallogistics.util.reference.CrafterReference;
 import cofh.core.item.ItemMultiRF;
 import cofh.core.key.KeyBindingItemMultiMode;
 import cofh.core.util.RayTracer;
@@ -116,7 +117,7 @@ public class ItemManager extends ItemMultiRF implements IInitializer {
 									player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
 									player.sendMessage(new TextComponentTranslation("info.logistics.manager.d.1"));
 								} else {
-									if (result.getResult().linked.contains(crafter)) {
+									if (result.getResult().linked.contains(new CrafterReference<>(crafter))) {
 										player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
 										player.sendMessage(new TextComponentTranslation("info.logistics.manager.d.2"));
 									} else {
@@ -127,9 +128,9 @@ public class ItemManager extends ItemMultiRF implements IInitializer {
 										player.sendMessage(new TextComponentTranslation("info.logistics.manager.d.3"));
 
 										crafter.linked.addAll(result.getResult().linked);
-										crafter.baseTile.markChunkDirty();
-										result.getResult().linked.forEach(c -> c.linked = crafter.linked);
-										result.getResult().baseTile.markChunkDirty();
+										result.getResult().linked.forEach(c -> c.getCrafter().linked = crafter.linked);
+
+										crafter.linked.forEach(c -> c.getCrafter().baseTile.markChunkDirty());
 									}
 								}
 							}

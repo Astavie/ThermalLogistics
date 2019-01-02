@@ -9,6 +9,7 @@ import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.IRequester;
+import astavie.thermallogistics.util.reference.CrafterReference;
 import astavie.thermallogistics.util.request.Requests;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Cuboid6;
@@ -59,7 +60,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	// Client-only
 	public final List<Requests<T, I>> requests = new LinkedList<>();
 
-	public Set<Crafter> linked;
+	public Set<CrafterReference> linked;
 
 	public int type;
 
@@ -72,7 +73,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	public Crafter(TileGrid tile, byte side) {
 		super(tile, side);
 		linked = new LinkedHashSet<>();
-		linked.add(this);
+		linked.add(new CrafterReference<>(this));
 	}
 
 	public Crafter(TileGrid tile, byte side, int type) {
@@ -81,7 +82,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 		updateFlags();
 
 		linked = new LinkedHashSet<>();
-		linked.add(this);
+		linked.add(new CrafterReference<>(this));
 	}
 
 	public static Crafter readCrafter(World world, NBTTagCompound tag) {
@@ -101,6 +102,13 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 		tag.setByte("side", crafter.side);
 	}
 
+	private static void writeCrafter(CrafterReference reference, NBTTagCompound tag) {
+		tag.setInteger("x", reference.pos.getX());
+		tag.setInteger("y", reference.pos.getY());
+		tag.setInteger("z", reference.pos.getZ());
+		tag.setByte("side", reference.side);
+	}
+
 	public abstract P createLinkedProcess(int sum);
 
 	public abstract int amountRequired(I item);
@@ -116,6 +124,12 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 
 	@Override
 	public Set<Crafter> getLinked() {
+		Set<Crafter> linked = new LinkedHashSet<>();
+		for (CrafterReference reference : this.linked) {
+			Crafter<?, ?, ?> crafter = reference.getCrafter();
+			if (crafter != null)
+				linked.add(crafter);
+		}
 		return linked;
 	}
 
@@ -180,11 +194,11 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	public void tick(int pass) {
 		if (_linked != null) {
 			linked = new LinkedHashSet<>();
-			linked.add(this);
+			linked.add(new CrafterReference<>(this));
 			for (int i = 0; i < _linked.tagCount(); i++) {
-				Crafter crafter = readCrafter(baseTile.world(), _linked.getCompoundTagAt(i));
+				Crafter<?, ?, ?> crafter = readCrafter(baseTile.world(), _linked.getCompoundTagAt(i));
 				if (crafter != null) {
-					this.linked.add(crafter);
+					this.linked.add(new CrafterReference<>(crafter));
 					crafter.linked = this.linked;
 					crafter._linked = null;
 				}
@@ -192,7 +206,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 			_linked = null;
 		}
 		if (pass == 0) {
-			linked.removeIf(Crafter::isInvalid);
+			linked.removeIf(c -> c.isLoaded() && c.getCrafter().isInvalid());
 		}
 	}
 
@@ -303,28 +317,29 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 				autoOutput();
 				break;
 			case 3: {
-				List<Crafter> crafters = new ArrayList<>(linked);
-				crafters.remove(this);
+				List<CrafterReference> crafters = new ArrayList<>(linked);
+				crafters.remove(new CrafterReference<>(this));
 
-				Crafter<?, ?, ?> crafter = crafters.get(payload.getInt());
-				linked.remove(crafter);
+				CrafterReference reference = crafters.get(payload.getInt());
+				linked.remove(reference);
 
+				Crafter<?, ?, ?> crafter = reference.getCrafter();
 				crafter.linked = new LinkedHashSet<>();
-				crafter.linked.add(crafter);
+				crafter.linked.add(reference);
 				break;
 			}
 
 			// CLIENT
 			case 4: {
 				linked = new LinkedHashSet<>();
-				linked.add(this);
+				linked.add(new CrafterReference<>(this));
 
 				int size = payload.getInt();
 				for (int i = 0; i < size; i++) {
 					try {
-						Crafter c = readCrafter(baseTile.world(), payload.readNBT());
+						Crafter<?, ?, ?> c = readCrafter(baseTile.world(), payload.readNBT());
 						if (c != null) {
-							linked.add(c);
+							linked.add(new CrafterReference<>(c));
 							c.linked = linked;
 						}
 					} catch (IOException e) {
@@ -426,8 +441,8 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 		writeInventory(tag);
 
 		NBTTagList linked = new NBTTagList();
-		for (Crafter crafter : this.linked) {
-			if (crafter == this)
+		for (CrafterReference crafter : this.linked) {
+			if (crafter.equals(new CrafterReference<>(this)))
 				continue;
 			NBTTagCompound link = new NBTTagCompound();
 			writeCrafter(crafter, link);
@@ -490,8 +505,8 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 			PacketTileInfo packet = getNewPacket();
 			packet.addByte(4);
 			packet.addInt(linked.size() - 1);
-			for (Crafter crafter : this.linked) {
-				if (crafter == this)
+			for (CrafterReference crafter : this.linked) {
+				if (crafter.equals(new CrafterReference<>(this)))
 					continue;
 				try {
 					NBTTagCompound link = new NBTTagCompound();

@@ -11,6 +11,7 @@ import astavie.thermallogistics.util.IProcessLoader;
 import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.delegate.DelegateClientFluid;
 import astavie.thermallogistics.util.delegate.DelegateFluid;
+import astavie.thermallogistics.util.reference.RequesterReference;
 import astavie.thermallogistics.util.request.IRequest;
 import astavie.thermallogistics.util.request.Request;
 import astavie.thermallogistics.util.request.Requests;
@@ -251,7 +252,7 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<DuctUni
 					for (ProcessFluid process : processes) {
 						FluidStack compare = process.getOutput();
 						if (FluidHelper.isFluidEqual(compare, fluid)) {
-							if (process.getCrafter() == crafter && process.isStuck())
+							if (process.getCrafter().equals(new RequesterReference<>(crafter)) && process.isStuck())
 								continue a;
 							amount -= compare.amount;
 						}

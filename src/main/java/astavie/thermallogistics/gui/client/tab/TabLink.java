@@ -4,6 +4,7 @@ import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.gui.client.GuiCrafter;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.delegate.DelegateClientItem;
+import astavie.thermallogistics.util.reference.CrafterReference;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.tab.TabBase;
 import cofh.core.init.CoreTextures;
@@ -27,7 +28,7 @@ public class TabLink extends TabBase {
 	private static final int HEIGHT = 18;
 
 	private final Crafter<?, ?, ?> crafter;
-	private final List<Crafter> linked;
+	private final List<CrafterReference> linked;
 	private int num;
 	private int max;
 
@@ -41,7 +42,7 @@ public class TabLink extends TabBase {
 		//noinspection unchecked
 		this.crafter = gui.crafter;
 		this.linked = new ArrayList<>(crafter.linked);
-		this.linked.remove(crafter);
+		this.linked.remove(new CrafterReference<>(crafter));
 		this.num = Math.min((maxHeight - 24) / HEIGHT, linked.size());
 		this.max = linked.size() - num;
 	}
@@ -78,7 +79,7 @@ public class TabLink extends TabBase {
 			int x = sideOffset() + 2;
 			int y = 21 + (i - first) * HEIGHT;
 
-			Crafter<?, ?, ?> link = linked.get(i);
+			Crafter<?, ?, ?> link = linked.get(i).getCrafter();
 			BlockPos pos = link.baseTile.getPos().offset(EnumFacing.VALUES[link.side]);
 			IBlockState state = link.baseTile.world().getBlockState(pos);
 

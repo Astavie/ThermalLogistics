@@ -30,6 +30,8 @@ public interface IProcess<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, 
 
 	boolean isLoaded();
 
+	boolean shouldUnload();
+
 	void addDependent(IProcess other);
 
 	void fail();

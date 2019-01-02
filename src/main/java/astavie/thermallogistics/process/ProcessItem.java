@@ -4,6 +4,7 @@ import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.NetworkUtils;
+import astavie.thermallogistics.util.reference.RequesterReference;
 import astavie.thermallogistics.util.request.IRequest;
 import astavie.thermallogistics.util.request.Request;
 import astavie.thermallogistics.util.request.Requests;
@@ -69,7 +70,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 				Iterator<ItemStack> iterator = input.getStacks().iterator();
 				while (iterator.hasNext()) {
 					ItemStack stack = iterator.next();
-					if (crafter.itemsIdentical(output, stack)) {
+					if (crafter.getRequester().itemsIdentical(output, stack)) {
 						int i = Math.min(output.getCount(), stack.getCount());
 
 						stack.shrink(i);
@@ -88,7 +89,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					Iterator<ItemStack> iterator = input.getStacks().iterator();
 					while (iterator.hasNext()) {
 						ItemStack stack = iterator.next();
-						if (crafter.itemsIdentical(output, stack)) {
+						if (crafter.getRequester().itemsIdentical(output, stack)) {
 							int i = Math.min(output.getCount(), stack.getCount());
 
 							stack.shrink(i);
@@ -124,8 +125,8 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	@Override
 	public void updateOutput() {
 		if (!output.isEmpty()) {
-			if (crafter instanceof CrafterItem) {
-				for (Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>> pair : ((CrafterItem) crafter).registry) {
+			if (crafter.getRequester() instanceof CrafterItem) {
+				for (Pair<ItemStack, IRequester<DuctUnitItem, ItemStack>> pair : ((CrafterItem) crafter.getRequester()).registry) {
 					if (pair.getRight() == this)
 						break;
 					if (pair.getLeft() != null || (pair.getRight() instanceof ProcessItem && !((ProcessItem) pair.getRight()).output.isEmpty()))
@@ -133,19 +134,19 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 				}
 			}
 
-			Route route = crafter.getDuct().getRoute(destination.getDuct());
+			Route route = getDuct().getRoute(destination.getDuct());
 			if (route == null) {
 				failed = true;
 				return;
 			}
 
-			IItemHandler inv = crafter.getDuct().tileCache[crafter.getSide()].getItemHandler(crafter.getSide() ^ 1);
+			IItemHandler inv = getDuct().tileCache[getSide()].getItemHandler(getSide() ^ 1);
 			for (int i = 0; i < inv.getSlots(); i++) {
 				ItemStack stack = inv.getStackInSlot(i);
 				if (stack.isEmpty() || !ItemHelper.itemsIdentical(stack, output))
 					continue;
 
-				TravelingItem ti = NetworkUtils.transfer(i, crafter.getDuct(), crafter.getSide(), destination.getDuct(), destination.getSide(), route, output.getCount(), destination.getType(), true);
+				TravelingItem ti = NetworkUtils.transfer(i, getDuct(), getSide(), destination.getDuct(), destination.getSide(), route, output.getCount(), destination.getType(), true);
 				if (ti != null)
 					break; // It was sent successfully
 			}
@@ -161,7 +162,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 		// Search for items
 		Set<CrafterItem> crafters = new HashSet<>();
-		for (Route<DuctUnitItem, GridItem> route : NetworkUtils.getRoutes(crafter.getDuct())) {
+		for (Route<DuctUnitItem, GridItem> route : NetworkUtils.getRoutes(getDuct())) {
 			DuctUnitItem end = route.endPoint;
 			byte side = route.getLastSide();
 
@@ -181,7 +182,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 			if (inv == null)
 				continue;
 
-			Route route1 = end.getRoute(crafter.getDuct());
+			Route route1 = end.getRoute(getDuct());
 			if (route1 == null)
 				continue;
 
@@ -193,19 +194,19 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 				// Calculate amount required
 				int amt = 0;
 				for (ItemStack stack : input.getStacks())
-					if (crafter.itemsIdentical(stack, item))
+					if (crafter.getRequester().itemsIdentical(stack, item))
 						amt += stack.getCount();
 				if (amt == 0)
 					continue;
 
 				for (ProcessItem process : sub)
-					if (!process.output.isEmpty() && crafter.itemsIdentical(process.output, item))
+					if (!process.output.isEmpty() && crafter.getRequester().itemsIdentical(process.output, item))
 						amt -= process.output.getCount();
 				if (amt <= 0)
 					continue;
 
 				// Try to send it
-				TravelingItem ti = NetworkUtils.transfer(slot, end, side, crafter.getDuct(), crafter.getSide(), route1, amt, crafter.getType(), true);
+				TravelingItem ti = NetworkUtils.transfer(slot, end, side, getDuct(), getSide(), route1, amt, getType(), true);
 				if (ti != null) {
 					send(ti.stack.copy());
 					return;
@@ -215,7 +216,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 		// No items found, let's see if any process has some leftovers
 		for (CrafterItem crafter : crafters) {
-			if (crafter == this.crafter)
+			if (this.crafter.equals(new RequesterReference<>(crafter)))
 				continue;
 
 			for (ItemStack output : crafter.outputs) {
@@ -232,10 +233,10 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 				for (IRequest<DuctUnitItem, ItemStack> request : leftovers)
 					for (ItemStack stack : request.getStacks())
-						if (this.crafter.itemsIdentical(stack, output))
+						if (this.crafter.getRequester().itemsIdentical(stack, output))
 							amt -= stack.getCount();
 				for (ProcessItem process : sub)
-					if (!process.output.isEmpty() && this.crafter.itemsIdentical(process.output, output))
+					if (!process.output.isEmpty() && this.crafter.getRequester().itemsIdentical(process.output, output))
 						amt -= process.output.getCount();
 				if (amt <= 0)
 					continue;
@@ -246,7 +247,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Calculate maximum transfer
-				output = NetworkUtils.maxTransfer(ItemHelper.cloneStack(output, amt), this.crafter.getDuct(), this.crafter.getSide(), this.crafter.getType(), true);
+				output = NetworkUtils.maxTransfer(ItemHelper.cloneStack(output, amt), getDuct(), getSide(), getType(), true);
 				if (output.isEmpty())
 					continue;
 
@@ -259,7 +260,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 		// No leftovers found, let's make some
 		a:
 		for (CrafterItem crafter : crafters) {
-			if (crafter == this.crafter)
+			if (this.crafter.equals(new RequesterReference<>(crafter)))
 				continue;
 
 			assert crafter.getDuct() != null;
@@ -277,19 +278,19 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 				for (IRequest<DuctUnitItem, ItemStack> request : leftovers)
 					for (ItemStack stack : request.getStacks())
-						if (this.crafter.itemsIdentical(stack, output))
+						if (this.crafter.getRequester().itemsIdentical(stack, output))
 							amt -= stack.getCount();
 				for (ProcessItem process : sub) {
-					if (process.getCrafter() == crafter && process.isStuck())
+					if (process.getCrafter().equals(new RequesterReference<>(crafter)) && process.isStuck())
 						continue a;
-					if (!process.output.isEmpty() && this.crafter.itemsIdentical(process.output, output))
+					if (!process.output.isEmpty() && this.crafter.getRequester().itemsIdentical(process.output, output))
 						amt -= process.output.getCount();
 				}
 				if (amt <= 0)
 					continue;
 
 				// Calculate maximum transfer
-				ItemStack out = NetworkUtils.maxTransfer(ItemHelper.cloneStack(output, amt), this.crafter.getDuct(), this.crafter.getSide(), this.crafter.getType(), true);
+				ItemStack out = NetworkUtils.maxTransfer(ItemHelper.cloneStack(output, amt), getDuct(), getSide(), getType(), true);
 				if (out.isEmpty())
 					continue;
 
@@ -305,7 +306,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	public boolean addItem(ListIterator<TravelingItem> iterator, TravelingItem item) {
 		if (!output.isEmpty() && ItemHelper.itemsIdentical(output, item.stack)) {
 			// Reroute the item
-			Route pass = crafter.getDuct().getRoute(destination.getDuct());
+			Route pass = getDuct().getRoute(destination.getDuct());
 			if (pass == null) {
 				failed = true;
 				return false;
@@ -327,7 +328,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 				else
 					route.pathDirections.insert(0, item.direction);
 
-				TravelingItem ti = new TravelingItem(ItemHelper.cloneStack(item.stack, amt), item.startX, item.startY, item.startZ, route, (byte) (crafter.getSide() ^ 1), (byte) item.step);
+				TravelingItem ti = new TravelingItem(ItemHelper.cloneStack(item.stack, amt), item.startX, item.startY, item.startZ, route, (byte) (getSide() ^ 1), (byte) item.step);
 				getDuct().getGrid().poll(ti);
 
 				iterator.add(ti);
@@ -347,7 +348,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 			item.hasDest = true;
 			getDuct().getGrid().poll(item);
 			getDuct().getGrid().shouldRepoll = true;
-			crafter.getTile().markChunkDirty();
+			crafter.getRequester().getTile().markChunkDirty();
 			return true;
 		}
 		return false;
@@ -368,7 +369,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 	@Override
 	public boolean isTick() {
-		return (crafter.getTile().getWorld().getTotalWorldTime() - delay) % ServoItem.tickDelays[crafter.getType()] == 0;
+		return (crafter.world.getTotalWorldTime() - delay) % ServoItem.tickDelays[getType()] == 0;
 	}
 
 	@Override
@@ -399,7 +400,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 		progress = true;
 		for (Iterator<ItemStack> iterator = input.getStacks().iterator(); iterator.hasNext(); ) {
 			ItemStack sent = iterator.next();
-			if (crafter.itemsIdentical(sent, item)) {
+			if (crafter.getRequester().itemsIdentical(sent, item)) {
 				int i = Math.min(sent.getCount(), item.getCount());
 
 				sent.shrink(i);

@@ -12,6 +12,7 @@ import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.NetworkUtils;
 import astavie.thermallogistics.util.delegate.DelegateClientItem;
 import astavie.thermallogistics.util.delegate.DelegateItem;
+import astavie.thermallogistics.util.reference.RequesterReference;
 import astavie.thermallogistics.util.request.IRequest;
 import astavie.thermallogistics.util.request.Request;
 import astavie.thermallogistics.util.request.Requests;
@@ -201,7 +202,7 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IReq
 			a:
 			for (ItemStack output : crafter.outputs) {
 				for (ProcessItem process : processes)
-					if (process.getCrafter() == crafter && process.isStuck())
+					if (process.getCrafter().equals(new RequesterReference<>(crafter)) && process.isStuck())
 						continue a;
 
 				if (output.isEmpty() || !filter.matchesFilter(output))

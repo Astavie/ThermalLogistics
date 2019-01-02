@@ -2,12 +2,14 @@ package astavie.thermallogistics.util.request;
 
 import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.delegate.IDelegate;
+import astavie.thermallogistics.util.reference.RequesterReference;
 import cofh.core.network.PacketBase;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import com.google.common.collect.Iterables;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.NonNullList;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 
@@ -21,7 +23,7 @@ import java.util.stream.Collectors;
 public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 
 	private final World world;
-	private final IRequester<T, I> start;
+	private final RequesterReference<IRequester<T, I>> start;
 	private final List<I> stacks = NonNullList.create();
 
 	private long birth;
@@ -30,7 +32,7 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 		//noinspection unchecked
 		this.world = world;
 		this.birth = world.getTotalWorldTime();
-		this.start = start;
+		this.start = start == null ? null : new RequesterReference<>(start);
 		this.stacks.addAll(stacks);
 	}
 
@@ -38,13 +40,21 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 		this(world, start, Collections.singleton(stack));
 	}
 
+	private Request(World world, @Nullable RequesterReference<IRequester<T, I>> start, Collection<I> stacks) {
+		this.world = world;
+		this.birth = world.getTotalWorldTime();
+		this.start = start;
+		this.stacks.addAll(stacks);
+	}
+
 	public Request(World world, IDelegate<I> delegate, NBTTagCompound tag) {
 		this.world = world;
 		this.birth = world.getTotalWorldTime() - tag.getLong("birth");
 
-		if (tag.hasKey("start"))
-			this.start = IRequester.readNbt(world, tag.getCompoundTag("start"));
-		else
+		if (tag.hasKey("start")) {
+			NBTTagCompound n = tag.getCompoundTag("start");
+			this.start = new RequesterReference<>(world, new BlockPos(n.getInteger("x"), n.getInteger("y"), n.getInteger("z")), n.getByte("side"), n.hasKey("index") ? n.getInteger("index") : -1);
+		} else
 			this.start = null;
 
 		NBTTagList list = tag.getTagList("stacks", Constants.NBT.TAG_COMPOUND);
@@ -57,7 +67,7 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 		this.birth = world.getTotalWorldTime() - packet.getLong();
 
 		if (packet.getBool())
-			this.start = IRequester.readPacket(world, packet);
+			this.start = new RequesterReference<>(world, new BlockPos(packet.getInt(), packet.getInt(), packet.getInt()), (byte) packet.getInt(), packet.getInt());
 		else
 			this.start = null;
 
@@ -74,6 +84,12 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 	@Override
 	@Nullable
 	public IRequester<T, I> getStart() {
+		return start == null ? null : start.getRequester();
+	}
+
+	@Nullable
+	@Override
+	public RequesterReference<IRequester<T, I>> getStartReference() {
 		return start;
 	}
 
@@ -101,7 +117,7 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 	}
 
 	public Request<T, I> copyFaceless(IDelegate<I> delegate) {
-		Request<T, I> clone = new Request<T, I>(world, null, stacks.stream().map(delegate::copy).collect(Collectors.toList()));
+		Request<T, I> clone = new Request<>(world, (RequesterReference<IRequester<T, I>>) null, stacks.stream().map(delegate::copy).collect(Collectors.toList()));
 		clone.birth = birth;
 		return clone;
 	}

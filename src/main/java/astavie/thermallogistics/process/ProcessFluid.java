@@ -4,6 +4,7 @@ import astavie.thermallogistics.attachment.CrafterFluid;
 import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.NetworkUtils;
+import astavie.thermallogistics.util.reference.RequesterReference;
 import astavie.thermallogistics.util.request.IRequest;
 import astavie.thermallogistics.util.request.Request;
 import astavie.thermallogistics.util.request.Requests;
@@ -77,7 +78,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 				Iterator<FluidStack> iterator = input.getStacks().iterator();
 				while (iterator.hasNext()) {
 					FluidStack stack = iterator.next();
-					if (crafter.itemsIdentical(output, stack)) {
+					if (crafter.getRequester().itemsIdentical(output, stack)) {
 						int i = Math.min(output.amount, stack.amount);
 
 						stack.amount -= i;
@@ -96,7 +97,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 					Iterator<FluidStack> iterator = input.getStacks().iterator();
 					while (iterator.hasNext()) {
 						FluidStack stack = iterator.next();
-						if (crafter.itemsIdentical(output, stack)) {
+						if (crafter.getRequester().itemsIdentical(output, stack)) {
 							int i = Math.min(output.amount, stack.amount);
 
 							stack.amount -= i;
@@ -133,8 +134,8 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 	public void updateOutput() {
 		// Copied from ServoFluid
 		if (output != null && output.amount > 0) {
-			if (crafter instanceof CrafterFluid) {
-				for (Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>> pair : ((CrafterFluid) crafter).registry) {
+			if (crafter.getRequester() instanceof CrafterFluid) {
+				for (Pair<FluidStack, IRequester<DuctUnitFluid, FluidStack>> pair : ((CrafterFluid) crafter.getRequester()).registry) {
 					if (pair.getRight() == this)
 						break;
 					if (pair.getLeft() != null || (pair.getRight() instanceof ProcessFluid && !getDelegate().isNull(((ProcessFluid) pair.getRight()).output)))
@@ -150,7 +151,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 				return;
 			}
 
-			DuctUnitFluid.Cache cache = crafter.getDuct().tileCache[crafter.getSide()];
+			DuctUnitFluid.Cache cache = getDuct().tileCache[getSide()];
 			if (cache == null) {
 				failed = true;
 				return;
@@ -163,7 +164,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 			}
 
 			FluidStack drainFluid = tileHandler.drain(maxInput, false);
-			if (drainFluid != null && !this.crafter.itemsIdentical(drainFluid, output))
+			if (drainFluid != null && !this.crafter.getRequester().itemsIdentical(drainFluid, output))
 				return;
 
 			maxInput = myTank.fill(drainFluid, false);
@@ -183,8 +184,9 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 		int c = maxInput;
 
 		if (tank.getFluid() != null)
-			if (crafter.amountRequired(this, tank.getFluid()) == 0)
+			if (crafter.getRequester().amountRequired(this, tank.getFluid()) == 0)
 				return;
+
 		Set<CrafterFluid> crafters = new HashSet<>();
 		for (Iterator<DuctUnitFluid> iterator = grid.nodeSet.iterator(); iterator.hasNext() && maxInput > 0; ) {
 			DuctUnitFluid fluidDuct = iterator.next();
@@ -209,7 +211,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 				FluidStack drainFluid = handler.drain(maxInput, false);
 				if (drainFluid != null) {
 					int input = tank.fill(drainFluid, false);
-					if (crafter.amountRequired(this, drainFluid) > 0) {
+					if (crafter.getRequester().amountRequired(this, drainFluid) > 0) {
 						maxInput -= tank.fill(handler.drain(input, true), true);
 						if (grid.toDistribute > 0 && tank.getFluid() != null) {
 							GridFluid otherGrid = fluidDuct.getGrid();
@@ -223,7 +225,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 		if (maxInput == c) {
 			// No fluid found, let's see if any process has some leftovers
 			for (CrafterFluid crafter : crafters) {
-				if (crafter == this.crafter)
+				if (this.crafter.equals(new RequesterReference<>(crafter)))
 					continue;
 
 				for (FluidStack output : crafter.outputs) {
@@ -245,10 +247,10 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 					required -= amt;
 					for (IRequest<DuctUnitFluid, FluidStack> request : leftovers)
 						for (FluidStack stack : request.getStacks())
-							if (this.crafter.itemsIdentical(stack, output))
+							if (this.crafter.getRequester().itemsIdentical(stack, output))
 								required -= stack.amount;
 					for (ProcessFluid process : sub)
-						if (this.crafter.itemsIdentical(process.output, output))
+						if (this.crafter.getRequester().itemsIdentical(process.output, output))
 							required -= process.output.amount;
 					if (required <= 0)
 						continue;
@@ -265,7 +267,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 
 			a:
 			for (CrafterFluid crafter : crafters) {
-				if (crafter == this.crafter)
+				if (this.crafter.equals(new RequesterReference<>(crafter)))
 					continue;
 
 				for (FluidStack fluid : crafter.outputs) {
@@ -286,12 +288,12 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 					required -= amt;
 					for (IRequest<DuctUnitFluid, FluidStack> request : leftovers)
 						for (FluidStack stack : request.getStacks())
-							if (this.crafter.itemsIdentical(stack, output))
+							if (this.crafter.getRequester().itemsIdentical(stack, output))
 								required -= stack.amount;
 					for (ProcessFluid process : sub) {
-						if (process.getCrafter() == crafter && process.isStuck())
+						if (process.getCrafter().equals(new RequesterReference<>(crafter)) && process.isStuck())
 							continue a;
-						if (this.crafter.itemsIdentical(process.getOutput(), fluid))
+						if (this.crafter.getRequester().itemsIdentical(process.getOutput(), fluid))
 							required -= process.getOutput().amount;
 					}
 
@@ -310,14 +312,14 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 	}
 
 	public int waiting(FluidStack stack) {
-		if (crafter.amountRequired(this, stack) == 0)
+		if (crafter.getRequester().amountRequired(this, stack) == 0)
 			return 0;
 		int i = 0;
 		for (ProcessFluid process : sub)
-			if (this.crafter.itemsIdentical(process.getOutput(), stack))
+			if (this.crafter.getRequester().itemsIdentical(process.getOutput(), stack))
 				i += process.start.amount - process.getOutput().amount;
 		for (FluidStack fluid : fluidStacks)
-			if (this.crafter.itemsIdentical(fluid, stack))
+			if (this.crafter.getRequester().itemsIdentical(fluid, stack))
 				i += fluid.amount;
 		return Math.max(i, 0);
 	}
@@ -325,7 +327,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 	public int addFluid(FluidStack fluid, boolean fill) {
 		int required = 0;
 		for (FluidStack stack : input.getStacks())
-			if (crafter.itemsIdentical(stack, fluid))
+			if (crafter.getRequester().itemsIdentical(stack, fluid))
 				required += stack.amount;
 
 		if (required > 0) {
@@ -343,7 +345,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 				int j = i;
 				for (Iterator<FluidStack> iterator = input.getStacks().iterator(); iterator.hasNext(); ) {
 					FluidStack sent = iterator.next();
-					if (crafter.itemsIdentical(sent, fluid)) {
+					if (crafter.getRequester().itemsIdentical(sent, fluid)) {
 						int a = Math.min(sent.amount, j);
 
 						sent.amount -= a;
@@ -355,7 +357,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 							break;
 					}
 				}
-				crafter.getTile().markChunkDirty();
+				crafter.getRequester().getTile().markChunkDirty();
 			}
 			return i;
 		}

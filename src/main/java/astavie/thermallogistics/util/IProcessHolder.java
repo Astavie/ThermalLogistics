@@ -2,6 +2,7 @@ package astavie.thermallogistics.util;
 
 import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.process.IProcess;
+import astavie.thermallogistics.util.reference.RequesterReference;
 import cofh.core.block.TileCore;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
@@ -47,6 +48,15 @@ public interface IProcessHolder<P extends IProcess<P, T, I>, T extends DuctUnit<
 		nbt.setInteger("y", holder.getTile().getPos().getY());
 		nbt.setInteger("z", holder.getTile().getPos().getZ());
 		nbt.setInteger("side", holder.getSide());
+		return nbt;
+	}
+
+	static NBTTagCompound write(RequesterReference<? extends IProcessHolder> holder) {
+		NBTTagCompound nbt = new NBTTagCompound();
+		nbt.setInteger("x", holder.pos.getX());
+		nbt.setInteger("y", holder.pos.getY());
+		nbt.setInteger("z", holder.pos.getZ());
+		nbt.setInteger("side", holder.side);
 		return nbt;
 	}
 
