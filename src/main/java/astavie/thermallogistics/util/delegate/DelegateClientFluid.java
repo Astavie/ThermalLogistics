@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraftforge.fluids.FluidStack;
 
 import java.text.NumberFormat;
+import java.util.List;
 
 public class DelegateClientFluid extends DelegateFluid implements IDelegateClient<FluidStack, CrafterFluid> {
 
@@ -34,9 +35,8 @@ public class DelegateClientFluid extends DelegateFluid implements IDelegateClien
 	}
 
 	@Override
-	public void drawHover(GuiContainerCore gui, int mouseX, int mouseY, FluidStack stack) {
-		if (stack != null)
-			gui.drawHoveringText(stack.getLocalizedName(), mouseX, mouseY);
+	public void addTooltip(GuiContainerCore gui, FluidStack stack, List<String> list) {
+		list.add(stack.getLocalizedName());
 	}
 
 	@Override

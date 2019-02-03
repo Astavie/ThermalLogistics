@@ -6,9 +6,9 @@ import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.RenderHelper;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.client.config.GuiUtils;
+
+import java.util.List;
 
 public class DelegateClientItem extends DelegateItem implements IDelegateClient<ItemStack, CrafterItem> {
 
@@ -24,13 +24,8 @@ public class DelegateClientItem extends DelegateItem implements IDelegateClient<
 	}
 
 	@Override
-	public void drawHover(GuiContainerCore gui, int mouseX, int mouseY, ItemStack stack) {
-		if (!stack.isEmpty()) {
-			FontRenderer font = stack.getItem().getFontRenderer(stack);
-			if (font == null)
-				font = gui.getFontRenderer();
-			GuiUtils.drawHoveringText(stack, gui.getItemToolTip(stack), mouseX, mouseY, gui.width, gui.height, -1, font);
-		}
+	public void addTooltip(GuiContainerCore gui, ItemStack stack, List<String> list) {
+		list.addAll(gui.getItemToolTip(stack));
 	}
 
 	@Override

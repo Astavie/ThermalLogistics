@@ -16,7 +16,6 @@ import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.item.ItemStack;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -51,8 +50,44 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 
 	@Override
 	public void addTooltip(List<String> list) {
-		if (!isFullyOpened())
+		if (!isFullyOpened()) {
 			list.add(getTitle());
+		} else {
+			int mouseX = gui.getMouseX() - posX();
+			int mouseY = gui.getMouseY() - posY;
+
+			for (int i = first; i < Math.min(first + num, sum); i++) {
+				int x = sideOffset() + 2;
+				int y = 21 + (i - first) * HEIGHT;
+
+				IRequest<T, I> request = null;
+				I stack = null;
+
+				int j = 0;
+				a:
+				for (Requests<T, I> r : requests) {
+					for (IRequest<T, I> q : r.getRequests()) {
+						j += q.getStacks().size();
+						if (j > i) {
+							j--;
+							request = q;
+							stack = q.getStacks().get(j - i);
+							break a;
+						}
+					}
+				}
+
+				if (j == i) {
+					if (!request.getBlock().isEmpty() && mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17)
+						DelegateClientItem.INSTANCE.addTooltip(gui, request.getBlock(), list);
+					if (!request.getAttachment().isEmpty() && mouseX >= x + 17 && mouseX < x + 35 && mouseY >= y - 1 && mouseY < y + 17)
+						DelegateClientItem.INSTANCE.addTooltip(gui, request.getAttachment(), list);
+				}
+
+				if (mouseX >= x + 53 && mouseX < x + 71 && mouseY >= y - 1 && mouseY < y + 17)
+					delegate.addTooltip(gui, stack, list);
+			}
+		}
 	}
 
 	private String getTitle() {
@@ -95,9 +130,6 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 		RenderHelper.disableStandardItemLighting();
 		RenderHelper.enableGUIStandardItemLighting();
 
-		ItemStack select = null;
-		I sel = null;
-
 		for (int i = first; i < Math.min(first + num, sum); i++) {
 			int x = sideOffset() + 2;
 			int y = 21 + (i - first) * HEIGHT;
@@ -136,29 +168,16 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 				}
 
 				// Render block and attachment
-				if (!request.getBlock().isEmpty()) {
+				if (!request.getBlock().isEmpty())
 					gui.drawItemStack(request.getBlock(), x, y, false, null);
-					if (mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17)
-						select = request.getBlock();
-				}
 
-				if (!request.getAttachment().isEmpty()) {
+				if (!request.getAttachment().isEmpty())
 					gui.drawItemStack(request.getAttachment(), x + 18, y, false, null);
-					if (mouseX >= x + 17 && mouseX < x + 35 && mouseY >= y - 1 && mouseY < y + 17)
-						select = request.getAttachment();
-				}
 			}
 
 			// Render stack
 			delegate.drawStack(gui, x + 54, y, stack);
-			if (mouseX >= x + 53 && mouseX < x + 71 && mouseY >= y - 1 && mouseY < y + 17)
-				sel = stack;
 		}
-
-		if (select != null)
-			DelegateClientItem.INSTANCE.drawHover(gui, mouseX, mouseY, select);
-		else if (sel != null)
-			delegate.drawHover(gui, mouseX, mouseY, sel);
 
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 	}

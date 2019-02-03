@@ -61,15 +61,11 @@ public class TabLink extends TabBase {
 		RenderHelper.disableStandardItemLighting();
 		RenderHelper.enableGUIStandardItemLighting();
 
-		Runnable select = null;
-
 		for (int i = first; i < first + num; i++) {
 			int x = sideOffset() + 2;
 			int y = 21 + (i - first) * HEIGHT;
 
-			Runnable run = crafter.links.get(i).drawSummary(this, x, y, mouseX, mouseY);
-			if (run != null)
-				select = run;
+			crafter.links.get(i).drawSummary(this, x, y, mouseX, mouseY);
 
 			if (mouseX >= x + 90 && mouseX < x + 106 && mouseY >= y && mouseY < y + 16)
 				gui.drawIcon(CoreTextures.ICON_CANCEL, x + 90, y);
@@ -77,16 +73,24 @@ public class TabLink extends TabBase {
 				gui.drawIcon(CoreTextures.ICON_CANCEL_INACTIVE, x + 90, y);
 		}
 
-		if (select != null)
-			select.run();
-
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 	}
 
 	@Override
 	public void addTooltip(List<String> list) {
-		if (!isFullyOpened())
+		if (!isFullyOpened()) {
 			list.add(getTitle());
+		} else {
+			int mouseX = gui.getMouseX() - posX();
+			int mouseY = gui.getMouseY() - posY;
+
+			for (int i = first; i < first + num; i++) {
+				int x = sideOffset() + 2;
+				int y = 21 + (i - first) * HEIGHT;
+
+				crafter.links.get(i).addTooltip(this, x, y, mouseX, mouseY, list);
+			}
+		}
 	}
 
 	private String getTitle() {

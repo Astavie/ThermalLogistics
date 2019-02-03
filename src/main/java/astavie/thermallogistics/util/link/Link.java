@@ -7,6 +7,8 @@ import astavie.thermallogistics.util.delegate.IDelegateClient;
 import cofh.core.gui.GuiContainerCore;
 import net.minecraft.item.ItemStack;
 
+import java.util.List;
+
 public class Link<I> implements ILink {
 
 	public final ItemStack crafter;
@@ -25,7 +27,7 @@ public class Link<I> implements ILink {
 	}
 
 	@Override
-	public Runnable drawSummary(TabLink tab, int x, int y, int mouseX, int mouseY) {
+	public void drawSummary(TabLink tab, int x, int y, int mouseX, int mouseY) {
 		GuiContainerCore gui = tab.getContainerScreen();
 
 		gui.drawItemStack(crafter, x, y, false, null);
@@ -41,17 +43,20 @@ public class Link<I> implements ILink {
 			delegate.drawStack(gui, x + 62, y, output);
 		if (outputs)
 			gui.getFontRenderer().drawString("...", x + 81, y + 4, tab.textColor);
+	}
+
+	@Override
+	public void addTooltip(TabLink tab, int x, int y, int mouseX, int mouseY, List<String> list) {
+		GuiContainerCore gui = tab.getContainerScreen();
 
 		if (mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17)
-			return () -> DelegateClientItem.INSTANCE.drawHover(gui, mouseX, mouseY, crafter);
+			DelegateClientItem.INSTANCE.addTooltip(gui, crafter, list);
 
 		if (!delegate.isNull(input) && mouseX >= x + 17 && mouseX < x + 35 && mouseY >= y - 1 && mouseY < y + 17)
-			return () -> delegate.drawHover(gui, mouseX, mouseY, input);
+			delegate.addTooltip(gui, input, list);
 
 		if (!delegate.isNull(output) && mouseX >= x + 61 && mouseX < x + 79 && mouseY >= y - 1 && mouseY < y + 17)
-			return () -> delegate.drawHover(gui, mouseX, mouseY, output);
-
-		return null;
+			delegate.addTooltip(gui, output, list);
 	}
 
 }
