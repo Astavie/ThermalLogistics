@@ -1,7 +1,9 @@
 package astavie.thermallogistics.event;
 
+import astavie.thermallogistics.network.PacketTick;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.util.IProcessLoader;
+import cofh.core.network.PacketHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -46,7 +48,10 @@ public class EventHandler {
 				if (process.isLoaded() && !process.hasFailed())
 					process.update();
 			}
-		} else time++;
+		} else {
+			time++;
+			PacketHandler.sendToServer(new PacketTick(time));
+		}
 	}
 
 }

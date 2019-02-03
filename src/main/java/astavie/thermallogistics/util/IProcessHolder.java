@@ -42,15 +42,6 @@ public interface IProcessHolder<P extends IProcess<P, T, I>, T extends DuctUnit<
 
 	void removeProcess(P process);
 
-	static NBTTagCompound write(IProcessHolder holder) {
-		NBTTagCompound nbt = new NBTTagCompound();
-		nbt.setInteger("x", holder.getTile().getPos().getX());
-		nbt.setInteger("y", holder.getTile().getPos().getY());
-		nbt.setInteger("z", holder.getTile().getPos().getZ());
-		nbt.setInteger("side", holder.getSide());
-		return nbt;
-	}
-
 	static NBTTagCompound write(RequesterReference<? extends IProcessHolder> holder) {
 		NBTTagCompound nbt = new NBTTagCompound();
 		nbt.setInteger("x", holder.pos.getX());

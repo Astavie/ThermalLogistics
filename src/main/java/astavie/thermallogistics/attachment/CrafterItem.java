@@ -150,7 +150,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 				NBTTagCompound item = tag.getCompoundTag("item");
 				NBTTagCompound destination = tag.getCompoundTag("destination");
 
-				this.registry.add(Pair.of(item.isEmpty() ? null : new ItemStack(item), IRequester.readNbt(baseTile.world(), destination)));
+				this.registry.add(Pair.of(item.isEmpty() ? null : new ItemStack(item), IRequester.readNbt(destination)));
 			}
 			_registry = null;
 		}
