@@ -155,13 +155,11 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 
 	@Override
 	protected void handleInfoPacket(byte message, PacketBase payload) {
-		switch (message) {
-			case 6:
-				FluidStack stack = payload.getFluidStack();
-				FluidStack[] inventory = payload.getBool() ? inputs : outputs;
-				inventory[payload.getInt()] = stack;
-				baseTile.markChunkDirty();
-				break;
+		if (message == 6) {
+			FluidStack stack = payload.getFluidStack();
+			FluidStack[] inventory = payload.getBool() ? inputs : outputs;
+			inventory[payload.getInt()] = stack;
+			baseTile.markChunkDirty();
 		}
 	}
 
@@ -206,7 +204,6 @@ public class CrafterFluid extends Crafter<ProcessFluid, DuctUnitFluid, FluidStac
 				NBTTagCompound item = tag.getCompoundTag("item");
 				NBTTagCompound destination = tag.getCompoundTag("destination");
 
-				//noinspection unchecked
 				this.registry.add(Pair.of(item.isEmpty() ? null : FluidStack.loadFluidStackFromNBT(item), IRequester.readNbt(baseTile.world(), destination)));
 			}
 			_registry = null;

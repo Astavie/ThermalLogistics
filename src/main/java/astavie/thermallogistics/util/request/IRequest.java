@@ -74,6 +74,7 @@ public interface IRequest<T extends DuctUnit<T, ?, ?>, I> extends Comparable<IRe
 				pos = pos.offset(EnumFacing.byIndex(start.getSide()));
 
 			IBlockState state = Minecraft.getMinecraft().player.world.getBlockState(pos);
+			//noinspection deprecation
 			packet.addItemStack(state.getBlock().getItem(Minecraft.getMinecraft().player.world, pos, state));
 
 			if (tile instanceof TileGrid) {

@@ -171,7 +171,7 @@ public class ItemManager extends ItemMultiRF implements IInitializer {
 
 	private Pair<TileGrid, Byte> getSide(EntityPlayer player, World world, BlockPos pos) {
 		TileEntity tile = world.getTileEntity(pos);
-		if (tile != null && tile instanceof TileGrid) {
+		if (tile instanceof TileGrid) {
 			TileGrid grid = (TileGrid) tile;
 			RayTraceResult target = RayTracer.retraceBlock(world, player, pos);
 			if (target != null) {

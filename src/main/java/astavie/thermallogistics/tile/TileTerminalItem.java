@@ -139,29 +139,24 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 					player.inventory.setItemStack(ItemStack.EMPTY);
 					break;
 			}
-		} else {
-			switch (message) {
-				case 1: {
-					terminal = NonNullList.create();
-					int size = payload.getInt();
-					for (int i = 0; i < size; i++) {
-						ItemStack stack = ItemStack.EMPTY;
-						short itemID = payload.getShort();
-						long stackSize = payload.getLong();
+		} else if (message == 1) {
+			terminal = NonNullList.create();
+			int size = payload.getInt();
+			for (int i = 0; i < size; i++) {
+				ItemStack stack = ItemStack.EMPTY;
+				short itemID = payload.getShort();
+				long stackSize = payload.getLong();
 
-						try {
-							short damage = payload.getShort();
-							stack = new ItemStack(Item.getItemById(itemID), 1, damage);
-							stack.setTagCompound(payload.readNBT());
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-
-						boolean craft = payload.getBool();
-						terminal.add(Triple.of(stack, stackSize, craft));
-					}
-					break;
+				try {
+					short damage = payload.getShort();
+					stack = new ItemStack(Item.getItemById(itemID), 1, damage);
+					stack.setTagCompound(payload.readNBT());
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
+
+				boolean craft = payload.getBool();
+				terminal.add(Triple.of(stack, stackSize, craft));
 			}
 		}
 	}

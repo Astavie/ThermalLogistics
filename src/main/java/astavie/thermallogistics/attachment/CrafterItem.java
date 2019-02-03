@@ -150,7 +150,6 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 				NBTTagCompound item = tag.getCompoundTag("item");
 				NBTTagCompound destination = tag.getCompoundTag("destination");
 
-				//noinspection unchecked
 				this.registry.add(Pair.of(item.isEmpty() ? null : new ItemStack(item), IRequester.readNbt(baseTile.world(), destination)));
 			}
 			_registry = null;
@@ -194,7 +193,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 
 	@Override
 	public boolean itemsIdentical(ItemStack a, ItemStack b) {
-		return !values[4] && a.getItem().getRegistryName().getNamespace().equals(b.getItem().getRegistryName().getNamespace()) || !values[3] && !Collections.disjoint(Arrays.asList(OreDictionary.getOreIDs(a)), Arrays.asList(OreDictionary.getOreIDs(b))) || a.getItem() == b.getItem() && (values[1] || a.getItemDamage() == b.getItemDamage()) && (values[2] || ItemStack.areItemStackTagsEqual(a, b));
+		return !values[4] && a.getItem().getRegistryName().getNamespace().equals(b.getItem().getRegistryName().getNamespace()) || !values[3] && !Collections.disjoint(Collections.singletonList(OreDictionary.getOreIDs(a)), Collections.singletonList(OreDictionary.getOreIDs(b))) || a.getItem() == b.getItem() && (values[1] || a.getItemDamage() == b.getItemDamage()) && (values[2] || ItemStack.areItemStackTagsEqual(a, b));
 	}
 
 	@Override
@@ -246,13 +245,11 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 
 	@Override
 	protected void handleInfoPacket(byte message, PacketBase payload) {
-		switch (message) {
-			case 6:
-				ItemStack stack = payload.getItemStack();
-				ItemStack[] inventory = payload.getBool() ? inputs : outputs;
-				inventory[payload.getInt()] = stack;
-				baseTile.markChunkDirty();
-				break;
+		if (message == 6) {
+			ItemStack stack = payload.getItemStack();
+			ItemStack[] inventory = payload.getBool() ? inputs : outputs;
+			inventory[payload.getInt()] = stack;
+			baseTile.markChunkDirty();
 		}
 	}
 

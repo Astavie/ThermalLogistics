@@ -31,7 +31,6 @@ public class TabLink extends TabBase {
 		this.maxHeight = 96;
 		this.backgroundColor = 0xc46d00;
 
-		//noinspection unchecked
 		this.crafter = gui.crafter;
 		this.num = Math.min((maxHeight - 24) / HEIGHT, crafter.links.size());
 		this.max = crafter.links.size() - num;

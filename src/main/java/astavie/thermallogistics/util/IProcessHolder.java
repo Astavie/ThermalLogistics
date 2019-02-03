@@ -34,7 +34,7 @@ public interface IProcessHolder<P extends IProcess<P, T, I>, T extends DuctUnit<
 			return (IProcessHolder<P, T, I>) tile;
 		if (tile instanceof TileGrid) {
 			Attachment attachment = ((TileGrid) tile).getAttachment(nbt.getByte("side"));
-			if (attachment != null && attachment instanceof IProcessHolder)
+			if (attachment instanceof IProcessHolder)
 				return (IProcessHolder<P, T, I>) attachment;
 		}
 		return null;

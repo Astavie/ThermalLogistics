@@ -45,7 +45,7 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 
 	private final Set<Container> registry = new HashSet<>();
 
-	protected List<P> processes = new ArrayList<>();
+	protected final List<P> processes = new ArrayList<>();
 	protected EnumFacing duct;
 	private NBTTagList _processes;
 

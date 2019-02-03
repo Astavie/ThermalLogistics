@@ -169,7 +169,6 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void update() {
 		if (getDuct().getGrid() == null)
 			getDuct().formGrid();
@@ -202,12 +201,20 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	public void remove() {
 		removed = true;
 
-		//noinspection SuspiciousMethodCalls, unchecked
+		//noinspection unchecked
 		crafter.getRequester().removeProcess((P) this);
 		EventHandler.PROCESSES.remove(this);
 
 		linked.forEach(IProcess::remove);
 		sub.forEach(IProcess::remove);
+	}
+
+	@Override
+	public void unload() {
+		EventHandler.PROCESSES.remove(this);
+
+		linked.forEach(IProcess::unload);
+		sub.forEach(IProcess::unload);
 	}
 
 	@Override
@@ -217,7 +224,6 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	@Override
 	public boolean isInvalid() {
-		//noinspection SuspiciousMethodCalls
 		return hasFailed() || isRemoved();
 	}
 
@@ -288,7 +294,6 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	@Override
 	public boolean shouldUnload() {
-		//noinspection unchecked
 		return destination != null && !(destination instanceof IProcess) && !destination.getDuct().world().isBlockLoaded(destination.getBase());
 	}
 

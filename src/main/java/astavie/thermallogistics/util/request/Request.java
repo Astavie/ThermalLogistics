@@ -33,7 +33,6 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 	private long birth;
 
 	public Request(World world, @Nullable IRequester<T, I> start, Collection<I> stacks) {
-		//noinspection unchecked
 		this.world = world;
 		this.birth = world.getTotalWorldTime();
 		this.start = start == null ? null : new RequesterReference<>(start);
@@ -126,7 +125,6 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 
 	@Override
 	public long getAge() {
-		//noinspection unchecked
 		return world.getTotalWorldTime() - birth;
 	}
 

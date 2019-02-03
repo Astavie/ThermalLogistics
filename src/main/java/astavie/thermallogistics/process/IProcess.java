@@ -22,6 +22,8 @@ public interface IProcess<P extends IProcess<P, T, I>, T extends DuctUnit<T, ?, 
 
 	void remove();
 
+	void unload();
+
 	boolean isRemoved();
 
 	NBTTagCompound save();

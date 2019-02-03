@@ -39,10 +39,33 @@ import java.util.Collections;
 
 public abstract class BlockTerminal extends BlockCoreTile {
 
+	@Override
+	@SuppressWarnings("deprecation")
+	public ItemStack getItem(World worldIn, BlockPos pos, IBlockState state) {
+		return new ItemStack(ThermalLogistics.terminal);
+	}
+
+	public static final PropertyEnum<Direction> DIRECTION = PropertyEnum.create("direction", Direction.class, Direction.values());
+	public static final PropertyBool ACTIVE = PropertyBool.create("active");
+
+	public BlockTerminal(String name) {
+		super(Material.IRON, "logistics");
+
+		this.setTranslationKey("terminal");
+		this.name = name;
+
+		this.setCreativeTab(ThermalLogistics.tab);
+
+		this.setHardness(5F);
+		this.setResistance(25F);
+
+		this.setDefaultState(this.blockState.getBaseState().withProperty(ACTIVE, false).withProperty(DIRECTION, Direction.NORTH));
+	}
+
 	public enum Direction implements IStringSerializable {
 		UP_NORTH, UP_SOUTH, UP_WEST, UP_EAST, NORTH, SOUTH, WEST, EAST, DOWN_NORTH, DOWN_SOUTH, DOWN_WEST, DOWN_EAST;
 
-		private String name;
+		private final String name;
 
 		Direction() {
 			this.name = toString().toLowerCase();
@@ -96,28 +119,6 @@ public abstract class BlockTerminal extends BlockCoreTile {
 			return NORTH;
 		}
 
-	}
-
-	public static final PropertyEnum<Direction> DIRECTION = PropertyEnum.create("direction", Direction.class, Direction.values());
-	public static final PropertyBool ACTIVE = PropertyBool.create("active");
-
-	public BlockTerminal(String name) {
-		super(Material.IRON, "logistics");
-
-		this.setTranslationKey("terminal");
-		this.name = name;
-
-		this.setCreativeTab(ThermalLogistics.tab);
-
-		this.setHardness(5F);
-		this.setResistance(25F);
-
-		this.setDefaultState(this.blockState.getBaseState().withProperty(ACTIVE, false).withProperty(DIRECTION, Direction.NORTH));
-	}
-
-	@Override
-	public ItemStack getItem(World worldIn, BlockPos pos, IBlockState state) {
-		return new ItemStack(ThermalLogistics.terminal);
 	}
 
 	@Override
