@@ -46,7 +46,7 @@ public class DelegateItem implements IDelegate<ItemStack> {
 
 	@Override
 	public void writePacket(PacketBase packet, ItemStack stack) {
-		packet.addItemStack(stack);
+		packet.addItemStack(stack == null ? ItemStack.EMPTY : stack);
 	}
 
 	@Override

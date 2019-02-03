@@ -46,7 +46,7 @@ info.logistics.manager.c.0=Monitoring Enabled
 info.logistics.manager.c.1=Linking Enabled
 
 info.logistics.manager.d.0=Starting link...
-info.logistics.manager.d.1=Crafters are too far away.
+info.logistics.manager.d.1=Unable to link. Please try again.
 info.logistics.manager.d.2=These crafters are already linked.
 info.logistics.manager.d.3=Linked successfully!
 
