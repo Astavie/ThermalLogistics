@@ -1,16 +1,17 @@
 package astavie.thermallogistics.util.reference;
 
+import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.IRequester;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
 
 public class RequesterReference<R extends IRequester<?, ?>> {
 
-	public final World world;
+	public final int dim;
 	public final BlockPos pos;
 	public final byte side;
 	public final int index;
@@ -19,34 +20,34 @@ public class RequesterReference<R extends IRequester<?, ?>> {
 	private long tick = -1;
 
 	public RequesterReference(R requester) {
-		this.world = requester.getDuct().world();
+		this.dim = requester.getDuct().world().provider.getDimension();
 		this.pos = new BlockPos(requester.getBase());
 		this.side = requester.getSide();
 		this.index = requester.getIndex();
 
 		cache = requester;
-		tick = world.getTotalWorldTime();
+		tick = EventHandler.time;
 	}
 
-	public RequesterReference(World world, BlockPos pos, byte side, int index) {
-		this.world = world;
+	public RequesterReference(int dim, BlockPos pos, byte side, int index) {
+		this.dim = dim;
 		this.pos = pos;
 		this.side = side;
 		this.index = index;
 	}
 
 	public boolean isLoaded() {
-		return world.isBlockLoaded(pos);
+		return DimensionManager.getWorld(dim).isBlockLoaded(pos);
 	}
 
 	@SuppressWarnings("unchecked")
 	public R getRequester() {
-		if (world.getTotalWorldTime() == tick)
+		if (EventHandler.time == tick)
 			return cache;
 
 		R requester = null;
 
-		TileEntity tile = world.getTileEntity(pos);
+		TileEntity tile = DimensionManager.getWorld(dim).getTileEntity(pos);
 		if (tile != null) {
 			if (index != -1 && tile instanceof IProcessHolder)
 				requester = (R) ((IProcessHolder) tile).getProcesses().get(index);
@@ -65,7 +66,7 @@ public class RequesterReference<R extends IRequester<?, ?>> {
 
 		if (requester != null) {
 			cache = requester;
-			tick = world.getTotalWorldTime();
+			tick = EventHandler.time;
 		}
 
 		return requester;
@@ -77,7 +78,7 @@ public class RequesterReference<R extends IRequester<?, ?>> {
 			return true;
 		} else if (obj instanceof RequesterReference) {
 			RequesterReference reference = (RequesterReference) obj;
-			return world == reference.world && pos == reference.pos && side == reference.side && index == reference.index;
+			return dim == reference.dim && pos == reference.pos && side == reference.side && index == reference.index;
 		}
 		return false;
 	}

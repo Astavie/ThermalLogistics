@@ -1,6 +1,7 @@
 package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.CrafterItem;
+import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.NetworkUtils;
@@ -51,7 +52,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 	public ProcessItem(IRequester<DuctUnitItem, ItemStack> destination, IProcessHolder<ProcessItem, DuctUnitItem, ItemStack> crafter, ItemStack output, int sum) {
 		super(destination, crafter, output, sum);
-		this.delay = (int) (crafter.getTile().getWorld().getTotalWorldTime() % ServoItem.tickDelays[crafter.getType()]) + 1;
+		this.delay = (int) (EventHandler.time % ServoItem.tickDelays[crafter.getType()]) + 1;
 	}
 
 	public ProcessItem(World world, NBTTagCompound tag) {
@@ -252,7 +253,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 					continue;
 
 				// Alright, let's do this!
-				this.leftovers.add(new Request<>(crafter.baseTile.getWorld(), crafter, crafter.registerLeftover(output, this, false)));
+				this.leftovers.add(new Request<>(crafter, crafter.registerLeftover(output, this, false)));
 				return;
 			}
 		}
@@ -369,7 +370,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 	@Override
 	public boolean isTick() {
-		return (crafter.world.getTotalWorldTime() - delay) % ServoItem.tickDelays[getType()] == 0;
+		return (EventHandler.time - delay) % ServoItem.tickDelays[getType()] == 0;
 	}
 
 	@Override

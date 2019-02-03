@@ -1,5 +1,6 @@
 package astavie.thermallogistics.util.request;
 
+import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.util.IRequester;
 import astavie.thermallogistics.util.delegate.IDelegate;
 import astavie.thermallogistics.util.reference.RequesterReference;
@@ -11,7 +12,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 
 import javax.annotation.Nullable;
@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 
-	private final World world;
 	private final RequesterReference<IRequester<T, I>> start;
 	private final List<I> stacks = NonNullList.create();
 
@@ -32,31 +31,28 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 
 	private long birth;
 
-	public Request(World world, @Nullable IRequester<T, I> start, Collection<I> stacks) {
-		this.world = world;
-		this.birth = world.getTotalWorldTime();
+	public Request(@Nullable IRequester<T, I> start, Collection<I> stacks) {
+		this.birth = EventHandler.time;
 		this.start = start == null ? null : new RequesterReference<>(start);
 		this.stacks.addAll(stacks);
 	}
 
-	public Request(World world, @Nullable IRequester<T, I> start, I stack) {
-		this(world, start, Collections.singleton(stack));
+	public Request(@Nullable IRequester<T, I> start, I stack) {
+		this(start, Collections.singleton(stack));
 	}
 
-	private Request(World world, @Nullable RequesterReference<IRequester<T, I>> start, Collection<I> stacks) {
-		this.world = world;
-		this.birth = world.getTotalWorldTime();
+	private Request(@Nullable RequesterReference<IRequester<T, I>> start, Collection<I> stacks) {
+		this.birth = EventHandler.time;
 		this.start = start;
 		this.stacks.addAll(stacks);
 	}
 
-	public Request(World world, IDelegate<I> delegate, NBTTagCompound tag) {
-		this.world = world;
-		this.birth = world.getTotalWorldTime() - tag.getLong("birth");
+	public Request(IDelegate<I> delegate, NBTTagCompound tag) {
+		this.birth = EventHandler.time - tag.getLong("birth");
 
 		if (tag.hasKey("start")) {
 			NBTTagCompound n = tag.getCompoundTag("start");
-			this.start = new RequesterReference<>(world, new BlockPos(n.getInteger("x"), n.getInteger("y"), n.getInteger("z")), n.getByte("side"), n.hasKey("index") ? n.getInteger("index") : -1);
+			this.start = new RequesterReference<>(tag.getInteger("dim"), new BlockPos(n.getInteger("x"), n.getInteger("y"), n.getInteger("z")), n.getByte("side"), n.hasKey("index") ? n.getInteger("index") : -1);
 		} else
 			this.start = null;
 
@@ -65,12 +61,11 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 			stacks.add(delegate.readNbt(list.getCompoundTagAt(i)));
 	}
 
-	public Request(World world, IDelegate<I> delegate, PacketBase packet) {
-		this.world = world;
-		this.birth = world.getTotalWorldTime() - packet.getLong();
+	public Request(IDelegate<I> delegate, PacketBase packet) {
+		this.birth = EventHandler.time - packet.getLong();
 
 		if (packet.getBool())
-			this.start = new RequesterReference<>(world, new BlockPos(packet.getInt(), packet.getInt(), packet.getInt()), (byte) packet.getInt(), packet.getInt());
+			this.start = new RequesterReference<>(packet.getInt(), new BlockPos(packet.getInt(), packet.getInt(), packet.getInt()), (byte) packet.getInt(), packet.getInt());
 		else
 			this.start = null;
 
@@ -85,14 +80,14 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 			stacks.add(delegate.readPacket(packet));
 	}
 
-	public static <T extends DuctUnit<T, ?, ?>, I> Request<T, I> combine(World world, IDelegate<I> delegate, IRequest<T, I> a, IRequest<T, I> b) {
+	public static <T extends DuctUnit<T, ?, ?>, I> Request<T, I> combine(IDelegate<I> delegate, IRequest<T, I> a, IRequest<T, I> b) {
 		List<I> list = new LinkedList<>();
 		for (I stack : Iterables.concat(a.getStacks(), b.getStacks()))
 			list.add(delegate.copy(stack));
 		delegate.truncate(list);
 
-		Request<T, I> combine = new Request<>(world, a.getStart(), list);
-		combine.birth = world.getTotalWorldTime() - Math.max(a.getAge(), b.getAge());
+		Request<T, I> combine = new Request<>(a.getStart(), list);
+		combine.birth = EventHandler.time - Math.max(a.getAge(), b.getAge());
 		return combine;
 	}
 
@@ -125,17 +120,17 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 
 	@Override
 	public long getAge() {
-		return world.getTotalWorldTime() - birth;
+		return EventHandler.time - birth;
 	}
 
 	public Request<T, I> copy(IDelegate<I> delegate) {
-		Request<T, I> clone = new Request<>(world, start, stacks.stream().map(delegate::copy).collect(Collectors.toList()));
+		Request<T, I> clone = new Request<>(start, stacks.stream().map(delegate::copy).collect(Collectors.toList()));
 		clone.birth = birth;
 		return clone;
 	}
 
 	public Request<T, I> copyFaceless(IDelegate<I> delegate) {
-		Request<T, I> clone = new Request<>(world, (RequesterReference<IRequester<T, I>>) null, stacks.stream().map(delegate::copy).collect(Collectors.toList()));
+		Request<T, I> clone = new Request<>((RequesterReference<IRequester<T, I>>) null, stacks.stream().map(delegate::copy).collect(Collectors.toList()));
 		clone.birth = birth;
 		return clone;
 	}

@@ -49,10 +49,10 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		this.output = output;
 
 		this.sum = sum;
-		this.birth = crafter.getTile().getWorld().getTotalWorldTime();
+		this.birth = EventHandler.time;
 
 		//noinspection unchecked
-		this.input = new Request<>(crafter.getTile().getWorld(), crafter, crafter.getInputs((P) this));
+		this.input = new Request<>(crafter, crafter.getInputs((P) this));
 
 		//noinspection unchecked
 		crafter.addProcess((P) this, -1);
@@ -77,7 +77,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 		this.crafter = new RequesterReference<>(holder);
 		this.output = tag.hasKey("output") ? getDelegate().readNbt(tag.getCompoundTag("output")) : null;
-		this.input = new Request<>(world, getDelegate(), tag.getCompoundTag("input"));
+		this.input = new Request<>(getDelegate(), tag.getCompoundTag("input"));
 		this.birth = tag.getLong("birth");
 		this.sum = tag.getInteger("sum");
 
@@ -101,7 +101,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 		NBTTagList leftovers = tag.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < leftovers.tagCount(); i++)
-			this.leftovers.add(new Request<>(world, getDelegate(), leftovers.getCompoundTagAt(i)));
+			this.leftovers.add(new Request<>(getDelegate(), leftovers.getCompoundTagAt(i)));
 	}
 
 	@Override
@@ -111,7 +111,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	@Override
 	public long getAge() {
-		return crafter.world.getTotalWorldTime() - birth;
+		return EventHandler.time - birth;
 	}
 
 	@Override
@@ -126,7 +126,7 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 			return Collections.emptyList();
 
 		Requests<T, I> requests = new Requests<>(this, list);
-		requests.condense(crafter.world, getDelegate());
+		requests.condense(getDelegate());
 		return Collections.singletonList(requests);
 	}
 

@@ -260,7 +260,7 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 						continue;
 
 					// Alright, let's do this!
-					this.leftovers.add(new Request<>(crafter.baseTile.getWorld(), crafter, output.copy()));
+					this.leftovers.add(new Request<>(crafter, output.copy()));
 					return;
 				}
 			}

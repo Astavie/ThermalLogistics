@@ -134,7 +134,7 @@ public class ItemManager extends ItemMultiRF implements IInitializer {
 
 				if (getEnergyStored(stack) >= ENERGY_PER_USE || player.capabilities.isCreativeMode || stack.getItemDamage() == CREATIVE) {
 					Crafter<?, ?, ?> crafter = (Crafter<?, ?, ?>) attachment;
-					ActionResult<Crafter<?, ?, ?>> result = getCrafter(world, stack);
+					ActionResult<Crafter<?, ?, ?>> result = getCrafter(stack);
 					if (result.getType() == EnumActionResult.PASS || (result.getType() == EnumActionResult.SUCCESS && result.getResult() == crafter)) {
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.0"));
 						saveCrafter(crafter, stack);
@@ -190,10 +190,10 @@ public class ItemManager extends ItemMultiRF implements IInitializer {
 		return null;
 	}
 
-	private ActionResult<Crafter<?, ?, ?>> getCrafter(World world, ItemStack stack) {
+	private ActionResult<Crafter<?, ?, ?>> getCrafter(ItemStack stack) {
 		NBTTagCompound tag = stack.getSubCompound("Link");
-		if (tag != null && world.provider.getDimension() == tag.getInteger("dim")) {
-			Crafter<?, ?, ?> crafter = Crafter.readCrafter(world, tag);
+		if (tag != null) {
+			Crafter<?, ?, ?> crafter = Crafter.readCrafter(tag);
 			if (crafter == null)
 				return ActionResult.newResult(EnumActionResult.FAIL, null);
 			else
@@ -205,7 +205,6 @@ public class ItemManager extends ItemMultiRF implements IInitializer {
 	private void saveCrafter(Crafter crafter, ItemStack stack) {
 		stack.removeSubCompound("Link");
 		NBTTagCompound tag = stack.getOrCreateSubCompound("Link");
-		tag.setInteger("dim", crafter.baseTile.world().provider.getDimension());
 		Crafter.writeCrafter(crafter, tag);
 	}
 

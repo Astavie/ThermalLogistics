@@ -501,7 +501,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 
 	@Override
 	public boolean isTick() {
-		return baseTile.getWorld().getTotalWorldTime() % ServoItem.tickDelays[getType()] == 0;
+		return EventHandler.time % ServoItem.tickDelays[getType()] == 0;
 	}
 
 	private class FilterItem implements IFilterItems {

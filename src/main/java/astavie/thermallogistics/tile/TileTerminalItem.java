@@ -1,5 +1,6 @@
 package astavie.thermallogistics.tile;
 
+import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.gui.client.GuiTerminal;
 import astavie.thermallogistics.gui.client.GuiTerminalItem;
 import astavie.thermallogistics.gui.container.ContainerTerminal;
@@ -218,7 +219,7 @@ public class TileTerminalItem extends TileTerminal<ProcessItem, DuctUnitItem, It
 
 	@Override
 	public boolean isTick() {
-		return getWorld().getTotalWorldTime() % ServoItem.tickDelays[getType()] == 0;
+		return EventHandler.time % ServoItem.tickDelays[getType()] == 0;
 	}
 
 }

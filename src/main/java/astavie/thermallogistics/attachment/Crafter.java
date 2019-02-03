@@ -45,7 +45,7 @@ import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
-import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 
 import javax.annotation.Nonnull;
@@ -83,8 +83,8 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 		updateFlags();
 	}
 
-	public static Crafter readCrafter(World world, NBTTagCompound tag) {
-		TileEntity tile = world.getTileEntity(new BlockPos(tag.getInteger("x"), tag.getInteger("y"), tag.getInteger("z")));
+	public static Crafter readCrafter(NBTTagCompound tag) {
+		TileEntity tile = DimensionManager.getWorld(tag.getInteger("dim")).getTileEntity(new BlockPos(tag.getInteger("x"), tag.getInteger("y"), tag.getInteger("z")));
 		if (tile instanceof TileGrid) {
 			Attachment attachment = ((TileGrid) tile).getAttachment(tag.getByte("side"));
 			if (attachment instanceof Crafter)
@@ -94,6 +94,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	}
 
 	public static void writeCrafter(Crafter crafter, NBTTagCompound tag) {
+		tag.setInteger("dim", crafter.baseTile.world().provider.getDimension());
 		tag.setInteger("x", crafter.baseTile.x());
 		tag.setInteger("y", crafter.baseTile.y());
 		tag.setInteger("z", crafter.baseTile.z());
@@ -101,6 +102,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	}
 
 	private static void writeCrafter(CrafterReference reference, NBTTagCompound tag) {
+		tag.setInteger("dim", reference.dim);
 		tag.setInteger("x", reference.pos.getX());
 		tag.setInteger("y", reference.pos.getY());
 		tag.setInteger("z", reference.pos.getZ());
@@ -194,7 +196,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 			linked = new LinkedHashSet<>();
 			linked.add(new CrafterReference<>(this));
 			for (int i = 0; i < _linked.tagCount(); i++) {
-				Crafter<?, ?, ?> crafter = readCrafter(baseTile.world(), _linked.getCompoundTagAt(i));
+				Crafter<?, ?, ?> crafter = readCrafter(_linked.getCompoundTagAt(i));
 				if (crafter != null) {
 					this.linked.add(new CrafterReference<>(crafter));
 					crafter.linked = this.linked;
@@ -387,7 +389,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 					requests.clear();
 					int size = payload.getInt();
 					for (int i = 0; i < size; i++)
-						requests.add(new Requests<>(baseTile.world(), getDelegate(), payload));
+						requests.add(new Requests<>(getDelegate(), payload));
 					break;
 				}
 			}

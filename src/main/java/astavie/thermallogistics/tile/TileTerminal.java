@@ -156,7 +156,7 @@ public abstract class TileTerminal<P extends IProcess<P, T, I>, T extends DuctUn
 			requests.clear();
 			int size = payload.getInt();
 			for (int i = 0; i < size; i++)
-				requests.add(new Requests<>(world, getDelegate(), payload));
+				requests.add(new Requests<>(getDelegate(), payload));
 		}
 	}
 

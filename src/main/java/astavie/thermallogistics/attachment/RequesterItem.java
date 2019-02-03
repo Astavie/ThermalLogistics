@@ -194,7 +194,7 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IReq
 				output = crafter.registerLeftover(output, this, false);
 				baseTile.markChunkDirty();
 
-				this.leftovers.add(new Request<>(crafter.baseTile.getWorld(), crafter, output.copy()));
+				this.leftovers.add(new Request<>(crafter, output.copy()));
 				return;
 			}
 		}
@@ -245,7 +245,7 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IReq
 			requests.clear();
 			int size = payload.getInt();
 			for (int i = 0; i < size; i++)
-				requests.add(new Requests<>(baseTile.world(), getDelegate(), payload));
+				requests.add(new Requests<>(getDelegate(), payload));
 		}
 	}
 
@@ -253,7 +253,7 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IReq
 	public void loadProcesses() {
 		if (_leftovers != null) {
 			for (int i = 0; i < _leftovers.tagCount(); i++)
-				this.leftovers.add(new Request<>(baseTile.world(), getDelegate(), _leftovers.getCompoundTagAt(i)));
+				this.leftovers.add(new Request<>(getDelegate(), _leftovers.getCompoundTagAt(i)));
 			_leftovers = null;
 		}
 		if (_processes != null) {
@@ -311,7 +311,7 @@ public class RequesterItem extends RetrieverItem implements IProcessLoader, IReq
 
 	@Override
 	public boolean isTick() {
-		return baseTile.world().getTotalWorldTime() % ServoItem.tickDelays[type] == 0;
+		return EventHandler.time % ServoItem.tickDelays[type] == 0;
 	}
 
 	@Override

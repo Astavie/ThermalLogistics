@@ -13,6 +13,8 @@ public class EventHandler {
 	public static final List<IProcessLoader> LOADERS = new LinkedList<>();
 	public static final List<IProcess> PROCESSES = new LinkedList<>();
 
+	public static long time = 0;
+
 	@SubscribeEvent
 	public void onTick(TickEvent.ServerTickEvent event) {
 		if (event.phase == TickEvent.Phase.START) {
@@ -44,7 +46,7 @@ public class EventHandler {
 				if (process.isLoaded() && !process.hasFailed())
 					process.update();
 			}
-		}
+		} else time++;
 	}
 
 }

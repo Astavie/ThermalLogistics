@@ -28,6 +28,7 @@ public interface IRequest<T extends DuctUnit<T, ?, ?>, I> extends Comparable<IRe
 			RequesterReference<IRequester<T, I>> start = request.getStartReference();
 
 			NBTTagCompound n = new NBTTagCompound();
+			n.setInteger("dim", start.dim);
 			n.setInteger("x", start.pos.getX());
 			n.setInteger("y", start.pos.getY());
 			n.setInteger("z", start.pos.getZ());
@@ -54,6 +55,7 @@ public interface IRequest<T extends DuctUnit<T, ?, ?>, I> extends Comparable<IRe
 			packet.addBool(true);
 
 			RequesterReference<IRequester<T, I>> start = request.getStartReference();
+			packet.addInt(start.dim);
 			packet.addInt(start.pos.getX());
 			packet.addInt(start.pos.getY());
 			packet.addInt(start.pos.getZ());

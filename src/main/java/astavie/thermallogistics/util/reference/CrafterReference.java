@@ -1,15 +1,16 @@
 package astavie.thermallogistics.util.reference;
 
 import astavie.thermallogistics.attachment.Crafter;
+import astavie.thermallogistics.event.EventHandler;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
 
 public class CrafterReference<C extends Crafter<?, ?, ?>> {
 
-	public final World world;
+	public final int dim;
 	public final BlockPos pos;
 	public final byte side;
 
@@ -17,32 +18,32 @@ public class CrafterReference<C extends Crafter<?, ?, ?>> {
 	private long tick = -1;
 
 	public CrafterReference(C crafter) {
-		this.world = crafter.getTile().getWorld();
+		this.dim = crafter.getTile().getWorld().provider.getDimension();
 		this.pos = crafter.getBase();
 		this.side = crafter.getSide();
 
 		cache = crafter;
-		tick = world.getTotalWorldTime();
+		tick = EventHandler.time;
 	}
 
-	public CrafterReference(World world, BlockPos pos, byte side) {
-		this.world = world;
+	public CrafterReference(int dim, BlockPos pos, byte side) {
+		this.dim = dim;
 		this.pos = pos;
 		this.side = side;
 	}
 
 	public boolean isLoaded() {
-		return world.isBlockLoaded(pos);
+		return DimensionManager.getWorld(dim).isBlockLoaded(pos);
 	}
 
 	@SuppressWarnings("unchecked")
 	public C getCrafter() {
-		if (world.getTotalWorldTime() == tick)
+		if (EventHandler.time == tick)
 			return cache;
 
 		C crafter = null;
 
-		TileEntity tile = world.getTileEntity(pos);
+		TileEntity tile = DimensionManager.getWorld(dim).getTileEntity(pos);
 		if (tile instanceof TileGrid) {
 			Attachment attachment = ((TileGrid) tile).getAttachment(side);
 			if (attachment instanceof Crafter)
@@ -51,7 +52,7 @@ public class CrafterReference<C extends Crafter<?, ?, ?>> {
 
 		if (crafter != null) {
 			cache = crafter;
-			tick = world.getTotalWorldTime();
+			tick = EventHandler.time;
 		}
 
 		return crafter;
@@ -63,7 +64,7 @@ public class CrafterReference<C extends Crafter<?, ?, ?>> {
 			return true;
 		} else if (obj instanceof CrafterReference) {
 			CrafterReference reference = (CrafterReference) obj;
-			return world == reference.world && pos == reference.pos && side == reference.side;
+			return dim == reference.dim && pos == reference.pos && side == reference.side;
 		}
 		return false;
 	}

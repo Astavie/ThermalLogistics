@@ -4,7 +4,6 @@ import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.util.delegate.IDelegate;
 import cofh.core.network.PacketBase;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
-import net.minecraft.world.World;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -27,7 +26,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 		this.age = process.getAge();
 	}
 
-	public Requests(World world, IDelegate<I> delegate, PacketBase packet) {
+	public Requests(IDelegate<I> delegate, PacketBase packet) {
 		this.requests = new LinkedList<>();
 
 		this.x = packet.getInt();
@@ -39,7 +38,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 
 		int size = packet.getInt();
 		for (int i = 0; i < size; i++)
-			requests.add(new Request<>(world, delegate, packet));
+			requests.add(new Request<>(delegate, packet));
 	}
 
 	public void writeCancel(PacketBase packet) {
@@ -63,7 +62,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 			IRequest.writePacket(request, delegate, packet);
 	}
 
-	public void condense(World world, IDelegate<I> delegate) {
+	public void condense(IDelegate<I> delegate) {
 		Iterator<IRequest<T, I>> a = requests.iterator();
 		while (a.hasNext()) {
 			IRequest<T, I> fa = a.next();
@@ -73,7 +72,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 					break;
 
 				if (fa.getStart().getBase().compareTo(fb.getStart().getBase()) == 0 && fa.getStart().getSide() == fb.getStart().getSide()) {
-					requests.set(i, Request.combine(world, delegate, fb, fa));
+					requests.set(i, Request.combine(delegate, fb, fa));
 					a.remove();
 					break;
 				}
