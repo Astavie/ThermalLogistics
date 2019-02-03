@@ -181,7 +181,7 @@ public abstract class BlockTerminal extends BlockCoreTile {
 
 	@Override
 	@SuppressWarnings("deprecation")
-	public IBlockState getStateFromMeta(int meta)  {
+	public IBlockState getStateFromMeta(int meta) {
 		return this.getDefaultState().withProperty(DIRECTION, Direction.values()[meta]);
 	}
 

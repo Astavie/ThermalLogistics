@@ -85,9 +85,9 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 
 	public static Crafter readCrafter(World world, NBTTagCompound tag) {
 		TileEntity tile = world.getTileEntity(new BlockPos(tag.getInteger("x"), tag.getInteger("y"), tag.getInteger("z")));
-        if (tile instanceof TileGrid) {
+		if (tile instanceof TileGrid) {
 			Attachment attachment = ((TileGrid) tile).getAttachment(tag.getByte("side"));
-            if (attachment instanceof Crafter)
+			if (attachment instanceof Crafter)
 				return (Crafter) attachment;
 		}
 		return null;
@@ -314,7 +314,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 				if (output == null)
 					output = stack;
 				if (b) {
-                    bO = true;
+					bO = true;
 					break;
 				} else b = true;
 			}

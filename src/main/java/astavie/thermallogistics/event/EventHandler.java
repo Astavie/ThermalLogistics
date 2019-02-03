@@ -25,7 +25,7 @@ public class EventHandler {
 			for (int i = 0; i < PROCESSES.size(); i++) {
 				IProcess process = PROCESSES.get(i);
 				if (process.shouldUnload()) {
-                    process.unload();
+					process.unload();
 					i--;
 				} else if (process.isDone()) {
 					process.remove();

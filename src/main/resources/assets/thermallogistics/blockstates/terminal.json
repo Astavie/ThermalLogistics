@@ -1,5 +1,7 @@
 {
-  "variants": {
-    "normal": { "model": "thermallogistics:terminal" }
-  }
+	"variants": {
+		"normal": {
+			"model": "thermallogistics:terminal"
+		}
+	}
 }
