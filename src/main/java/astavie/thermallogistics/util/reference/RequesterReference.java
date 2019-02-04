@@ -77,7 +77,7 @@ public class RequesterReference<R extends IRequester<?, ?>> {
 			return true;
 		} else if (obj instanceof RequesterReference) {
 			RequesterReference reference = (RequesterReference) obj;
-			return dim == reference.dim && pos == reference.pos && side == reference.side && index == reference.index;
+			return dim == reference.dim && pos.equals(reference.pos) && side == reference.side && index == reference.index;
 		}
 		return false;
 	}

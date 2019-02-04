@@ -74,7 +74,7 @@ public class CrafterReference<C extends Crafter<?, ?, ?>> {
 			return true;
 		} else if (obj instanceof CrafterReference) {
 			CrafterReference reference = (CrafterReference) obj;
-			return dim == reference.dim && pos == reference.pos && side == reference.side;
+			return dim == reference.dim && pos.equals(reference.pos) && side == reference.side;
 		}
 		return false;
 	}

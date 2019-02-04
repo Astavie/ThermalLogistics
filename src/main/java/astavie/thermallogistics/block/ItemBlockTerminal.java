@@ -54,7 +54,7 @@ public abstract class ItemBlockTerminal extends ItemCore implements IModelRegist
 			TileGrid grid = (TileGrid) tile;
 			if (grid.getDuct(token) == null)
 				return EnumActionResult.FAIL;
-		}
+		} else return EnumActionResult.FAIL;
 
 		pos = pos.offset(facing);
 
