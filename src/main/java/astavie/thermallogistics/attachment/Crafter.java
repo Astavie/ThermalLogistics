@@ -2,6 +2,7 @@ package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.compat.ICrafterWrapper;
+import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.gui.client.GuiCrafter;
 import astavie.thermallogistics.gui.container.ContainerCrafter;
 import astavie.thermallogistics.item.ItemCrafter;
@@ -45,7 +46,6 @@ import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.Constants;
 
 import javax.annotation.Nonnull;
@@ -84,7 +84,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	}
 
 	public static Crafter readCrafter(NBTTagCompound tag) {
-		TileEntity tile = DimensionManager.getWorld(tag.getInteger("dim")).getTileEntity(new BlockPos(tag.getInteger("x"), tag.getInteger("y"), tag.getInteger("z")));
+		TileEntity tile = EventHandler.getWorld(tag.getInteger("dim")).getTileEntity(new BlockPos(tag.getInteger("x"), tag.getInteger("y"), tag.getInteger("z")));
 		if (tile instanceof TileGrid) {
 			Attachment attachment = ((TileGrid) tile).getAttachment(tag.getByte("side"));
 			if (attachment instanceof Crafter)

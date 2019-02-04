@@ -1,5 +1,6 @@
 package astavie.thermallogistics.util;
 
+import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.util.delegate.IDelegate;
 import astavie.thermallogistics.util.delegate.IDelegateClient;
 import astavie.thermallogistics.util.request.Requests;
@@ -10,7 +11,6 @@ import cofh.thermaldynamics.duct.tiles.TileGrid;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -20,7 +20,7 @@ public interface IRequester<T extends DuctUnit<T, ?, ?>, I> {
 
 	@SuppressWarnings("unchecked")
 	static <T extends DuctUnit<T, ?, ?>, I> IRequester<T, I> readNbt(NBTTagCompound tag) {
-		TileEntity tile = DimensionManager.getWorld(tag.getInteger("dim")).getTileEntity(new BlockPos(tag.getInteger("x"), tag.getInteger("y"), tag.getInteger("z")));
+		TileEntity tile = EventHandler.getWorld(tag.getInteger("dim")).getTileEntity(new BlockPos(tag.getInteger("x"), tag.getInteger("y"), tag.getInteger("z")));
 		if (tile != null) {
 			if (tag.hasKey("index") && tile instanceof IProcessHolder)
 				return (IRequester<T, I>) ((IProcessHolder) tile).getProcesses().get(tag.getInteger("index"));

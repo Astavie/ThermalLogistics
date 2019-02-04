@@ -22,7 +22,7 @@ public interface IRequest<T extends DuctUnit<T, ?, ?>, I> extends Comparable<IRe
 
 	static <T extends DuctUnit<T, ?, ?>, I> NBTTagCompound writeNbt(IRequest<T, I> request, IDelegate<I> delegate) {
 		NBTTagCompound tag = new NBTTagCompound();
-		tag.setLong("age", request.getAge());
+		tag.setLong("birth", request.getBirth());
 
 		if (request.getStartReference() != null) {
 			RequesterReference<IRequester<T, I>> start = request.getStartReference();
@@ -49,7 +49,7 @@ public interface IRequest<T extends DuctUnit<T, ?, ?>, I> extends Comparable<IRe
 	}
 
 	static <T extends DuctUnit<T, ?, ?>, I> void writePacket(IRequest<T, I> request, IDelegate<I> delegate, PacketBase packet) {
-		packet.addLong(request.getAge());
+		packet.addLong(request.getBirth());
 
 		if (request.getStartReference() != null) {
 			packet.addBool(true);
@@ -100,11 +100,11 @@ public interface IRequest<T extends DuctUnit<T, ?, ?>, I> extends Comparable<IRe
 		return null;
 	}
 
-	long getAge();
+	long getBirth();
 
 	@Override
 	default int compareTo(IRequest<T, I> o) {
-		return Long.compare(getAge(), o.getAge());
+		return -Long.compare(getBirth(), o.getBirth());
 	}
 
 	// Client-only

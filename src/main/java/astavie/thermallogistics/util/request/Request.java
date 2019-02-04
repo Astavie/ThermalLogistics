@@ -48,7 +48,7 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 	}
 
 	public Request(IDelegate<I> delegate, NBTTagCompound tag) {
-		this.birth = EventHandler.time - tag.getLong("birth");
+		this.birth = tag.getLong("birth");
 
 		if (tag.hasKey("start")) {
 			NBTTagCompound n = tag.getCompoundTag("start");
@@ -62,7 +62,7 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 	}
 
 	public Request(IDelegate<I> delegate, PacketBase packet) {
-		this.birth = EventHandler.time - packet.getLong();
+		this.birth = packet.getLong();
 
 		if (packet.getBool())
 			this.start = new RequesterReference<>(packet.getInt(), new BlockPos(packet.getInt(), packet.getInt(), packet.getInt()), (byte) packet.getInt(), packet.getInt());
@@ -87,7 +87,7 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 		delegate.truncate(list);
 
 		Request<T, I> combine = new Request<>(a.getStart(), list);
-		combine.birth = EventHandler.time - Math.max(a.getAge(), b.getAge());
+		combine.birth = Math.max(a.getBirth(), b.getBirth());
 		return combine;
 	}
 
@@ -119,8 +119,8 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 	}
 
 	@Override
-	public long getAge() {
-		return EventHandler.time - birth;
+	public long getBirth() {
+		return birth;
 	}
 
 	public Request<T, I> copy(IDelegate<I> delegate) {

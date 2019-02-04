@@ -110,8 +110,8 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	}
 
 	@Override
-	public long getAge() {
-		return EventHandler.time - birth;
+	public long getBirth() {
+		return birth;
 	}
 
 	@Override

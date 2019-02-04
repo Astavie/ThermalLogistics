@@ -13,7 +13,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 
 	private final List<IRequest<T, I>> requests;
 	private final int x, y, z, side, index;
-	private final long age;
+	private final long birth;
 
 	public Requests(IProcess<?, T, I> process, List<IRequest<T, I>> requests) {
 		this.requests = requests;
@@ -23,7 +23,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 		this.z = process.getBase().getZ();
 		this.side = process.getSide();
 		this.index = process.getIndex();
-		this.age = process.getAge();
+		this.birth = process.getBirth();
 	}
 
 	public Requests(IDelegate<I> delegate, PacketBase packet) {
@@ -34,7 +34,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 		this.z = packet.getInt();
 		this.side = packet.getInt();
 		this.index = packet.getInt();
-		this.age = packet.getLong();
+		this.birth = packet.getLong();
 
 		int size = packet.getInt();
 		for (int i = 0; i < size; i++)
@@ -55,7 +55,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 		packet.addInt(z);
 		packet.addInt(side);
 		packet.addInt(index);
-		packet.addLong(age);
+		packet.addLong(birth);
 
 		packet.addInt(requests.size());
 		for (IRequest<T, I> request : requests)
@@ -86,7 +86,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 
 	@Override
 	public int compareTo(Requests<T, I> o) {
-		return Long.compare(age, o.age);
+		return -Long.compare(birth, o.birth);
 	}
 
 }

@@ -6,7 +6,6 @@ import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.common.DimensionManager;
 
 public class CrafterReference<C extends Crafter<?, ?, ?>> {
 
@@ -33,7 +32,7 @@ public class CrafterReference<C extends Crafter<?, ?, ?>> {
 	}
 
 	public boolean isLoaded() {
-		return DimensionManager.getWorld(dim).isBlockLoaded(pos);
+		return EventHandler.isBlockLoaded(dim, pos);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -43,7 +42,7 @@ public class CrafterReference<C extends Crafter<?, ?, ?>> {
 
 		C crafter = null;
 
-		TileEntity tile = DimensionManager.getWorld(dim).getTileEntity(pos);
+		TileEntity tile = EventHandler.getWorld(dim).getTileEntity(pos);
 		if (tile instanceof TileGrid) {
 			Attachment attachment = ((TileGrid) tile).getAttachment(side);
 			if (attachment instanceof Crafter)

@@ -1,9 +1,11 @@
 package astavie.thermallogistics.event;
 
-import astavie.thermallogistics.network.PacketTick;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.util.IProcessLoader;
-import cofh.core.network.PacketHandler;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -16,6 +18,20 @@ public class EventHandler {
 	public static final List<IProcess> PROCESSES = new LinkedList<>();
 
 	public static long time = 0;
+
+	public static WorldServer getWorld(int dim) {
+		WorldServer world = DimensionManager.getWorld(dim);
+		if (world == null) {
+			DimensionManager.initDimension(dim);
+			return DimensionManager.getWorld(dim);
+		}
+		return world;
+	}
+
+	public static boolean isBlockLoaded(int dim, BlockPos pos) {
+		World world = DimensionManager.getWorld(dim);
+		return world != null && world.isBlockLoaded(pos);
+	}
 
 	@SubscribeEvent
 	public void onTick(TickEvent.ServerTickEvent event) {
@@ -48,10 +64,7 @@ public class EventHandler {
 				if (process.isLoaded() && !process.hasFailed())
 					process.update();
 			}
-		} else {
-			time++;
-			PacketHandler.sendToServer(new PacketTick(time));
-		}
+		} else time++;
 	}
 
 }

@@ -7,7 +7,6 @@ import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.common.DimensionManager;
 
 public class RequesterReference<R extends IRequester<?, ?>> {
 
@@ -37,7 +36,7 @@ public class RequesterReference<R extends IRequester<?, ?>> {
 	}
 
 	public boolean isLoaded() {
-		return DimensionManager.getWorld(dim).isBlockLoaded(pos);
+		return EventHandler.isBlockLoaded(dim, pos);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -47,7 +46,7 @@ public class RequesterReference<R extends IRequester<?, ?>> {
 
 		R requester = null;
 
-		TileEntity tile = DimensionManager.getWorld(dim).getTileEntity(pos);
+		TileEntity tile = EventHandler.getWorld(dim).getTileEntity(pos);
 		if (tile != null) {
 			if (index != -1 && tile instanceof IProcessHolder)
 				requester = (R) ((IProcessHolder) tile).getProcesses().get(index);

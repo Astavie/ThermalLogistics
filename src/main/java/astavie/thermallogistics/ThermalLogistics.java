@@ -14,7 +14,6 @@ import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.item.ItemManager;
 import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.network.PacketCancelProcess;
-import astavie.thermallogistics.network.PacketTick;
 import astavie.thermallogistics.process.IProcess;
 import astavie.thermallogistics.process.ProcessFluid;
 import astavie.thermallogistics.process.ProcessItem;
@@ -115,7 +114,6 @@ public class ThermalLogistics {
 		MinecraftForge.EVENT_BUS.register(new EventHandler());
 
 		PacketCancelProcess.initialize();
-		PacketTick.initialize();
 
 		proxy.preInit();
 	}
