@@ -21,8 +21,8 @@ item.logistics.manager.signalum.name=Network Manager (Signalum)
 item.logistics.manager.resonant.name=Network Manager (Resonant)
 item.logistics.manager.creative.name=Network Manager (Creative)
 
-item.logistics.terminal.name=Terminal
-tile.logistics.terminal.name=Terminal
+item.logistics.terminal.item.name=Terminal
+tile.logistics.terminal.item.name=Terminal
 
 info.logistics.input=Import Input
 info.logistics.output=Import Output

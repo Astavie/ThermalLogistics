@@ -7,6 +7,7 @@ import astavie.thermallogistics.util.delegate.DelegateClientFluid;
 import astavie.thermallogistics.util.delegate.DelegateClientItem;
 import astavie.thermallogistics.util.link.ILink;
 import astavie.thermallogistics.util.link.Link;
+import astavie.thermallogistics.util.reference.CrafterReference;
 import cofh.core.network.PacketBase;
 import cofh.core.render.IModelRegister;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -51,8 +52,8 @@ public class ProxyClient extends Proxy {
 		MinecraftForge.EVENT_BUS.register(this);
 		models.forEach(IModelRegister::registerModels);
 
-		registerLink(CrafterItem.ID, p -> new Link<>(p.getItemStack(), p.getItemStack(), p.getBool(), p.getItemStack(), p.getBool(), DelegateClientItem.INSTANCE));
-		registerLink(CrafterFluid.ID, p -> new Link<>(p.getItemStack(), p.getFluidStack(), p.getBool(), p.getFluidStack(), p.getBool(), DelegateClientFluid.INSTANCE));
+		registerLink(CrafterItem.ID, p -> new Link<>(new CrafterReference<>(p), p.getItemStack(), p.getItemStack(), p.getBool(), p.getItemStack(), p.getBool(), DelegateClientItem.INSTANCE));
+		registerLink(CrafterFluid.ID, p -> new Link<>(new CrafterReference<>(p), p.getItemStack(), p.getFluidStack(), p.getBool(), p.getFluidStack(), p.getBool(), DelegateClientFluid.INSTANCE));
 	}
 
 	@SubscribeEvent

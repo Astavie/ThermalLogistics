@@ -39,20 +39,14 @@ import java.util.Collections;
 
 public abstract class BlockTerminal extends BlockCoreTile {
 
-	@Override
-	@SuppressWarnings("deprecation")
-	public ItemStack getItem(World worldIn, BlockPos pos, IBlockState state) {
-		return new ItemStack(ThermalLogistics.terminal);
-	}
-
 	public static final PropertyEnum<Direction> DIRECTION = PropertyEnum.create("direction", Direction.class, Direction.values());
 	public static final PropertyBool ACTIVE = PropertyBool.create("active");
 
-	public BlockTerminal(String name) {
+	public BlockTerminal(String type) {
 		super(Material.IRON, "logistics");
 
-		this.setTranslationKey("terminal");
-		this.name = name;
+		this.setTranslationKey("terminal." + type);
+		this.name = "terminal_" + type;
 
 		this.setCreativeTab(ThermalLogistics.tab);
 
@@ -203,12 +197,12 @@ public abstract class BlockTerminal extends BlockCoreTile {
 
 	@Override
 	public ItemStack getPickBlock(IBlockState state, RayTraceResult target, World world, BlockPos pos, EntityPlayer player) {
-		return new ItemStack(ThermalLogistics.terminal);
+		return new ItemStack(ThermalLogistics.itemTerminalItem);
 	}
 
 	@Override
 	public ArrayList<ItemStack> dropDelegate(NBTTagCompound nbt, IBlockAccess world, BlockPos pos, int fortune) {
-		return new ArrayList<>(Collections.singleton(new ItemStack(ThermalLogistics.terminal)));
+		return new ArrayList<>(Collections.singleton(new ItemStack(ThermalLogistics.itemTerminalItem)));
 	}
 
 	@Override
@@ -231,7 +225,7 @@ public abstract class BlockTerminal extends BlockCoreTile {
 		if (world.getBlockState(pos).getBlock() != this)
 			return ret;
 
-		ItemStack dropBlock = new ItemStack(ThermalLogistics.terminal);
+		ItemStack dropBlock = new ItemStack(ThermalLogistics.itemTerminalItem);
 		if (nbt != null && !nbt.isEmpty())
 			dropBlock.setTagCompound(nbt);
 

@@ -12,12 +12,13 @@ import java.util.List;
 public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requests<T, I>> {
 
 	private final List<IRequest<T, I>> requests;
-	private final int x, y, z, side, index;
+	private final int dim, x, y, z, side, index;
 	private final long birth;
 
 	public Requests(IProcess<?, T, I> process, List<IRequest<T, I>> requests) {
 		this.requests = requests;
 
+		this.dim = process.getDuct().parent.world().provider.getDimension();
 		this.x = process.getBase().getX();
 		this.y = process.getBase().getY();
 		this.z = process.getBase().getZ();
@@ -29,6 +30,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 	public Requests(IDelegate<I> delegate, PacketBase packet) {
 		this.requests = new LinkedList<>();
 
+		this.dim = packet.getInt();
 		this.x = packet.getInt();
 		this.y = packet.getInt();
 		this.z = packet.getInt();
@@ -42,6 +44,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 	}
 
 	public void writeCancel(PacketBase packet) {
+		packet.addInt(dim);
 		packet.addInt(x);
 		packet.addInt(y);
 		packet.addInt(z);
@@ -50,6 +53,7 @@ public class Requests<T extends DuctUnit<T, ?, ?>, I> implements Comparable<Requ
 	}
 
 	public void writePacket(IDelegate<I> delegate, PacketBase packet) {
+		packet.addInt(dim);
 		packet.addInt(x);
 		packet.addInt(y);
 		packet.addInt(z);

@@ -2,6 +2,7 @@ package astavie.thermallogistics.util.reference;
 
 import astavie.thermallogistics.attachment.Crafter;
 import astavie.thermallogistics.event.EventHandler;
+import cofh.core.network.PacketBase;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import net.minecraft.tileentity.TileEntity;
@@ -29,6 +30,16 @@ public class CrafterReference<C extends Crafter<?, ?, ?>> {
 		this.dim = dim;
 		this.pos = pos;
 		this.side = side;
+	}
+
+	public CrafterReference(PacketBase packet) {
+		this(packet.getInt(), packet.getCoords(), packet.getByte());
+	}
+
+	public static void write(Crafter<?, ?, ?> crafter, PacketBase packet) {
+		packet.addInt(crafter.getTile().getWorld().provider.getDimension());
+		packet.addCoords(crafter.getBase().getX(), crafter.getBase().getY(), crafter.getBase().getZ());
+		packet.addByte(crafter.getSide());
 	}
 
 	public boolean isLoaded() {

@@ -4,6 +4,7 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.tile.TileTerminalItem;
 import cofh.core.util.CoreUtils;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -13,7 +14,7 @@ import javax.annotation.Nullable;
 public class BlockTerminalItem extends BlockTerminal {
 
 	public BlockTerminalItem() {
-		super("terminal_item");
+		super("item");
 	}
 
 	@Override
@@ -22,6 +23,12 @@ public class BlockTerminalItem extends BlockTerminal {
 		for (int i = 0; i < tile.inventory.getSizeInventory(); i++)
 			CoreUtils.dropItemStackIntoWorldWithVelocity(tile.inventory.getStackInSlot(i), world, pos);
 		super.breakBlock(world, pos, state);
+	}
+
+	@Override
+	@SuppressWarnings("deprecation")
+	public ItemStack getItem(World worldIn, BlockPos pos, IBlockState state) {
+		return new ItemStack(ThermalLogistics.itemTerminalItem);
 	}
 
 	@Nullable

@@ -293,7 +293,13 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	protected abstract void setAutoOutput(ICrafterWrapper wrapper);
 
 	protected void addLink(PacketBase packet) {
+		// id
 		packet.addString(getId().toString());
+
+		// location
+		CrafterReference.write(this, packet);
+
+		// appearance
 		packet.addItemStack(getPickBlock());
 
 		I input = null, output = null;

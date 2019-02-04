@@ -1,5 +1,6 @@
 package astavie.thermallogistics.network;
 
+import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.util.IProcessHolder;
 import astavie.thermallogistics.util.request.Requests;
 import cofh.core.network.PacketBase;
@@ -25,13 +26,14 @@ public class PacketCancelProcess extends PacketBase {
 
 	@Override
 	public void handlePacket(EntityPlayer player, boolean isServer) {
+		int dim = getInt();
 		int x = getInt();
 		int y = getInt();
 		int z = getInt();
 		int side = getInt();
 		int index = getInt();
 
-		TileEntity tile = player.world.getTileEntity(new BlockPos(x, y, z));
+		TileEntity tile = EventHandler.getWorld(dim).getTileEntity(new BlockPos(x, y, z));
 		if (tile != null) {
 			if (tile instanceof IProcessHolder) {
 				((IProcessHolder<?, ?, ?>) tile).getProcesses().get(index).setFailed();

@@ -4,6 +4,7 @@ import astavie.thermallogistics.gui.client.tab.TabLink;
 import astavie.thermallogistics.proxy.ProxyClient;
 import astavie.thermallogistics.util.delegate.DelegateClientItem;
 import astavie.thermallogistics.util.delegate.IDelegateClient;
+import astavie.thermallogistics.util.reference.CrafterReference;
 import cofh.core.gui.GuiContainerCore;
 import net.minecraft.item.ItemStack;
 
@@ -11,13 +12,15 @@ import java.util.List;
 
 public class Link<I> implements ILink {
 
+	public final CrafterReference<?> reference;
 	public final ItemStack crafter;
 	public final I input, output;
 	public final boolean inputs, outputs;
 
 	public final IDelegateClient<I, ?> delegate;
 
-	public Link(ItemStack crafter, I input, boolean inputs, I output, boolean outputs, IDelegateClient<I, ?> delegate) {
+	public Link(CrafterReference<?> reference, ItemStack crafter, I input, boolean inputs, I output, boolean outputs, IDelegateClient<I, ?> delegate) {
+		this.reference = reference;
 		this.crafter = crafter;
 		this.input = input;
 		this.inputs = inputs;
@@ -57,6 +60,11 @@ public class Link<I> implements ILink {
 
 		if (!delegate.isNull(output) && mouseX >= x + 61 && mouseX < x + 79 && mouseY >= y - 1 && mouseY < y + 17)
 			delegate.addTooltip(gui, output, list);
+	}
+
+	@Override
+	public CrafterReference<?> getReference() {
+		return reference;
 	}
 
 }

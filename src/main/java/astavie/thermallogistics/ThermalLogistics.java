@@ -47,12 +47,7 @@ public class ThermalLogistics {
 	public static final String MODID = "thermallogistics";
 	public static final String VERSION = Loader.instance().activeModContainer().getVersion();
 
-	public static final CreativeTabs tab = new CreativeTabCore(MODID) {
-		@Override
-		public ItemStack createIcon() {
-			return new ItemStack(terminal);
-		}
-	};
+	public static final ItemBlockTerminal itemTerminalItem = new ItemBlockTerminal.Item();
 
 	// Items
 	public static final ItemAttachment requester = new ItemRequester();
@@ -60,8 +55,13 @@ public class ThermalLogistics {
 	public static final ItemManager manager = new ItemManager();
 
 	// Blocks
-	public static final ItemBlockTerminal terminal = new ItemBlockTerminal();
 	public static final BlockTerminal terminalItem = new BlockTerminalItem();
+	public static final CreativeTabs tab = new CreativeTabCore(MODID) {
+		@Override
+		public ItemStack createIcon() {
+			return new ItemStack(itemTerminalItem);
+		}
+	};
 
 	private static final Map<Class<?>, Function<?, ICrafterWrapper>> crafterRegistry = new HashMap<>();
 	private static final Map<ResourceLocation, BiFunction<World, NBTTagCompound, IProcess<?, ?, ?>>> processRegistry = new HashMap<>();
@@ -100,7 +100,7 @@ public class ThermalLogistics {
 		crafter.preInit();
 		manager.preInit();
 
-		terminal.preInit();
+		itemTerminalItem.preInit();
 		terminalItem.preInit();
 
 		AttachmentRegistry.registerAttachment(RequesterItem.ID, RequesterItem::new);
@@ -124,7 +124,7 @@ public class ThermalLogistics {
 		crafter.initialize();
 		manager.initialize();
 
-		terminal.initialize();
+		itemTerminalItem.initialize();
 		terminalItem.initialize();
 	}
 
