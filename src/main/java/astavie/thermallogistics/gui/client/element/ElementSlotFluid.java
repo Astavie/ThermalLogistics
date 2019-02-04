@@ -8,6 +8,7 @@ import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -45,9 +46,9 @@ public class ElementSlotFluid extends ElementSlot {
 	}
 
 	@Override
-	protected void drawIntersect(int mouseX, int mouseY) {
+	protected void addTooltip(int mouseX, int mouseY, List<String> list) {
 		if (fluid.get() != null)
-			gui.drawHoveringText(fluid.get().getLocalizedName(), mouseX, mouseY);
+			list.add(fluid.get().getLocalizedName());
 	}
 
 	@Override

@@ -26,12 +26,14 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 
 import static cofh.core.util.helpers.RecipeHelper.addShapedRecipe;
@@ -117,11 +119,13 @@ public class ItemManager extends ItemMultiRF implements IInitializer {
 
 				StackMap map = duct.getGrid().travelingItems.get(duct.pos().offset(EnumFacing.VALUES[pair.getRight()]));
 				if (map == null || map.isEmpty()) {
-					player.sendMessage(new TextComponentTranslation("info.logistics.manager.e.2"));
+					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.e.2"));
 				} else {
-					player.sendMessage(new TextComponentTranslation("info.logistics.manager.e.0"));
+					List<ITextComponent> list = new ArrayList<>();
+					list.add(new TextComponentTranslation("info.logistics.manager.e.0"));
 					for (ItemStack item : map.getItems())
-						player.sendMessage(new TextComponentTranslation("info.logistics.manager.e.1", item.getCount(), item.getTextComponent()));
+						list.add(new TextComponentTranslation("info.logistics.manager.e.1", item.getCount(), item.getTextComponent()));
+					ChatHelper.sendIndexedChatMessagesToPlayer(player, list);
 				}
 
 				return EnumActionResult.SUCCESS;

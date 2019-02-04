@@ -3,10 +3,9 @@ package astavie.thermallogistics.gui.client.element;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.core.util.helpers.RenderHelper;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.client.config.GuiUtils;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -31,13 +30,9 @@ public class ElementSlotItem extends ElementSlot {
 	}
 
 	@Override
-	protected void drawIntersect(int mouseX, int mouseY) {
-		if (!stack.get().isEmpty()) {
-			FontRenderer font = stack.get().getItem().getFontRenderer(stack.get());
-			if (font == null)
-				font = gui.getFontRenderer();
-			GuiUtils.drawHoveringText(stack.get(), gui.getItemToolTip(stack.get()), mouseX, mouseY, gui.width, gui.height, -1, font);
-		}
+	protected void addTooltip(int mouseX, int mouseY, List<String> list) {
+		if (!stack.get().isEmpty())
+			list.addAll(gui.getItemToolTip(stack.get()));
 	}
 
 	@Override

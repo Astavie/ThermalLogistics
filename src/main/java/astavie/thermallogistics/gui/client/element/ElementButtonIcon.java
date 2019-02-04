@@ -5,6 +5,8 @@ import cofh.core.gui.element.ElementButtonBase;
 import cofh.core.util.helpers.StringHelper;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
+import java.util.List;
+
 public class ElementButtonIcon extends ElementButtonBase {
 
 	private final TextureAtlasSprite icon;
@@ -25,8 +27,12 @@ public class ElementButtonIcon extends ElementButtonBase {
 
 	@Override
 	public void drawForeground(int mouseX, int mouseY) {
-		if (intersectsWith(mouseX, mouseY))
-			gui.drawHoveringText(StringHelper.localize(hovering), mouseX, mouseY);
+	}
+
+	@Override
+	public void addTooltip(List<String> list) {
+		if (intersectsWith(gui.getMouseX(), gui.getMouseY()))
+			list.add(StringHelper.localize(hovering));
 	}
 
 	@Override

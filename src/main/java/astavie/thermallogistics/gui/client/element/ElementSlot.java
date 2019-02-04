@@ -7,6 +7,8 @@ import cofh.core.util.helpers.RenderHelper;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 
+import java.util.List;
+
 public abstract class ElementSlot extends ElementBase {
 
 	private static final ResourceLocation SLOT = new ResourceLocation(CoreProps.PATH_ELEMENTS + "slot.png");
@@ -44,12 +46,16 @@ public abstract class ElementSlot extends ElementBase {
 
 	@Override
 	public void drawForeground(int mouseX, int mouseY) {
-		if (intersectsWith(mouseX, mouseY) && gui.mc.player.inventory.getItemStack().isEmpty())
-			drawIntersect(mouseX, mouseY);
+	}
+
+	@Override
+	public void addTooltip(List<String> list) {
+		if (intersectsWith(gui.getMouseX(), gui.getMouseY()) && gui.mc.player.inventory.getItemStack().isEmpty())
+			addTooltip(gui.getMouseX(), gui.getMouseY(), list);
 	}
 
 	protected abstract void drawSlot(int mouseX, int mouseY);
 
-	protected abstract void drawIntersect(int mouseX, int mouseY);
+	protected abstract void addTooltip(int mouseX, int mouseY, List<String> list);
 
 }

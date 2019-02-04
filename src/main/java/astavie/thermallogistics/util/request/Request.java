@@ -87,7 +87,7 @@ public class Request<T extends DuctUnit<T, ?, ?>, I> implements IRequest<T, I> {
 		delegate.truncate(list);
 
 		Request<T, I> combine = new Request<>(a.getStart(), list);
-		combine.birth = Math.max(a.getBirth(), b.getBirth());
+		combine.birth = Math.min(a.getBirth(), b.getBirth());
 		return combine;
 	}
 
