@@ -47,7 +47,12 @@ public class ThermalLogistics {
 	public static final String MODID = "thermallogistics";
 	public static final String VERSION = Loader.instance().activeModContainer().getVersion();
 
-	public static final ItemBlockTerminal itemTerminalItem = new ItemBlockTerminal.Item();
+	public static final CreativeTabs tab = new CreativeTabCore(MODID) {
+		@Override
+		public ItemStack createIcon() {
+			return new ItemStack(itemTerminalItem);
+		}
+	};
 
 	// Items
 	public static final ItemAttachment requester = new ItemRequester();
@@ -56,12 +61,7 @@ public class ThermalLogistics {
 
 	// Blocks
 	public static final BlockTerminal terminalItem = new BlockTerminalItem();
-	public static final CreativeTabs tab = new CreativeTabCore(MODID) {
-		@Override
-		public ItemStack createIcon() {
-			return new ItemStack(itemTerminalItem);
-		}
-	};
+	public static final ItemBlockTerminal itemTerminalItem = new ItemBlockTerminal.Item();
 
 	private static final Map<Class<?>, Function<?, ICrafterWrapper>> crafterRegistry = new HashMap<>();
 	private static final Map<ResourceLocation, BiFunction<World, NBTTagCompound, IProcess<?, ?, ?>>> processRegistry = new HashMap<>();
