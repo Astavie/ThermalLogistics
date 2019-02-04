@@ -206,7 +206,15 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 			_linked = null;
 		}
 		if (pass == 0) {
-			linked.removeIf(c -> c.isLoaded() && c.getCrafter().isInvalid());
+			if (linked.removeIf(c -> {
+				if (c.isLoaded()) {
+					Crafter crafter = c.getCrafter();
+					return crafter == null || crafter.isInvalid();
+				}
+				return false;
+			})) {
+				processes.forEach(IProcess::setFailed);
+			}
 		}
 	}
 

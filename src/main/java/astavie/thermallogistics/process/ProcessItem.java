@@ -137,7 +137,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 
 			Route route = getDuct().getRoute(destination.getDuct());
 			if (route == null) {
-				failed = true;
+				setFailed();
 				return;
 			}
 
@@ -155,11 +155,15 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 	}
 
 	@Override
-	public void updateInput() {
-		// Copied from RequesterItem TODO: Make this generic
+	protected void onTick() {
 		// Check subprocesses
 		linked.removeIf(IProcess::isDone);
-		sub.removeIf(process -> process.isDone() || process.hasFailed());
+		sub.removeIf(process -> process.isInvalid() || process.isDone());
+	}
+
+	@Override
+	public void updateInput() {
+		// Copied from RequesterItem TODO: Make this generic
 
 		// Search for items
 		Set<CrafterItem> crafters = new HashSet<>();
@@ -309,7 +313,7 @@ public class ProcessItem extends Process<IProcessHolder<ProcessItem, DuctUnitIte
 			// Reroute the item
 			Route pass = getDuct().getRoute(destination.getDuct());
 			if (pass == null) {
-				failed = true;
+				setFailed();
 				return false;
 			}
 

@@ -173,6 +173,8 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		if (getDuct().getGrid() == null)
 			getDuct().formGrid();
 
+		onTick();
+
 		if (isTick()) {
 			updateInput();
 			crafter.getRequester().getTile().markChunkDirty();
@@ -183,13 +185,15 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 		}
 	}
 
+	protected abstract void onTick();
+
 	protected abstract void updateOutput();
 
 	protected abstract void updateInput();
 
 	@Override
 	public boolean isDone() {
-		return sub.stream().allMatch(IProcess::isDone) && linked.stream().allMatch(IProcess::isDone) && (destination == null || getDelegate().isNull(output)) && input.getStacks().isEmpty();
+		return !isInvalid() && sub.stream().allMatch(IProcess::isDone) && linked.stream().allMatch(IProcess::isDone) && (destination == null || getDelegate().isNull(output)) && input.getStacks().isEmpty();
 	}
 
 	@Override
@@ -201,8 +205,11 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 	public void remove() {
 		removed = true;
 
-		//noinspection unchecked
-		crafter.getRequester().removeProcess((P) this);
+		C crafter = this.crafter.getRequester();
+		if (crafter != null)
+			//noinspection unchecked
+			crafter.removeProcess((P) this);
+
 		EventHandler.PROCESSES.remove(this);
 
 		linked.forEach(IProcess::remove);
@@ -229,6 +236,8 @@ public abstract class Process<C extends IProcessHolder<P, T, I>, P extends IProc
 
 	@Override
 	public NBTTagCompound save() {
+		onTick();
+
 		NBTTagCompound c = IProcessHolder.write(crafter);
 
 		NBTTagList linked = new NBTTagList();

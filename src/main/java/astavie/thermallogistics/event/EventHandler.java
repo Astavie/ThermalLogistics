@@ -47,11 +47,11 @@ public class EventHandler {
 				if (process.shouldUnload()) {
 					process.unload();
 					i--;
-				} else if (process.isDone()) {
-					process.remove();
-					i--;
 				} else if (process.hasFailed()) {
 					process.fail();
+					process.remove();
+					i--;
+				} else if (process.isDone()) {
 					process.remove();
 					i--;
 				}

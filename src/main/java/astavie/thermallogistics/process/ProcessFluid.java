@@ -147,19 +147,19 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 			int maxInput = Math.min((int) Math.ceil(myTank.fluidThroughput * ServoFluid.throttle[destination.getType()]), output.amount);
 			IFluidHandler ductHandler = getDuct().getFluidCapability(EnumFacing.VALUES[getSide()]);
 			if (ductHandler == null) {
-				failed = true;
+				setFailed();
 				return;
 			}
 
 			DuctUnitFluid.Cache cache = getDuct().tileCache[getSide()];
 			if (cache == null) {
-				failed = true;
+				setFailed();
 				return;
 			}
 
 			IFluidHandler tileHandler = cache.getHandler(getSide() ^ 1);
 			if (tileHandler == null) {
-				failed = true;
+				setFailed();
 				return;
 			}
 
@@ -173,10 +173,14 @@ public class ProcessFluid extends Process<IProcessHolder<ProcessFluid, DuctUnitF
 	}
 
 	@Override
-	public void updateInput() {
+	protected void onTick() {
+		// Check subprocesses
 		linked.removeIf(IProcess::isDone);
-		sub.removeIf(process -> process.hasFailed() || (process.isDone() && waiting(process.getOutput()) == 0));
+		sub.removeIf(process -> process.isInvalid() || (process.isDone() && waiting(process.getOutput()) == 0));
+	}
 
+	@Override
+	public void updateInput() {
 		// Copied from RequesterFluid TODO: Make this generic
 		GridFluid grid = getDuct().getGrid();
 		FluidTankGrid tank = grid.myTank;
