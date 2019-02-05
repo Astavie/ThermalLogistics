@@ -4,6 +4,7 @@ import cofh.core.inventory.InventoryCraftingFalse;
 import cofh.core.util.helpers.FluidHelper;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermalexpansion.block.machine.TileCrafter;
+import cofh.thermalexpansion.item.ItemFrame;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
@@ -18,6 +19,10 @@ import java.util.List;
 public class FabricatorWrapper implements ICrafterWrapper {
 
 	public static final Class<TileCrafter> CLASS = TileCrafter.class;
+
+	public static ItemStack getMachineFrame() {
+		return ItemFrame.frameMachine;
+	}
 
 	private final TileCrafter tile;
 

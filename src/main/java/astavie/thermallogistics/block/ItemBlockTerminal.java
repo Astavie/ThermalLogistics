@@ -1,6 +1,7 @@
 package astavie.thermallogistics.block;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.compat.FabricatorWrapper;
 import astavie.thermallogistics.tile.TileTerminal;
 import cofh.core.item.ItemCore;
 import cofh.core.render.IModelRegister;
@@ -9,7 +10,6 @@ import cofh.core.util.helpers.RecipeHelper;
 import cofh.thermaldynamics.duct.TDDucts;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
-import cofh.thermalexpansion.item.ItemFrame;
 import cofh.thermalfoundation.item.ItemMaterial;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.block.Block;
@@ -28,6 +28,7 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.client.model.ModelLoader;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 public abstract class ItemBlockTerminal extends ItemCore implements IModelRegister, IInitializer {
@@ -107,7 +108,7 @@ public abstract class ItemBlockTerminal extends ItemCore implements IModelRegist
 					" X ",
 					"YCY",
 					"IPI",
-					'C', ItemFrame.frameMachine,
+					'C', Loader.isModLoaded("thermalexpansion") ? FabricatorWrapper.getMachineFrame() : "blockIron",
 					'I', "gearCopper",
 					'P', ItemMaterial.powerCoilGold,
 					'X', ThermalLogistics.manager,
