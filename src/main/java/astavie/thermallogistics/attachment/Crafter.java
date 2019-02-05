@@ -63,7 +63,7 @@ public abstract class Crafter<P extends IProcess<P, T, I>, T extends DuctUnit<T,
 	public final List<Requests<T, I>> requests = new LinkedList<>();
 	public final List<ILink> links = new LinkedList<>(); // haha "linked" list
 
-	public Set<CrafterReference> linked;
+	public Set<CrafterReference> linked = new HashSet<>();
 
 	public int type;
 
