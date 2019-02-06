@@ -50,7 +50,7 @@ dependencies {
     deobfCompile "cofh:ThermalExpansion:${mc_version}+:universal@jar"
 
 	// Runtime
-	runtime fileTree(dir: 'lib', include: ['*.jar'])
+	// runtime fileTree(dir: 'lib', include: ['*.jar'])
 	
 	runtime "cofh:CoFHWorld:${mc_version}+:universal@jar"
 	runtime "cofh:ThermalCultivation:${mc_version}+:universal@jar"
