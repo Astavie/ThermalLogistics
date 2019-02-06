@@ -36,8 +36,8 @@ info.logistics.output=Import Output
 info.logistics.fluid.input=Add Input
 info.logistics.fluid.output=Add Output
 
-info.logistics.networks=Connected Networks
-info.logistics.servos=Servo Slots
+info.logistics.networks=Connected Networks: %s
+info.logistics.servos=Servo Slots: %s
 
 info.logistics.tab.link=Linked Crafters
 info.logistics.tab.fluid=Add Fluid
