@@ -29,6 +29,7 @@ public class ProxyClient extends Proxy {
 
 	public static final TextureAtlasSprite[][] REQUESTER = new TextureAtlasSprite[2][];
 	public static final TextureAtlasSprite[][] CRAFTER = new TextureAtlasSprite[2][];
+	public static final TextureAtlasSprite[][] MULTIPLEXER = new TextureAtlasSprite[2][];
 
 	public static TextureAtlasSprite ICON_LINK;
 	public static TextureAtlasSprite ICON_ARROW_RIGHT;
@@ -60,6 +61,7 @@ public class ProxyClient extends Proxy {
 	public void handleTextureStitchEventPre(TextureStitchEvent.Pre event) {
 		registerAttachment(event.getMap(), REQUESTER, "requester");
 		registerAttachment(event.getMap(), CRAFTER, "crafter");
+		registerAttachment(event.getMap(), MULTIPLEXER, "multiplexer");
 
 		ICON_LINK = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MODID, "items/manager_1"));
 		ICON_ARROW_RIGHT = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MODID, "gui/icons/arrow_right"));

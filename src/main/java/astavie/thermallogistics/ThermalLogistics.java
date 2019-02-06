@@ -1,9 +1,6 @@
 package astavie.thermallogistics;
 
-import astavie.thermallogistics.attachment.CrafterFluid;
-import astavie.thermallogistics.attachment.CrafterItem;
-import astavie.thermallogistics.attachment.RequesterFluid;
-import astavie.thermallogistics.attachment.RequesterItem;
+import astavie.thermallogistics.attachment.*;
 import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.block.BlockTerminalItem;
 import astavie.thermallogistics.block.ItemBlockTerminal;
@@ -12,6 +9,7 @@ import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.event.EventHandler;
 import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.item.ItemManager;
+import astavie.thermallogistics.item.ItemMultiplexer;
 import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.network.PacketCancelProcess;
 import astavie.thermallogistics.process.IProcess;
@@ -57,6 +55,7 @@ public class ThermalLogistics {
 	// Items
 	public static final ItemAttachment requester = new ItemRequester();
 	public static final ItemAttachment crafter = new ItemCrafter();
+	public static final ItemAttachment multiplexer = new ItemMultiplexer();
 	public static final ItemManager manager = new ItemManager();
 
 	// Blocks
@@ -98,6 +97,7 @@ public class ThermalLogistics {
 
 		requester.preInit();
 		crafter.preInit();
+		multiplexer.preInit();
 		manager.preInit();
 
 		itemTerminalItem.preInit();
@@ -107,6 +107,7 @@ public class ThermalLogistics {
 		AttachmentRegistry.registerAttachment(RequesterFluid.ID, RequesterFluid::new);
 		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
 		AttachmentRegistry.registerAttachment(CrafterFluid.ID, CrafterFluid::new);
+		AttachmentRegistry.registerAttachment(Multiplexer.ID, Multiplexer::new);
 
 		registerProcessType(new ResourceLocation("item"), ProcessItem::new);
 		registerProcessType(new ResourceLocation("fluid"), ProcessFluid::new);
@@ -122,6 +123,7 @@ public class ThermalLogistics {
 	public void init(FMLInitializationEvent event) {
 		requester.initialize();
 		crafter.initialize();
+		multiplexer.initialize();
 		manager.initialize();
 
 		itemTerminalItem.initialize();

@@ -14,6 +14,13 @@ item.logistics.crafter.signalum.name=Signalum Crafter
 item.logistics.crafter.resonant.name=Resonant Crafter
 item.logistics.crafter.info=Pulls distant items/fluids to itself when a request is given to craft items.
 
+item.logistics.multiplexer.basic.name=Servo Multiplexer
+item.logistics.multiplexer.hardened.name=Hardened Servo Multiplexer
+item.logistics.multiplexer.reinforced.name=Reinforced Servo Multiplexer
+item.logistics.multiplexer.signalum.name=Signalum Servo Multiplexer
+item.logistics.multiplexer.resonant.name=Resonant Servo Multiplexer
+item.logistics.multiplexer.info=Allows you to put the functionality of multiple servos on a single servo.
+
 item.logistics.manager.basic.name=Network Manager (Basic)
 item.logistics.manager.hardened.name=Network Manager (Hardened)
 item.logistics.manager.reinforced.name=Network Manager (Reinforced)
@@ -30,6 +37,7 @@ info.logistics.fluid.input=Add Input
 info.logistics.fluid.output=Add Output
 
 info.logistics.networks=Connected Networks
+info.logistics.servos=Servo Slots
 
 info.logistics.tab.link=Linked Crafters
 info.logistics.tab.fluid=Add Fluid

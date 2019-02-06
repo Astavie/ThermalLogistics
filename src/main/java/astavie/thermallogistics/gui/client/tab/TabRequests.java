@@ -13,7 +13,6 @@ import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.MathHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 
@@ -39,6 +38,10 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 	public TabRequests(GuiContainerCore gui, IDelegateClient<I, ?> delegate, List<Requests<T, I>> requests, Runnable refresh) {
 		super(gui);
 		this.maxHeight = 96;
+
+		this.backgroundColor = 0xFF008080;
+		this.textColor = 0xFFFFFFFF;
+
 		this.num = (maxHeight - 24) / HEIGHT;
 
 		this.delegate = delegate;
@@ -125,7 +128,7 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 		else
 			gui.drawIcon(CoreTextures.ICON_ARROW_DOWN_INACTIVE, sideOffset() + maxWidth - 20, 76);
 
-		getFontRenderer().drawString(getTitle(), sideOffset() + 18, 6, 0xFF373737);
+		getFontRenderer().drawString(getTitle(), sideOffset() + 18, 6, textColor);
 
 		RenderHelper.disableStandardItemLighting();
 		RenderHelper.enableGUIStandardItemLighting();
@@ -158,7 +161,7 @@ public class TabRequests<T extends DuctUnit<T, ?, ?>, I> extends TabBase {
 				if (f) {
 					// Render line separator
 					if (i > first)
-						Gui.drawRect(x - 1, y - 1, sideOffset() + maxWidth - 20, y, 0xFF373737);
+						drawModalRect(x - 1, y - 1, sideOffset() + maxWidth - 16, y, textColor);
 
 					// Render cancel button
 					if (mouseX >= x + 90 && mouseX < x + 106 && mouseY >= y && mouseY < y + 16)
