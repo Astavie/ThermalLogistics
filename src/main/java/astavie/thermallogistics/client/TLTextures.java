@@ -1,5 +1,6 @@
-package astavie.thermallogistics;
+package astavie.thermallogistics.client;
 
+import astavie.thermallogistics.ThermalLogistics;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.ResourceLocation;

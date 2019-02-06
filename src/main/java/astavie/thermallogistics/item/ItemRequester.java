@@ -30,7 +30,7 @@ public class ItemRequester extends ItemLogisticsAttachment {
 	public Attachment getAttachment(EnumFacing side, ItemStack stack, TileGrid tile) {
 		int type = stack.getItemDamage();
 		//if (tile.getDuct(DuctToken.FLUID) != null)
-		//	return new RequesterFluid(tile, (byte) (side.ordinal() ^ 1), type);
+		//	return new RequesterFluid(tile, (byte) (side.ordinal() ^ 1), type); TODO
 		if (tile.getDuct(DuctToken.ITEMS) != null)
 			return new RequesterItem(tile, (byte) (side.ordinal() ^ 1), type);
 		return null;
