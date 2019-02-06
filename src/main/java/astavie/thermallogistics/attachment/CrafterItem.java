@@ -186,13 +186,17 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 	public int amountRequired(ItemStack item) {
 		int amt = 0;
 		for (ItemStack input : inputs)
-			if (itemsIdentical(item, input))
+			if (!input.isEmpty() && itemsIdentical(item, input))
 				amt += input.getCount();
 		return amt;
 	}
 
 	@Override
 	public boolean itemsIdentical(ItemStack a, ItemStack b) {
+		if (a.isEmpty() && b.isEmpty())
+			return true;
+		if (a.isEmpty() || b.isEmpty())
+			return false;
 		return !values[4] && a.getItem().getRegistryName().getNamespace().equals(b.getItem().getRegistryName().getNamespace()) || !values[3] && !Collections.disjoint(Collections.singletonList(OreDictionary.getOreIDs(a)), Collections.singletonList(OreDictionary.getOreIDs(b))) || a.getItem() == b.getItem() && (values[1] || a.getItemDamage() == b.getItemDamage()) && (values[2] || ItemStack.areItemStackTagsEqual(a, b));
 	}
 
@@ -509,7 +513,7 @@ public class CrafterItem extends Crafter<ProcessItem, DuctUnitItem, ItemStack> i
 		@Override
 		public boolean matchesFilter(ItemStack item) {
 			for (ItemStack input : inputs)
-				if (itemsIdentical(input, item))
+				if (!input.isEmpty() && itemsIdentical(input, item))
 					return true;
 			return false;
 		}
