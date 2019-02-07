@@ -17,6 +17,11 @@ public interface ICrafter<I> extends IRequester<I> {
 		public final List<I> outputs = NonNullList.create();
 
 		public final List<Request<I>> requests = NonNullList.create();
+		public final Request<I> leftovers;
+
+		public Recipe(Request<I> leftovers) {
+			this.leftovers = leftovers;
+		}
 
 	}
 

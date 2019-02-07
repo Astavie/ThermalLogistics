@@ -7,11 +7,11 @@ import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
 import codechicken.lib.vec.uv.IconTransformation;
-import cofh.core.util.helpers.InventoryHelper;
+import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.attachments.retriever.RetrieverItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
-import cofh.thermaldynamics.duct.item.SimulatedInv;
+import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
@@ -22,6 +22,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
 
@@ -98,15 +99,21 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 		if (!filter.matchesFilter(stack))
 			return 0;
 
-		SimulatedInv inv = SimulatedInv.wrapHandler(getCachedInv());
+		int required = filter.getMaxStock();
+
+		// Items in requests
 		for (ItemStack item : process.getStacks())
-			InventoryHelper.insertStackIntoInventory(inv, item, false);
+			if (ItemHelper.itemsIdentical(item, stack))
+				required -= item.getCount();
 
-		int space = filter.getMaxStock() - DuctUnitItem.getNumItems(inv, side ^ 1, stack, filter.getMaxStock());
-		if (space <= 0)
-			return 0;
+		// Items traveling
+		StackMap map = itemDuct.getGrid().travelingItems.get(itemDuct.pos().offset(EnumFacing.byIndex(side)));
+		if (map != null)
+			for (ItemStack item : map.getItems())
+				if (ItemHelper.itemsIdentical(item, stack))
+					required -= item.getCount();
 
-		return space;
+		return required < 0 ? 0 : required;
 	}
 
 	@Override

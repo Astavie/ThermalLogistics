@@ -22,7 +22,6 @@ import cofh.thermaldynamics.util.ListWrapper;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -47,9 +46,9 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	public CrafterItem(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
-		recipes.add(new Recipe<ItemStack>() {{
-			inputs.add(new ItemStack(Blocks.PLANKS, 4));
-			outputs.add(new ItemStack(Blocks.CRAFTING_TABLE, 1));
+		recipes.add(new Recipe<ItemStack>(new RequestItem(null)) {{
+			inputs.add(OreDictionary.getOres("oreIron").get(0));
+			outputs.add(ItemHelper.cloneStack(OreDictionary.getOres("dustIron").get(0), 2));
 		}});
 	}
 
@@ -125,9 +124,19 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	@Override
 	public boolean request(IRequester<ItemStack> requester, ItemStack stack) {
 		for (Recipe<ItemStack> recipe : recipes) {
-			if (recipe.outputs.stream().noneMatch(output -> ItemHelper.itemsIdentical(output, stack)))
+			ItemStack output = ItemStack.EMPTY;
+
+			for (ItemStack out : recipe.outputs) {
+				if (ItemHelper.itemsIdentical(out, stack)) {
+					output = out;
+					break;
+				}
+			}
+
+			if (output.isEmpty())
 				continue;
 
+			// Add request
 			for (Request<ItemStack> request : recipe.requests) {
 				if (request.attachment.references(requester)) {
 					request.addStack(stack);
@@ -192,8 +201,10 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 						}
 					}
 				}
+				count -= recipe.leftovers.getCount(output);
 
-				recipes = Math.max(recipes, (count - 1) / output.getCount() + 1);
+				if (count > 0)
+					recipes = Math.max(recipes, (count - 1) / output.getCount() + 1);
 			}
 
 			amount += inputAmount * recipes;
@@ -267,9 +278,35 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				if (request.stacks.isEmpty())
 					iterator.remove();
 
-				int count = (stack.getCount() - 1) / output.getCount() + 1;
+				// Check leftovers
+				int count = stack.getCount();
+
+				for (Iterator<ItemStack> iterator1 = recipe.leftovers.stacks.iterator(); iterator1.hasNext(); ) {
+					ItemStack leftovers = iterator1.next();
+					if (ItemHelper.itemsIdentical(leftovers, stack)) {
+						int amount = Math.min(leftovers.getCount(), stack.getCount());
+						leftovers.shrink(amount);
+						count -= amount;
+
+						if (leftovers.isEmpty())
+							iterator1.remove();
+
+						break;
+					}
+				}
+
+				// Remove sent
+				int recipes = (count - 1) / output.getCount() + 1;
 				for (ItemStack in : recipe.inputs)
-					sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * count));
+					sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
+
+				// Add leftovers
+				int leftover = count % output.getCount();
+				for (ItemStack out : recipe.outputs) {
+					int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
+					if (amount > 0)
+						recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
+				}
 
 				return;
 			}

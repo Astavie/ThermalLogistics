@@ -166,7 +166,7 @@ public class ProcessItem extends Process<ItemStack> {
 			if (inv == null)
 				continue;
 
-			ItemStack extract = extract(this.requester, handler, request::amountRequired, endPoint, side, cache, inv);
+			ItemStack extract = extract(this.requester, handler, request::getCount, endPoint, side, cache, inv);
 			if (!extract.isEmpty()) {
 				requester.onFinishCrafting(this.requester, extract);
 

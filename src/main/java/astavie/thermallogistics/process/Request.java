@@ -39,7 +39,7 @@ public abstract class Request<I> implements Comparable<Request<?>> {
 
 	public abstract void decreaseStack(I stack);
 
-	public abstract int amountRequired(I stack);
+	public abstract int getCount(I stack);
 
 	@Override
 	public int compareTo(@Nonnull Request<?> request) {

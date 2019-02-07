@@ -22,7 +22,7 @@ public class RequestItem extends Request<ItemStack> {
 	}
 
 	public RequestItem(RequesterReference<ItemStack> attachment, ItemStack stack) {
-		super(attachment, stack);
+		super(attachment, stack.copy());
 	}
 
 	private RequestItem(RequesterReference<ItemStack> attachment, long id) {
@@ -95,7 +95,7 @@ public class RequestItem extends Request<ItemStack> {
 	}
 
 	@Override
-	public int amountRequired(ItemStack stack) {
+	public int getCount(ItemStack stack) {
 		for (ItemStack item : stacks)
 			if (ItemHelper.itemsIdentical(item, stack))
 				return item.getCount();
