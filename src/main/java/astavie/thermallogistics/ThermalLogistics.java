@@ -1,6 +1,8 @@
 package astavie.thermallogistics;
 
+import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.RequesterItem;
+import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.item.ItemRequester;
 import cofh.core.util.core.IInitializer;
 import cofh.thermaldynamics.duct.AttachmentRegistry;
@@ -34,6 +36,7 @@ public class ThermalLogistics {
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		AttachmentRegistry.registerAttachment(RequesterItem.ID, RequesterItem::new);
+		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
 	}
 
 	@Mod.EventHandler
@@ -55,6 +58,7 @@ public class ThermalLogistics {
 	public static class Items {
 
 		public static final ItemRequester requester = null;
+		public static final ItemCrafter crafter = null;
 
 	}
 
@@ -64,6 +68,7 @@ public class ThermalLogistics {
 		@SubscribeEvent
 		public static void registerItems(RegistryEvent.Register<Item> event) {
 			register(event.getRegistry(), new ItemRequester("requester"));
+			register(event.getRegistry(), new ItemCrafter("crafter"));
 		}
 
 		@SubscribeEvent
@@ -74,11 +79,13 @@ public class ThermalLogistics {
 		@SubscribeEvent
 		public static void registerRecipes(RegistryEvent.Register<IRecipe> event) {
 			Items.requester.initialize();
+			Items.crafter.initialize();
 		}
 
 		@SubscribeEvent
 		public static void registerModels(ModelRegistryEvent event) {
 			Items.requester.registerModels();
+			Items.crafter.registerModels();
 		}
 
 		private static <V extends IForgeRegistryEntry<V>> void register(IForgeRegistry<V> registry, IInitializer i) {

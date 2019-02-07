@@ -17,6 +17,10 @@ public class RequestItem extends Request<ItemStack> {
 		super(attachment, stacks);
 	}
 
+	public RequestItem(RequesterReference<ItemStack> attachment) {
+		super(attachment);
+	}
+
 	public RequestItem(RequesterReference<ItemStack> attachment, ItemStack stack) {
 		super(attachment, stack);
 	}
@@ -78,25 +82,24 @@ public class RequestItem extends Request<ItemStack> {
 	}
 
 	@Override
-	public ItemStack decreaseStack(ItemStack stack) {
+	public void decreaseStack(ItemStack stack) {
 		for (Iterator<ItemStack> iterator = stacks.iterator(); iterator.hasNext(); ) {
 			ItemStack s = iterator.next();
 			if (ItemHelper.itemsIdentical(stack, s)) {
-				int size = s.getCount();
 				s.shrink(stack.getCount());
-
-				if (s.isEmpty()) {
+				if (s.isEmpty())
 					iterator.remove();
-
-					ItemStack ret = stack.copy();
-					ret.shrink(size);
-					return ret;
-				}
-
-				return ItemStack.EMPTY;
+				return;
 			}
 		}
-		return stack.copy();
+	}
+
+	@Override
+	public int amountRequired(ItemStack stack) {
+		for (ItemStack item : stacks)
+			if (ItemHelper.itemsIdentical(item, stack))
+				return item.getCount();
+		return 0;
 	}
 
 }

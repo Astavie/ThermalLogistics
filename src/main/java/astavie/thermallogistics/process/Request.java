@@ -16,6 +16,10 @@ public abstract class Request<I> implements Comparable<Request<?>> {
 
 	protected long id;
 
+	public Request(RequesterReference<I> attachment) {
+		this(attachment, ID++);
+	}
+
 	public Request(RequesterReference<I> attachment, Collection<I> stacks) {
 		this(attachment, ID++);
 		this.stacks.addAll(stacks);
@@ -33,7 +37,9 @@ public abstract class Request<I> implements Comparable<Request<?>> {
 
 	public abstract void addStack(I stack);
 
-	public abstract I decreaseStack(I stack);
+	public abstract void decreaseStack(I stack);
+
+	public abstract int amountRequired(I stack);
 
 	@Override
 	public int compareTo(@Nonnull Request<?> request) {

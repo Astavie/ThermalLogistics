@@ -7,9 +7,11 @@ import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
 import codechicken.lib.vec.uv.IconTransformation;
+import cofh.core.util.helpers.InventoryHelper;
 import cofh.thermaldynamics.duct.attachments.retriever.RetrieverItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
+import cofh.thermaldynamics.duct.item.SimulatedInv;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
@@ -96,11 +98,15 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 		if (!filter.matchesFilter(stack))
 			return 0;
 
-		int space = filter.getMaxStock() - DuctUnitItem.getNumItems(getCachedInv(), side ^ 1, stack, filter.getMaxStock());
+		SimulatedInv inv = SimulatedInv.wrapHandler(getCachedInv());
+		for (ItemStack item : process.getStacks())
+			InventoryHelper.insertStackIntoInventory(inv, item, false);
+
+		int space = filter.getMaxStock() - DuctUnitItem.getNumItems(inv, side ^ 1, stack, filter.getMaxStock());
 		if (space <= 0)
 			return 0;
 
-		return Math.min(getMaxSend(), space);
+		return space;
 	}
 
 	@Override
@@ -136,6 +142,14 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	@Override
 	public ItemStack getIcon() {
 		return getPickBlock();
+	}
+
+	@Override
+	public void onFinishCrafting(IRequester<ItemStack> requester, ItemStack stack) {
+	}
+
+	@Override
+	public void onExtract(ItemStack stack) {
 	}
 
 }

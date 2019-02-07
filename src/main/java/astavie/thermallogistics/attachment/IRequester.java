@@ -1,5 +1,6 @@
 package astavie.thermallogistics.attachment;
 
+import astavie.thermallogistics.util.RequesterReference;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.multiblock.IGridTileRoute;
@@ -18,6 +19,8 @@ public interface IRequester<I> {
 
 	int amountRequired(I stack);
 
+	int getMaxSend();
+
 	IGridTileRoute getDuct();
 
 	TileEntity getTile();
@@ -34,11 +37,19 @@ public interface IRequester<I> {
 
 	ItemStack getIcon();
 
+	void onFinishCrafting(IRequester<I> requester, I stack);
+
+	void onExtract(I stack);
+
 	default ItemStack getTileIcon() {
 		TileEntity myTile = getCachedTile();
 
 		//noinspection deprecation
 		return myTile == null ? ItemStack.EMPTY : myTile.getBlockType().getItem(myTile.getWorld(), myTile.getPos(), myTile.getWorld().getBlockState(myTile.getPos()));
+	}
+
+	default RequesterReference<I> getReference() {
+		return new RequesterReference<>(getTile().getWorld().provider.getDimension(), getTile().getPos(), getSide());
 	}
 
 }
