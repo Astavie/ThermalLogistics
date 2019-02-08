@@ -28,7 +28,6 @@ import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.render.RenderDuct;
 import cofh.thermaldynamics.util.ListWrapper;
-import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -44,6 +43,8 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.oredict.OreDictionary;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
@@ -113,8 +114,56 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	@Override
 	public void handleItemSending() {
 		// Check requests
+		boolean changed = false;
+
 		for (Recipe<ItemStack> recipe : recipes)
-			ProcessItem.checkRequests(this, recipe.requests, IRequester::getInputFrom);
+			changed |= ProcessItem.checkRequests(this, recipe.requests, IRequester::getInputFrom);
+
+		if (changed) {
+			Set<ItemStack> set = new HashSet<>();
+
+			a:
+			for (ItemStack stack : process.getStacks()) {
+				for (ItemStack compare : set) {
+					if (itemsIdentical(stack, compare)) {
+						compare.grow(stack.getCount());
+						continue a;
+					}
+				}
+				set.add(stack.copy());
+			}
+
+			Map<ItemStack, Integer> map = set.stream().collect(Collectors.toMap(Function.identity(), item -> Math.max(item.getCount() - required(item), 0)));
+			map.entrySet().removeIf(e -> e.getValue() == 0);
+
+			for (Iterator<Request<ItemStack>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
+				Request<ItemStack> request = iterator.next();
+
+				for (Iterator<ItemStack> iterator1 = request.stacks.iterator(); iterator1.hasNext(); ) {
+					ItemStack stack = iterator1.next();
+
+					for (Iterator<Map.Entry<ItemStack, Integer>> iterator2 = map.entrySet().iterator(); iterator2.hasNext(); ) {
+						Map.Entry<ItemStack, Integer> entry = iterator2.next();
+						if (!itemsIdentical(entry.getKey(), stack))
+							continue;
+
+						int shrink = Math.min(stack.getCount(), entry.getValue());
+						stack.shrink(shrink);
+						entry.setValue(entry.getValue() - shrink);
+
+						if (stack.isEmpty())
+							iterator1.remove();
+						if (entry.getValue() == 0)
+							iterator2.remove();
+
+						break;
+					}
+				}
+
+				if (request.stacks.isEmpty())
+					iterator.remove();
+			}
+		}
 
 		// Handle input
 		process.tick();
@@ -480,6 +529,16 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public int amountRequired(ItemStack stack) {
+		int amount = required(stack);
+
+		for (ItemStack item : process.getStacks())
+			if (itemsIdentical(item, stack))
+				amount -= item.getCount();
+
+		return Math.max(amount, 0);
+	}
+
+	private int required(ItemStack stack) {
 		int amount = 0;
 		for (Recipe<ItemStack> recipe : recipes) {
 			if (recipe.requests.isEmpty())
@@ -517,7 +576,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			amount += inputAmount * recipes;
 		}
 
-		for (ItemStack item : Iterables.concat(process.getStacks(), sent.stacks))
+		for (ItemStack item : sent.stacks)
 			if (itemsIdentical(item, stack))
 				amount -= item.getCount();
 

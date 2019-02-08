@@ -30,7 +30,8 @@ public class ProcessItem extends Process<ItemStack> {
 		super(requester);
 	}
 
-	public static void checkRequests(IRequester<ItemStack> requester, List<Request<ItemStack>> requests, BiFunction<IRequester<ItemStack>, IRequester<ItemStack>, List<ItemStack>> function) {
+	public static boolean checkRequests(IRequester<ItemStack> requester, List<Request<ItemStack>> requests, BiFunction<IRequester<ItemStack>, IRequester<ItemStack>, List<ItemStack>> function) {
+		boolean changed = false;
 		for (Iterator<Request<ItemStack>> iterator = requests.iterator(); iterator.hasNext(); ) {
 			Request<ItemStack> request = iterator.next();
 			if (request.attachment.isLoaded()) {
@@ -48,6 +49,7 @@ public class ProcessItem extends Process<ItemStack> {
 							if (ItemHelper.itemsIdentical(stack, compare)) {
 								if (stack.getCount() > compare.getCount()) {
 									stack.setCount(compare.getCount());
+									changed = true;
 									requester.markDirty();
 								}
 								continue a;
@@ -65,6 +67,7 @@ public class ProcessItem extends Process<ItemStack> {
 				}
 			}
 		}
+		return changed;
 	}
 
 	public NBTTagList writeNbt() {
