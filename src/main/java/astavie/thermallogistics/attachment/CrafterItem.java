@@ -2,6 +2,7 @@ package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.TLTextures;
+import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.process.Request;
@@ -10,11 +11,18 @@ import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
 import codechicken.lib.vec.uv.IconTransformation;
+import cofh.core.network.PacketBase;
+import cofh.core.network.PacketHandler;
+import cofh.core.network.PacketTileInfo;
 import cofh.core.util.helpers.ItemHelper;
+import cofh.core.util.helpers.ServerHelper;
+import cofh.thermaldynamics.ThermalDynamics;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
+import cofh.thermaldynamics.gui.GuiHandler;
+import cofh.thermaldynamics.gui.container.ContainerAttachmentBase;
 import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.render.RenderDuct;
@@ -22,13 +30,16 @@ import cofh.thermaldynamics.util.ListWrapper;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
+import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.oredict.OreDictionary;
 
 import java.util.Collections;
@@ -39,17 +50,19 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MOD_ID, "crafter_item");
 
-	private final List<Recipe<ItemStack>> recipes = NonNullList.create();
+	public final List<Recipe<ItemStack>> recipes = NonNullList.create();
 
 	private final ProcessItem process = new ProcessItem(this);
 	private final RequestItem sent = new RequestItem(null);
 
 	public CrafterItem(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
-		recipes.add(new Recipe<ItemStack>(new RequestItem(null)) {{
-			inputs.add(OreDictionary.getOres("oreIron").get(0));
-			outputs.add(ItemHelper.cloneStack(OreDictionary.getOres("dustIron").get(0), 2));
-		}});
+
+		Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+		recipe.inputs.addAll(Collections.nCopies((type + 1) * 2, ItemStack.EMPTY));
+		recipe.outputs.addAll(Collections.nCopies(type + 1, ItemStack.EMPTY));
+
+		recipes.add(recipe);
 	}
 
 	public CrafterItem(TileGrid tile, byte side) {
@@ -97,8 +110,6 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public void handleItemSending() {
-		filter.setFlag(1, true);
-
 		// Check requests
 		for (Recipe<ItemStack> recipe : recipes)
 			ProcessItem.checkRequests(this, recipe.requests, IRequester::getInputFrom);
@@ -108,9 +119,209 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
+	public void writeToNBT(NBTTagCompound tag) {
+		super.writeToNBT(tag);
+
+		NBTTagList recipes = new NBTTagList();
+		for (Recipe<ItemStack> recipe : this.recipes) {
+			NBTTagList inputs = new NBTTagList();
+			for (ItemStack stack : recipe.inputs)
+				inputs.appendTag(stack.writeToNBT(new NBTTagCompound()));
+
+			NBTTagList outputs = new NBTTagList();
+			for (ItemStack stack : recipe.outputs)
+				outputs.appendTag(stack.writeToNBT(new NBTTagCompound()));
+
+			NBTTagList requests = new NBTTagList();
+			for (Request<ItemStack> request : recipe.requests)
+				requests.appendTag(RequestItem.writeNBT(request));
+
+			NBTTagList leftovers = new NBTTagList();
+			for (ItemStack stack : recipe.leftovers.stacks)
+				leftovers.appendTag(stack.writeToNBT(new NBTTagCompound()));
+
+			NBTTagCompound nbt = new NBTTagCompound();
+			nbt.setTag("inputs", inputs);
+			nbt.setTag("outputs", outputs);
+			nbt.setTag("requests", requests);
+			nbt.setTag("leftovers", leftovers);
+			recipes.appendTag(nbt);
+		}
+
+		NBTTagList sent = new NBTTagList();
+		for (ItemStack stack : this.sent.stacks)
+			sent.appendTag(stack.writeToNBT(new NBTTagCompound()));
+
+		tag.setTag("recipes", recipes);
+		tag.setTag("process", process.writeNbt());
+		tag.setTag("sent", sent);
+	}
+
+	@Override
+	public void readFromNBT(NBTTagCompound tag) {
+		super.readFromNBT(tag);
+
+		recipes.clear();
+		sent.stacks.clear();
+
+		NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
+		for (int i = 0; i < recipes.tagCount(); i++) {
+			NBTTagCompound nbt = recipes.getCompoundTagAt(i);
+
+			Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+
+			NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
+			for (int j = 0; j < inputs.tagCount(); j++)
+				recipe.inputs.add(new ItemStack(inputs.getCompoundTagAt(j)));
+
+			NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
+			for (int j = 0; j < outputs.tagCount(); j++)
+				recipe.outputs.add(new ItemStack(outputs.getCompoundTagAt(j)));
+
+			NBTTagList requests = nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND);
+			for (int j = 0; j < requests.tagCount(); j++)
+				recipe.requests.add(RequestItem.readNBT(requests.getCompoundTagAt(j)));
+
+			NBTTagList leftovers = nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
+			for (int j = 0; j < leftovers.tagCount(); j++)
+				recipe.leftovers.stacks.add(new ItemStack(leftovers.getCompoundTagAt(j)));
+
+			this.recipes.add(recipe);
+		}
+
+		process.readNbt(tag.getTagList("process", Constants.NBT.TAG_COMPOUND));
+
+		NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
+		for (int i = 0; i < sent.tagCount(); i++)
+			this.sent.stacks.add(new ItemStack(sent.getCompoundTagAt(i)));
+	}
+
+	@Override
 	public void writePortableData(EntityPlayer player, NBTTagCompound tag) {
 		super.writePortableData(player, tag);
+
+		NBTTagList recipes = new NBTTagList();
+		for (Recipe<ItemStack> recipe : this.recipes) {
+			NBTTagList inputs = new NBTTagList();
+			for (ItemStack stack : recipe.inputs)
+				inputs.appendTag(stack.writeToNBT(new NBTTagCompound()));
+
+			NBTTagList outputs = new NBTTagList();
+			for (ItemStack stack : recipe.outputs)
+				outputs.appendTag(stack.writeToNBT(new NBTTagCompound()));
+
+			NBTTagCompound nbt = new NBTTagCompound();
+			nbt.setTag("inputs", inputs);
+			nbt.setTag("outputs", outputs);
+			recipes.appendTag(nbt);
+		}
+
 		tag.setString("DisplayType", new ItemStack(ThermalLogistics.Items.crafter).getTranslationKey() + ".name");
+		tag.setTag("recipes", recipes);
+	}
+
+	@Override
+	public void readPortableData(EntityPlayer player, NBTTagCompound tag) {
+		super.readPortableData(player, tag);
+
+		recipes.clear();
+		NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
+		for (int i = 0; i < recipes.tagCount(); i++) {
+			NBTTagCompound nbt = recipes.getCompoundTagAt(i);
+
+			Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+
+			NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
+			for (int j = 0; j < inputs.tagCount(); j++)
+				recipe.inputs.add(new ItemStack(inputs.getCompoundTagAt(j)));
+
+			NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
+			for (int j = 0; j < outputs.tagCount(); j++)
+				recipe.outputs.add(new ItemStack(outputs.getCompoundTagAt(j)));
+
+			this.recipes.add(recipe);
+		}
+
+		markDirty();
+	}
+
+	@Override
+	public Object getGuiServer(InventoryPlayer inventory) {
+		return new ContainerAttachmentBase(inventory, this);
+	}
+
+	@Override
+	public Object getGuiClient(InventoryPlayer inventory) {
+		return new GuiCrafter(inventory, this);
+	}
+
+	@Override
+	public void handleInfoPacketType(byte a, PacketBase payload, boolean isServer, EntityPlayer player) {
+		if (a == NETWORK_ID.GUI) {
+			if (isServer) {
+				int recipe = payload.getInt();
+				boolean input = payload.getBool();
+				int index = payload.getInt();
+				ItemStack stack = payload.getItemStack();
+
+				if (recipe < recipes.size()) {
+					Recipe<ItemStack> r = recipes.get(recipe);
+					if (input) {
+						if (index < r.inputs.size())
+							r.inputs.set(index, stack);
+					} else if (index < r.outputs.size())
+						r.outputs.set(index, stack);
+				}
+
+				markDirty();
+			} else {
+				recipes.clear();
+				int size = payload.getInt();
+				for (int i = 0; i < size; i++) {
+					Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+
+					int inputs = payload.getInt();
+					for (int j = 0; j < inputs; j++)
+						recipe.inputs.add(payload.getItemStack());
+
+					int outputs = payload.getInt();
+					for (int j = 0; j < outputs; j++)
+						recipe.outputs.add(payload.getItemStack());
+
+					int leftovers = payload.getInt();
+					for (int j = 0; j < leftovers; j++)
+						recipe.leftovers.stacks.add(payload.getItemStack());
+
+					recipes.add(recipe);
+				}
+			}
+		} else super.handleInfoPacketType(a, payload, isServer, player);
+	}
+
+	@Override
+	public boolean openGui(EntityPlayer player) {
+		if (ServerHelper.isServerWorld(baseTile.world())) {
+			PacketTileInfo packet = getNewPacket(NETWORK_ID.GUI);
+
+			packet.addInt(recipes.size());
+			for (Recipe<ItemStack> recipe : recipes) {
+				packet.addInt(recipe.inputs.size());
+				for (ItemStack input : recipe.inputs)
+					packet.addItemStack(input);
+
+				packet.addInt(recipe.outputs.size());
+				for (ItemStack output : recipe.outputs)
+					packet.addItemStack(output);
+
+				packet.addInt(recipe.leftovers.stacks.size());
+				for (ItemStack leftover : recipe.leftovers.stacks)
+					packet.addItemStack(leftover);
+			}
+
+			PacketHandler.sendTo(packet, player);
+			player.openGui(ThermalDynamics.instance, GuiHandler.TILE_ATTACHMENT_ID + side, baseTile.getWorld(), baseTile.x(), baseTile.y(), baseTile.z());
+		}
+		return true;
 	}
 
 	@Override
@@ -118,6 +329,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		List<ItemStack> outputs = NonNullList.create();
 		for (Recipe<ItemStack> recipe : recipes)
 			outputs.addAll(recipe.outputs);
+		outputs.removeIf(ItemStack::isEmpty);
 		return outputs;
 	}
 
@@ -137,6 +349,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				continue;
 
 			// Add request
+			markDirty();
+
 			for (Request<ItemStack> request : recipe.requests) {
 				if (request.attachment.references(requester)) {
 					request.addStack(stack);
@@ -161,6 +375,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		for (Recipe<ItemStack> recipe : recipes)
 			stacks.addAll(Process.getStacks(recipe.requests, requester));
 		return stacks;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return isPowered;
 	}
 
 	private boolean itemsIdentical(ItemStack a, ItemStack b) {
@@ -192,19 +411,21 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			// Get amount of recipes needed
 			int recipes = 0;
 			for (ItemStack output : recipe.outputs) {
-				int count = 0;
-				for (Request<ItemStack> request : recipe.requests) {
-					for (ItemStack item : request.stacks) {
-						if (ItemHelper.itemsIdentical(output, item)) {
-							count += item.getCount();
-							break;
+				if (!output.isEmpty()) {
+					int count = 0;
+					for (Request<ItemStack> request : recipe.requests) {
+						for (ItemStack item : request.stacks) {
+							if (ItemHelper.itemsIdentical(output, item)) {
+								count += item.getCount();
+								break;
+							}
 						}
 					}
-				}
-				count -= recipe.leftovers.getCount(output);
+					count -= recipe.leftovers.getCount(output);
 
-				if (count > 0)
-					recipes = Math.max(recipes, (count - 1) / output.getCount() + 1);
+					if (count > 0)
+						recipes = Math.max(recipes, (count - 1) / output.getCount() + 1);
+				}
 			}
 
 			amount += inputAmount * recipes;
@@ -298,16 +519,20 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				// Remove sent
 				int recipes = (count - 1) / output.getCount() + 1;
 				for (ItemStack in : recipe.inputs)
-					sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
+					if (!in.isEmpty())
+						sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
 
 				// Add leftovers
 				int leftover = count % output.getCount();
 				for (ItemStack out : recipe.outputs) {
-					int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
-					if (amount > 0)
-						recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
+					if (!out.isEmpty()) {
+						int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
+						if (amount > 0)
+							recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
+					}
 				}
 
+				markDirty();
 				return;
 			}
 		}
@@ -316,6 +541,12 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	@Override
 	public void onExtract(ItemStack stack) {
 		sent.addStack(stack);
+		markDirty();
+	}
+
+	@Override
+	public void markDirty() {
+		baseTile.markChunkDirty();
 	}
 
 }

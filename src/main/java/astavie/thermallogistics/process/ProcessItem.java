@@ -11,6 +11,7 @@ import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
@@ -32,8 +33,9 @@ public class ProcessItem extends Process<ItemStack> {
 			Request<ItemStack> request = iterator.next();
 			if (request.attachment.isLoaded()) {
 				IRequester<ItemStack> attachment = request.attachment.getAttachment();
-				if (attachment == null) {
+				if (attachment == null || !attachment.isEnabled()) {
 					iterator.remove();
+					requester.markDirty();
 				} else {
 					List<ItemStack> list = function.apply(attachment, requester);
 
@@ -42,18 +44,38 @@ public class ProcessItem extends Process<ItemStack> {
 						ItemStack stack = iterator1.next();
 						for (ItemStack compare : list) {
 							if (ItemHelper.itemsIdentical(stack, compare)) {
-								stack.setCount(Math.min(stack.getCount(), compare.getCount()));
+								if (stack.getCount() > compare.getCount()) {
+									stack.setCount(compare.getCount());
+									requester.markDirty();
+								}
 								continue a;
 							}
 						}
+
 						iterator1.remove();
+						requester.markDirty();
 					}
 
-					if (request.stacks.isEmpty())
+					if (request.stacks.isEmpty()) {
 						iterator.remove();
+						requester.markDirty();
+					}
 				}
 			}
 		}
+	}
+
+	public NBTTagList writeNbt() {
+		NBTTagList requests = new NBTTagList();
+		for (Request<ItemStack> request : this.requests)
+			requests.appendTag(RequestItem.writeNBT(request));
+		return requests;
+	}
+
+	public void readNbt(NBTTagList nbt) {
+		requests.clear();
+		for (int i = 0; i < nbt.tagCount(); i++)
+			requests.add(RequestItem.readNBT(nbt.getCompoundTagAt(i)));
 	}
 
 	private static ItemStack extract(IRequester<ItemStack> requester, IItemHandler handler, Function<ItemStack, Integer> amountRequired, DuctUnitItem endPoint, byte side, DuctUnitItem.Cache cache, IItemHandler inv) {
@@ -174,6 +196,7 @@ public class ProcessItem extends Process<ItemStack> {
 				if (request.stacks.isEmpty())
 					iterator.remove();
 
+				this.requester.markDirty();
 				return;
 			}
 		}
@@ -233,6 +256,8 @@ public class ProcessItem extends Process<ItemStack> {
 					continue;
 
 				// No turning back now
+				requester.markDirty();
+
 				for (Request<ItemStack> request : requests) {
 					if (request.attachment.references(crafter)) {
 						request.addStack(stack);

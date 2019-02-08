@@ -17,6 +17,8 @@ public interface IRequester<I> {
 
 	List<I> getOutputTo(IRequester<I> requester);
 
+	boolean isEnabled();
+
 	int amountRequired(I stack);
 
 	int getMaxSend();
@@ -40,6 +42,8 @@ public interface IRequester<I> {
 	void onFinishCrafting(IRequester<I> requester, I stack);
 
 	void onExtract(I stack);
+
+	void markDirty();
 
 	default ItemStack getTileIcon() {
 		TileEntity myTile = getCachedTile();

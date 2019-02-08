@@ -25,6 +25,7 @@ import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
+import net.minecraftforge.common.util.Constants;
 
 import java.util.Collections;
 import java.util.List;
@@ -79,6 +80,18 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
+	public void writeToNBT(NBTTagCompound tag) {
+		super.writeToNBT(tag);
+		tag.setTag("process", process.writeNbt());
+	}
+
+	@Override
+	public void readFromNBT(NBTTagCompound tag) {
+		super.readFromNBT(tag);
+		process.readNbt(tag.getTagList("process", Constants.NBT.TAG_COMPOUND));
+	}
+
+	@Override
 	public void writePortableData(EntityPlayer player, NBTTagCompound tag) {
 		super.writePortableData(player, tag);
 		tag.setString("DisplayType", new ItemStack(ThermalLogistics.Items.requester).getTranslationKey() + ".name");
@@ -92,6 +105,11 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	@Override
 	public List<ItemStack> getOutputTo(IRequester<ItemStack> requester) {
 		return Collections.emptyList();
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return isPowered;
 	}
 
 	@Override
@@ -157,6 +175,11 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 
 	@Override
 	public void onExtract(ItemStack stack) {
+	}
+
+	@Override
+	public void markDirty() {
+		baseTile.markChunkDirty();
 	}
 
 }
