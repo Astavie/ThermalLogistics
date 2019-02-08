@@ -243,6 +243,9 @@ public class ProcessItem extends Process<ItemStack> {
 
 		// Check crafters
 		for (ICrafter<ItemStack> crafter : crafters) {
+			if (!crafter.isEnabled())
+				continue;
+
 			for (ItemStack stack : crafter.getOutputs()) {
 				int amount = requester.amountRequired(stack);
 				if (amount == 0)

@@ -50,6 +50,9 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MOD_ID, "crafter_item");
 
+	public static final int[] SIZE = {1, 2, 3, 4, 6};
+	public static final int[][] SPLITS = {{1}, {2, 1}, {3, 1}, {4, 2, 1}, {6, 3, 2, 1}};
+
 	public final List<Recipe<ItemStack>> recipes = NonNullList.create();
 
 	private final ProcessItem process = new ProcessItem(this);
@@ -59,8 +62,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		super(tile, side, type);
 
 		Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
-		recipe.inputs.addAll(Collections.nCopies((type + 1) * 2, ItemStack.EMPTY));
-		recipe.outputs.addAll(Collections.nCopies(type + 1, ItemStack.EMPTY));
+		recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, ItemStack.EMPTY));
+		recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
 
 		recipes.add(recipe);
 	}
@@ -217,6 +220,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		}
 
 		tag.setString("DisplayType", new ItemStack(ThermalLogistics.Items.crafter).getTranslationKey() + ".name");
+
+		tag.setInteger("recipesType", type);
 		tag.setTag("recipes", recipes);
 	}
 
@@ -224,25 +229,29 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	public void readPortableData(EntityPlayer player, NBTTagCompound tag) {
 		super.readPortableData(player, tag);
 
-		recipes.clear();
-		NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < recipes.tagCount(); i++) {
-			NBTTagCompound nbt = recipes.getCompoundTagAt(i);
+		if (tag.getInteger("recipesType") == type) {
+			recipes.clear();
+			sent.stacks.clear();
 
-			Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+			NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < recipes.tagCount(); i++) {
+				NBTTagCompound nbt = recipes.getCompoundTagAt(i);
 
-			NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < inputs.tagCount(); j++)
-				recipe.inputs.add(new ItemStack(inputs.getCompoundTagAt(j)));
+				Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
 
-			NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < outputs.tagCount(); j++)
-				recipe.outputs.add(new ItemStack(outputs.getCompoundTagAt(j)));
+				NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < inputs.tagCount(); j++)
+					recipe.inputs.add(new ItemStack(inputs.getCompoundTagAt(j)));
 
-			this.recipes.add(recipe);
+				NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < outputs.tagCount(); j++)
+					recipe.outputs.add(new ItemStack(outputs.getCompoundTagAt(j)));
+
+				this.recipes.add(recipe);
+			}
+
+			markDirty();
 		}
-
-		markDirty();
 	}
 
 	@Override
@@ -259,21 +268,27 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	public void handleInfoPacketType(byte a, PacketBase payload, boolean isServer, EntityPlayer player) {
 		if (a == NETWORK_ID.GUI) {
 			if (isServer) {
-				int recipe = payload.getInt();
-				boolean input = payload.getBool();
-				int index = payload.getInt();
-				ItemStack stack = payload.getItemStack();
+				if (payload.getByte() == 0) {
+					int recipe = payload.getInt();
+					boolean input = payload.getBool();
+					int index = payload.getInt();
+					ItemStack stack = payload.getItemStack();
 
-				if (recipe < recipes.size()) {
-					Recipe<ItemStack> r = recipes.get(recipe);
-					if (input) {
-						if (index < r.inputs.size())
-							r.inputs.set(index, stack);
-					} else if (index < r.outputs.size())
-						r.outputs.set(index, stack);
+					if (recipe < recipes.size()) {
+						Recipe<ItemStack> r = recipes.get(recipe);
+						if (input) {
+							if (index < r.inputs.size())
+								r.inputs.set(index, stack);
+						} else if (index < r.outputs.size())
+							r.outputs.set(index, stack);
+					}
+
+					markDirty();
+				} else {
+					int split = payload.getInt();
+					if (Ints.contains(SPLITS[type], split))
+						split(split);
 				}
-
-				markDirty();
 			} else {
 				recipes.clear();
 				int size = payload.getInt();
@@ -288,14 +303,48 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					for (int j = 0; j < outputs; j++)
 						recipe.outputs.add(payload.getItemStack());
 
-					int leftovers = payload.getInt();
-					for (int j = 0; j < leftovers; j++)
-						recipe.leftovers.stacks.add(payload.getItemStack());
-
 					recipes.add(recipe);
 				}
 			}
 		} else super.handleInfoPacketType(a, payload, isServer, player);
+	}
+
+	public void split(int split) {
+		ItemStack[] inputs = new ItemStack[SIZE[type] * 2];
+		ItemStack[] outputs = new ItemStack[SIZE[type]];
+
+		int recipeSize = SIZE[type] / recipes.size();
+
+		for (int i = 0; i < recipes.size(); i++) {
+			Recipe<ItemStack> recipe = recipes.get(i);
+
+			for (int j = 0; j < recipeSize; j++) {
+				inputs[(i * recipeSize + j) * 2] = recipe.inputs.get(j * 2);
+				inputs[(i * recipeSize + j) * 2 + 1] = recipe.inputs.get(j * 2 + 1);
+
+				outputs[i * recipeSize + j] = recipe.outputs.get(j);
+			}
+		}
+
+		recipes.clear();
+		sent.stacks.clear();
+
+		int recipes = SIZE[type] / split;
+		for (int i = 0; i < recipes; i++) {
+			Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+
+			for (int j = 0; j < split; j++) {
+				recipe.inputs.add(inputs[(i * split + j) * 2]);
+				recipe.inputs.add(inputs[(i * split + j) * 2 + 1]);
+
+				recipe.outputs.add(outputs[i * split + j]);
+			}
+
+			this.recipes.add(recipe);
+		}
+
+		if (ServerHelper.isServerWorld(baseTile.world()))
+			markDirty();
 	}
 
 	@Override
@@ -312,10 +361,6 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				packet.addInt(recipe.outputs.size());
 				for (ItemStack output : recipe.outputs)
 					packet.addItemStack(output);
-
-				packet.addInt(recipe.leftovers.stacks.size());
-				for (ItemStack leftover : recipe.leftovers.stacks)
-					packet.addItemStack(leftover);
 			}
 
 			PacketHandler.sendTo(packet, player);
