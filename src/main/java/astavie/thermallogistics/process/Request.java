@@ -5,7 +5,9 @@ import net.minecraft.util.NonNullList;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public abstract class Request<I> implements Comparable<Request<?>> {
 
@@ -13,6 +15,8 @@ public abstract class Request<I> implements Comparable<Request<?>> {
 
 	public final RequesterReference<I> attachment;
 	public final List<I> stacks = NonNullList.create();
+
+	public final Set<RequesterReference<I>> blacklist = new HashSet<>();
 
 	protected long id;
 

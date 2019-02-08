@@ -8,8 +8,8 @@ import java.util.List;
 
 public abstract class Process<I> {
 
-	protected final IRequester<I> requester;
-	protected final List<Request<I>> requests = NonNullList.create();
+	public final IRequester<I> requester;
+	public final List<Request<I>> requests = NonNullList.create();
 
 	public Process(IRequester<I> requester) {
 		this.requester = requester;

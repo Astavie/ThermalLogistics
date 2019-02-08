@@ -34,9 +34,14 @@ public class RequestItem extends Request<ItemStack> {
 		for (ItemStack stack : request.stacks)
 			stacks.appendTag(stack.writeToNBT(new NBTTagCompound()));
 
+		NBTTagList blacklist = new NBTTagList();
+		for (RequesterReference<ItemStack> reference : request.blacklist)
+			blacklist.appendTag(RequesterReference.writeNBT(reference));
+
 		NBTTagCompound nbt = new NBTTagCompound();
 		nbt.setTag("attachment", RequesterReference.writeNBT(request.attachment));
 		nbt.setTag("stacks", stacks);
+		nbt.setTag("blacklist", blacklist);
 		nbt.setLong("id", request.id);
 		return nbt;
 	}
@@ -47,6 +52,10 @@ public class RequestItem extends Request<ItemStack> {
 		NBTTagList stacks = nbt.getTagList("stacks", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < stacks.tagCount(); i++)
 			request.stacks.add(new ItemStack(stacks.getCompoundTagAt(i)));
+
+		NBTTagList blacklist = nbt.getTagList("blacklist", Constants.NBT.TAG_COMPOUND);
+		for (int i = 0; i < blacklist.tagCount(); i++)
+			request.blacklist.add(RequesterReference.readNBT(blacklist.getCompoundTagAt(i)));
 
 		return request;
 	}

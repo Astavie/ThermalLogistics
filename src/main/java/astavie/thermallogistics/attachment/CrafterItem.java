@@ -7,6 +7,7 @@ import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.process.RequestItem;
+import astavie.thermallogistics.util.RequesterReference;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
@@ -42,9 +43,7 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.oredict.OreDictionary;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
@@ -119,6 +118,36 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 		// Handle input
 		process.tick();
+	}
+
+	@Override
+	public void onNeighborChange() {
+		boolean wasPowered = isPowered;
+		super.onNeighborChange();
+		if (wasPowered && !isPowered) {
+			process.requests.clear();
+			sent.stacks.clear();
+
+			for (Recipe<ItemStack> recipe : recipes) {
+				recipe.requests.clear();
+				recipe.leftovers.stacks.clear();
+			}
+		}
+	}
+
+	@Override
+	public void checkSignal() {
+		boolean wasPowered = isPowered;
+		super.checkSignal();
+		if (wasPowered && !isPowered) {
+			process.requests.clear();
+			sent.stacks.clear();
+
+			for (Recipe<ItemStack> recipe : recipes) {
+				recipe.requests.clear();
+				recipe.leftovers.stacks.clear();
+			}
+		}
 	}
 
 	@Override
@@ -277,17 +306,21 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					if (recipe < recipes.size()) {
 						Recipe<ItemStack> r = recipes.get(recipe);
 						if (input) {
-							if (index < r.inputs.size())
+							if (index < r.inputs.size()) {
 								r.inputs.set(index, stack);
-						} else if (index < r.outputs.size())
+								markDirty();
+							}
+						} else if (index < r.outputs.size()) {
 							r.outputs.set(index, stack);
+							markDirty();
+						}
 					}
-
-					markDirty();
 				} else {
 					int split = payload.getInt();
-					if (Ints.contains(SPLITS[type], split))
+					if (Ints.contains(SPLITS[type], split)) {
 						split(split);
+						markDirty();
+					}
 				}
 			} else {
 				recipes.clear();
@@ -342,9 +375,6 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 			this.recipes.add(recipe);
 		}
-
-		if (ServerHelper.isServerWorld(baseTile.world()))
-			markDirty();
 	}
 
 	@Override
@@ -376,6 +406,17 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			outputs.addAll(recipe.outputs);
 		outputs.removeIf(ItemStack::isEmpty);
 		return outputs;
+	}
+
+	@Override
+	public Set<RequesterReference<ItemStack>> getBlacklist() {
+		Set<RequesterReference<ItemStack>> list = new HashSet<>();
+		list.add(getReference());
+
+		for (Request<ItemStack> request : process.requests)
+			list.addAll(request.blacklist);
+
+		return list;
 	}
 
 	@Override
@@ -568,12 +609,14 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 						sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
 
 				// Add leftovers
-				int leftover = count % output.getCount();
-				for (ItemStack out : recipe.outputs) {
-					if (!out.isEmpty()) {
-						int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
-						if (amount > 0)
-							recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
+				if (count > 0) {
+					int leftover = output.getCount() - (count % output.getCount());
+					for (ItemStack out : recipe.outputs) {
+						if (!out.isEmpty()) {
+							int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
+							if (amount > 0)
+								recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
+						}
 					}
 				}
 

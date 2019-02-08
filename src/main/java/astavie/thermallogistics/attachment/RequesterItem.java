@@ -80,6 +80,22 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
+	public void onNeighborChange() {
+		boolean wasPowered = isPowered;
+		super.onNeighborChange();
+		if (wasPowered && !isPowered)
+			process.requests.clear();
+	}
+
+	@Override
+	public void checkSignal() {
+		boolean wasPowered = isPowered;
+		super.checkSignal();
+		if (wasPowered && !isPowered)
+			process.requests.clear();
+	}
+
+	@Override
 	public void writeToNBT(NBTTagCompound tag) {
 		super.writeToNBT(tag);
 		tag.setTag("process", process.writeNbt());

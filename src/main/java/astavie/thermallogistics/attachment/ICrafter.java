@@ -1,13 +1,17 @@
 package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.process.Request;
+import astavie.thermallogistics.util.RequesterReference;
 import net.minecraft.util.NonNullList;
 
 import java.util.List;
+import java.util.Set;
 
 public interface ICrafter<I> extends IRequester<I> {
 
 	List<I> getOutputs();
+
+	Set<RequesterReference<I>> getBlacklist();
 
 	boolean request(IRequester<I> requester, I stack);
 

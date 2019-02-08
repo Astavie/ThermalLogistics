@@ -194,12 +194,13 @@ public class GuiCrafter extends GuiContainerCore {
 					int split = CrafterItem.SPLITS[crafter.type][index];
 					crafter.split(split);
 
+					playClickSound(0.8F);
+
+					// Send to server
 					PacketTileInfo packet = crafter.getNewPacket(ConnectionBase.NETWORK_ID.GUI);
 					packet.addByte(1);
 					packet.addInt(split);
 					PacketHandler.sendToServer(packet);
-
-					playClickSound(0.8F);
 				}
 			}
 			setButtons();

@@ -2,6 +2,7 @@ package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.IRequester;
+import astavie.thermallogistics.util.RequesterReference;
 import cofh.core.util.helpers.InventoryHelper;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
@@ -19,6 +20,7 @@ import net.minecraftforge.items.IItemHandler;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -243,7 +245,11 @@ public class ProcessItem extends Process<ItemStack> {
 
 		// Check crafters
 		for (ICrafter<ItemStack> crafter : crafters) {
-			if (!crafter.isEnabled())
+			if (crafter == requester || !crafter.isEnabled())
+				continue;
+
+			Set<RequesterReference<ItemStack>> blacklist = crafter.getBlacklist();
+			if (blacklist.stream().anyMatch(reference -> reference.references(requester)))
 				continue;
 
 			for (ItemStack stack : crafter.getOutputs()) {
@@ -264,11 +270,16 @@ public class ProcessItem extends Process<ItemStack> {
 				for (Request<ItemStack> request : requests) {
 					if (request.attachment.references(crafter)) {
 						request.addStack(stack);
+						request.blacklist.addAll(blacklist);
 						return;
 					}
 				}
 
-				requests.add(new RequestItem(crafter.getReference(), stack));
+				Request<ItemStack> request = new RequestItem(crafter.getReference(), stack);
+				request.blacklist.add(crafter.getReference());
+				request.blacklist.addAll(blacklist);
+
+				requests.add(request);
 				return;
 			}
 		}
