@@ -93,7 +93,7 @@ public class ProcessItem extends Process<ItemStack> {
 			if (item.isEmpty())
 				continue;
 
-			if (!cache.filter.matchesFilter(item))
+			if (cache != null && !cache.filter.matchesFilter(item))
 				continue;
 
 			int amount = Math.min(amountRequired.apply(item), requester.getMaxSend());
@@ -193,7 +193,7 @@ public class ProcessItem extends Process<ItemStack> {
 			if (inv == null)
 				continue;
 
-			ItemStack extract = extract(this.requester, handler, request::getCount, endPoint, side, cache, inv);
+			ItemStack extract = extract(this.requester, handler, request::getCount, endPoint, side, null, inv);
 			if (!extract.isEmpty()) {
 				requester.onFinishCrafting(this.requester, extract);
 
