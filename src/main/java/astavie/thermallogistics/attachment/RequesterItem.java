@@ -190,6 +190,10 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
+	public void onFinishCrafting(int index, int recipes, int leftover, ItemStack stack) {
+	}
+
+	@Override
 	public void onExtract(ItemStack stack) {
 	}
 

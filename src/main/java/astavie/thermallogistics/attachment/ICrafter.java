@@ -15,6 +15,12 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	boolean request(IRequester<I> requester, I stack);
 
+	void link(ICrafter<?> crafter, boolean recursion);
+
+	boolean hasLinked(ICrafter<?> crafter);
+
+	int getRecipes(int index);
+
 	class Recipe<I> {
 
 		public final List<I> inputs = NonNullList.create();

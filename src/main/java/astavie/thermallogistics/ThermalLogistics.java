@@ -1,14 +1,30 @@
 package astavie.thermallogistics;
 
 import astavie.thermallogistics.attachment.CrafterItem;
+import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.attachment.IRequester;
 import astavie.thermallogistics.attachment.RequesterItem;
 import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.item.ItemRequester;
+import astavie.thermallogistics.util.RequesterReference;
+import cofh.core.util.RayTracer;
 import cofh.core.util.core.IInitializer;
+import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.AttachmentRegistry;
+import cofh.thermaldynamics.duct.tiles.TileGrid;
 import net.minecraft.block.Block;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumActionResult;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.World;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Loader;
@@ -69,6 +85,48 @@ public class ThermalLogistics {
 		public static void registerItems(RegistryEvent.Register<Item> event) {
 			register(event.getRegistry(), new ItemRequester("requester"));
 			register(event.getRegistry(), new ItemCrafter("crafter"));
+			event.getRegistry().register(new Item() {
+				{
+					setTranslationKey("linkstick");
+					setRegistryName("linkstick");
+				}
+
+				@Override
+				public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
+					ICrafter<?> crafter = null;
+
+					TileEntity tile = world.getTileEntity(pos);
+					if (tile instanceof TileGrid) {
+						RayTraceResult raytrace = RayTracer.retraceBlock(world, player, pos);
+						if (raytrace != null && raytrace.subHit >= 14 && raytrace.subHit < 20) {
+							Attachment attachment = ((TileGrid) tile).getAttachment(raytrace.subHit - 14);
+							if (attachment instanceof ICrafter)
+								crafter = (ICrafter<?>) attachment;
+						}
+					} else if (tile instanceof ICrafter)
+						crafter = (ICrafter<?>) tile;
+
+					if (crafter == null)
+						return EnumActionResult.PASS;
+
+					if (world.isRemote)
+						return EnumActionResult.SUCCESS;
+
+					ItemStack item = player.getHeldItem(hand);
+					if (item.hasTagCompound()) {
+						IRequester<?> other = RequesterReference.readNBT(item.getTagCompound()).getAttachment();
+						if (other instanceof ICrafter && other != crafter)
+							crafter.link((ICrafter<?>) other, true);
+						else
+							player.sendMessage(new TextComponentString("Nope"));
+						item.setTagCompound(null);
+					} else {
+						item.setTagCompound(RequesterReference.writeNBT(crafter.getReference()));
+					}
+
+					return EnumActionResult.SUCCESS;
+				}
+			});
 		}
 
 		@SubscribeEvent

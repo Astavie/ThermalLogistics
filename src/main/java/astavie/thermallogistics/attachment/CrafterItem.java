@@ -56,6 +56,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	public final List<Recipe<ItemStack>> recipes = NonNullList.create();
 
+	private final Set<RequesterReference<?>> linked = new HashSet<>();
+
 	private final ProcessItem process = new ProcessItem(this);
 	private final RequestItem sent = new RequestItem(null);
 
@@ -114,8 +116,27 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		return true;
 	}
 
+	private void checkLinked() {
+		for (Iterator<RequesterReference<?>> iterator = linked.iterator(); iterator.hasNext(); ) {
+			IRequester<?> requester = iterator.next().getAttachment();
+			if (!(requester instanceof ICrafter)) {
+				iterator.remove();
+				markDirty();
+			} else {
+				ICrafter<?> crafter = (ICrafter<?>) requester;
+				if (!crafter.hasLinked(this)) {
+					iterator.remove();
+					markDirty();
+				}
+			}
+		}
+	}
+
 	@Override
 	public void handleItemSending() {
+		// Check linked
+		checkLinked();
+
 		// Check requests
 		boolean changed = false;
 
@@ -241,9 +262,14 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		for (ItemStack stack : this.sent.stacks)
 			sent.appendTag(stack.writeToNBT(new NBTTagCompound()));
 
+		NBTTagList linked = new NBTTagList();
+		for (RequesterReference<?> reference : this.linked)
+			linked.appendTag(RequesterReference.writeNBT(reference));
+
 		tag.setTag("recipes", recipes);
 		tag.setTag("process", process.writeNbt());
 		tag.setTag("sent", sent);
+		tag.setTag("linked", linked);
 	}
 
 	@Override
@@ -283,6 +309,10 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < sent.tagCount(); i++)
 			this.sent.stacks.add(new ItemStack(sent.getCompoundTagAt(i)));
+
+		NBTTagList linked = tag.getTagList("linked", Constants.NBT.TAG_COMPOUND);
+		for (int i = 0; i < linked.tagCount(); i++)
+			this.linked.add(RequesterReference.readNBT(linked.getCompoundTagAt(i)));
 	}
 
 	@Override
@@ -508,6 +538,34 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
+	public void link(ICrafter<?> crafter, boolean recursion) {
+		if (!linked.contains(crafter.getReference())) {
+			for (Iterator<RequesterReference<?>> iterator = linked.iterator(); iterator.hasNext(); ) {
+				IRequester<?> requester = iterator.next().getAttachment();
+				if (!(requester instanceof ICrafter)) {
+					iterator.remove();
+				} else {
+					ICrafter<?> other = (ICrafter<?>) requester;
+					if (!other.hasLinked(this))
+						iterator.remove();
+					else if (recursion)
+						other.link(crafter, false);
+				}
+			}
+
+			linked.add(crafter.getReference());
+			crafter.link(this, false);
+
+			markDirty();
+		}
+	}
+
+	@Override
+	public boolean hasLinked(ICrafter<?> crafter) {
+		return linked.contains(crafter.getReference());
+	}
+
+	@Override
 	public List<ItemStack> getInputFrom(IRequester<ItemStack> requester) {
 		return process.getStacks(requester);
 	}
@@ -548,9 +606,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	private int required(ItemStack stack, boolean sent) {
 		int amount = 0;
-		for (Recipe<ItemStack> recipe : recipes) {
-			if (recipe.requests.isEmpty())
-				continue;
+		for (int i = 0; i < recipes.size(); i++) {
+			Recipe<ItemStack> recipe = recipes.get(i);
 
 			// Get amount required per recipe
 			int inputAmount = 0;
@@ -562,24 +619,9 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				continue;
 
 			// Get amount of recipes needed
-			int recipes = 0;
-			for (ItemStack output : recipe.outputs) {
-				if (!output.isEmpty()) {
-					int count = 0;
-					for (Request<ItemStack> request : recipe.requests) {
-						for (ItemStack item : request.stacks) {
-							if (ItemHelper.itemsIdentical(output, item)) {
-								count += item.getCount();
-								break;
-							}
-						}
-					}
-					count -= recipe.leftovers.getCount(output);
-
-					if (count > 0)
-						recipes = Math.max(recipes, (count - 1) / output.getCount() + 1);
-				}
-			}
+			int recipes = getRecipes(i);
+			for (RequesterReference<?> reference : linked)
+				recipes = Math.max(recipes, ((ICrafter<?>) reference.getAttachment()).getRecipes(i));
 
 			amount += inputAmount * recipes;
 		}
@@ -590,6 +632,34 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					amount -= item.getCount();
 
 		return Math.max(amount, 0);
+	}
+
+	@Override
+	public int getRecipes(int index) {
+		if (index >= recipes.size())
+			return 0;
+
+		Recipe<ItemStack> recipe = recipes.get(index);
+
+		int recipes = 0;
+		for (ItemStack output : recipe.outputs) {
+			if (!output.isEmpty()) {
+				int count = 0;
+				for (Request<ItemStack> request : recipe.requests) {
+					for (ItemStack item : request.stacks) {
+						if (ItemHelper.itemsIdentical(output, item)) {
+							count += item.getCount();
+							break;
+						}
+					}
+				}
+				count -= recipe.leftovers.getCount(output);
+
+				if (count > 0)
+					recipes = Math.max(recipes, (count - 1) / output.getCount() + 1);
+			}
+		}
+		return recipes;
 	}
 
 	@Override
@@ -629,7 +699,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public void onFinishCrafting(IRequester<ItemStack> requester, ItemStack stack) {
-		for (Recipe<ItemStack> recipe : recipes) {
+		for (int i = 0; i < recipes.size(); i++) {
+			Recipe<ItemStack> recipe = recipes.get(i);
 			if (recipe.requests.isEmpty())
 				continue;
 
@@ -670,28 +741,44 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					}
 				}
 
-				// Remove sent
 				int recipes = (count - 1) / output.getCount() + 1;
-				for (ItemStack in : recipe.inputs)
-					if (!in.isEmpty())
-						sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
+				if (recipes > 0) {
+					int leftover = count % output.getCount() > 0 ? output.getCount() - (count % output.getCount()) : 0;
 
-				// Add leftovers
-				if (count % output.getCount() > 0) {
-					int leftover = output.getCount() - (count % output.getCount());
-					for (ItemStack out : recipe.outputs) {
-						if (!out.isEmpty()) {
-							int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
-							if (amount > 0)
-								recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
-						}
-					}
+					checkLinked();
+
+					onFinishCrafting(i, recipes, leftover, stack);
+					for (RequesterReference<?> reference : linked)
+						reference.getAttachment().onFinishCrafting(i, recipes, 0, null);
 				}
 
-				markDirty();
 				return;
 			}
 		}
+	}
+
+	@Override
+	public void onFinishCrafting(int index, int recipes, int leftover, ItemStack stack) {
+		if (index >= this.recipes.size())
+			return;
+
+		Recipe<ItemStack> recipe = this.recipes.get(index);
+
+		// Remove sent
+		for (ItemStack in : recipe.inputs)
+			if (!in.isEmpty())
+				sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
+
+		// Add leftovers
+		for (ItemStack out : recipe.outputs) {
+			if (!out.isEmpty()) {
+				int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
+				if (amount > 0)
+					recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
+			}
+		}
+
+		markDirty();
 	}
 
 	@Override

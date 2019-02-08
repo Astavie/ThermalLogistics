@@ -1,6 +1,7 @@
 package astavie.thermallogistics.util;
 
 import astavie.thermallogistics.attachment.IRequester;
+import astavie.thermallogistics.attachment.IRequesterContainer;
 import cofh.core.network.PacketBase;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
@@ -19,6 +20,7 @@ public class RequesterReference<I> {
 	public final int dim;
 	public final BlockPos pos;
 	public final byte side;
+	public final int index;
 
 	private long tick;
 	private IRequester<I> cache;
@@ -27,9 +29,14 @@ public class RequesterReference<I> {
 	private ItemStack tile = ItemStack.EMPTY;
 
 	public RequesterReference(int dim, BlockPos pos, byte side) {
+		this(dim, pos, side, 0);
+	}
+
+	public RequesterReference(int dim, BlockPos pos, byte side, int index) {
 		this.dim = dim;
 		this.pos = pos;
 		this.side = side;
+		this.index = index;
 	}
 
 	public static NBTTagCompound writeNBT(RequesterReference<?> reference) {
@@ -39,11 +46,12 @@ public class RequesterReference<I> {
 		nbt.setInteger("y", reference.pos.getY());
 		nbt.setInteger("z", reference.pos.getZ());
 		nbt.setByte("side", reference.side);
+		nbt.setInteger("index", reference.index);
 		return nbt;
 	}
 
 	public static <I> RequesterReference<I> readNBT(NBTTagCompound nbt) {
-		return new RequesterReference<>(nbt.getInteger("dim"), new BlockPos(nbt.getInteger("x"), nbt.getInteger("y"), nbt.getInteger("z")), nbt.getByte("side"));
+		return new RequesterReference<>(nbt.getInteger("dim"), new BlockPos(nbt.getInteger("x"), nbt.getInteger("y"), nbt.getInteger("z")), nbt.getByte("side"), nbt.getInteger("index"));
 	}
 
 	public static void writePacket(PacketBase packet, RequesterReference<?> reference) {
@@ -57,6 +65,7 @@ public class RequesterReference<I> {
 		packet.addInt(reference.dim);
 		packet.addCoords(reference.pos.getX(), reference.pos.getY(), reference.pos.getZ());
 		packet.addByte(reference.side);
+		packet.addInt(reference.index);
 
 		IRequester<?> requester = reference.getAttachment();
 		packet.addItemStack(requester.getIcon());
@@ -65,7 +74,7 @@ public class RequesterReference<I> {
 
 	public static <I> RequesterReference<I> readPacket(PacketBase packet) {
 		if (packet.getBool()) {
-			RequesterReference<I> reference = new RequesterReference<>(packet.getInt(), packet.getCoords(), packet.getByte());
+			RequesterReference<I> reference = new RequesterReference<>(packet.getInt(), packet.getCoords(), packet.getByte(), packet.getInt());
 			reference.icon = packet.getItemStack();
 			reference.tile = packet.getItemStack();
 
@@ -109,6 +118,8 @@ public class RequesterReference<I> {
 				Attachment attachment = ((TileGrid) tile).getAttachment(side);
 				if (attachment instanceof IRequester)
 					cache = (IRequester<I>) attachment;
+				else if (attachment instanceof IRequesterContainer)
+					cache = (IRequester<I>) ((IRequesterContainer) attachment).getRequester(index);
 			}
 		} catch (ClassCastException ignore) {
 			cache = null;
@@ -117,8 +128,21 @@ public class RequesterReference<I> {
 		return cache;
 	}
 
-	public boolean references(IRequester<I> requester) {
+	public boolean references(IRequester<?> requester) {
 		return dim == requester.getTile().getWorld().provider.getDimension() && pos.equals(requester.getTile().getPos()) && side == requester.getSide();
+	}
+
+	public boolean equals(Object object) {
+		if (object instanceof RequesterReference) {
+			RequesterReference<?> reference = (RequesterReference<?>) object;
+			return reference.dim == dim && reference.pos.equals(pos) && reference.side == side;
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return (Integer.hashCode(dim) * 31 + pos.hashCode()) * 31 + Integer.hashCode(side);
 	}
 
 	public ItemStack getIcon() {
