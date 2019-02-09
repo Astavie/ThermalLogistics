@@ -204,7 +204,7 @@ public class NetworkUtils {
 
 				a:
 				for (int slot = 0; slot < inv.getSlots(); slot++) {
-					ItemStack extract = inv.extractItem(slot, inv.getSlotLimit(slot), true);
+					ItemStack extract = inv.getStackInSlot(slot);
 					if (extract.isEmpty())
 						continue;
 
@@ -215,7 +215,7 @@ public class NetworkUtils {
 						output.set(i, Triple.of(stack.getLeft(), stack.getMiddle() + extract.getCount(), stack.getRight()));
 						continue a;
 					}
-					output.add(Triple.of(extract, (long) extract.getCount(), false));
+					output.add(Triple.of(extract.copy(), (long) extract.getCount(), false));
 				}
 			}
 		}
