@@ -1,6 +1,10 @@
 package astavie.thermallogistics.util;
 
+import astavie.thermallogistics.client.gui.GuiCrafter;
+import astavie.thermallogistics.client.gui.element.ElementSlotFluid;
+import astavie.thermallogistics.client.gui.element.ElementSlotItem;
 import cofh.core.gui.GuiContainerCore;
+import cofh.core.gui.element.ElementBase;
 import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.StringHelper;
 import net.minecraft.client.renderer.GlStateManager;
@@ -14,12 +18,14 @@ import java.util.List;
 
 public class StackHandler {
 
-	public static void writePacket(PacketBase packet, Object item) {
+	public static void writePacket(PacketBase packet, Object item, boolean identifier) {
 		if (item instanceof ItemStack) {
-			packet.addByte(0);
+			if (identifier)
+				packet.addByte(0);
 			packet.addItemStack((ItemStack) item);
 		} else if (item instanceof FluidStack) {
-			packet.addByte(1);
+			if (identifier)
+				packet.addByte(1);
 			packet.addFluidStack((FluidStack) item);
 		} else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
 	}
@@ -43,6 +49,9 @@ public class StackHandler {
 			if (overlay) {
 				GlStateManager.pushMatrix();
 
+				GlStateManager.disableDepth();
+				GlStateManager.disableBlend();
+
 				GlStateManager.scale(0.5, 0.5, 0.5);
 				String amount = StringHelper.getScaledNumber(((FluidStack) item).amount);
 				gui.getFontRenderer().drawStringWithShadow(amount, (x + 16) * 2 - gui.getFontRenderer().getStringWidth(amount), (y + 12) * 2, 0xFFFFFF);
@@ -59,6 +68,17 @@ public class StackHandler {
 		else if (item instanceof FluidStack)
 			return Collections.singletonList(((FluidStack) item).getLocalizedName());
 		else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
+	}
+
+	@SuppressWarnings("unchecked")
+	@SideOnly(Side.CLIENT)
+	public static ElementBase getSlot(GuiContainerCore gui, int x, int y, GuiCrafter.Slot<?> slot) {
+		Class<?> c = slot.getCrafter().getItemClass();
+		if (c == ItemStack.class)
+			return new ElementSlotItem(gui, x, y, (GuiCrafter.Slot<ItemStack>) slot, (GuiCrafter.Slot<ItemStack>) slot);
+		else if (c == FluidStack.class)
+			return new ElementSlotFluid(gui, x, y, (GuiCrafter.Slot<FluidStack>) slot, (GuiCrafter.Slot<FluidStack>) slot, true);
+		else throw new IllegalArgumentException("Unknown item type " + c.getName());
 	}
 
 }

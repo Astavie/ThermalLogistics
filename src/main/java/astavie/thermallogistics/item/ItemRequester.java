@@ -1,5 +1,6 @@
 package astavie.thermallogistics.item;
 
+import astavie.thermallogistics.attachment.RequesterFluid;
 import astavie.thermallogistics.attachment.RequesterItem;
 import cofh.core.util.helpers.RecipeHelper;
 import cofh.core.util.helpers.StringHelper;
@@ -29,8 +30,8 @@ public class ItemRequester extends ItemLogisticsAttachment {
 	@Override
 	public Attachment getAttachment(EnumFacing side, ItemStack stack, TileGrid tile) {
 		int type = stack.getItemDamage();
-		//if (tile.getDuct(DuctToken.FLUID) != null)
-		//	return new RequesterFluid(tile, (byte) (side.ordinal() ^ 1), type); TODO
+		if (tile.getDuct(DuctToken.FLUID) != null)
+			return new RequesterFluid(tile, (byte) (side.ordinal() ^ 1), type);
 		if (tile.getDuct(DuctToken.ITEMS) != null)
 			return new RequesterItem(tile, (byte) (side.ordinal() ^ 1), type);
 		return null;

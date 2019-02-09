@@ -29,6 +29,12 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	PacketTileInfo getNewPacket(byte type);
 
+	List<Recipe<I>> getRecipes();
+
+	void split(int split);
+
+	Class<I> getItemClass();
+
 	class Recipe<I> {
 
 		public final List<I> inputs = NonNullList.create();

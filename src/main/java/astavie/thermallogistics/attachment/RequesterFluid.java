@@ -2,16 +2,19 @@ package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.TLTextures;
-import astavie.thermallogistics.process.ProcessItem;
+import astavie.thermallogistics.process.ProcessFluid;
+import astavie.thermallogistics.process.Request;
+import codechicken.lib.fluid.FluidUtils;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
 import codechicken.lib.vec.uv.IconTransformation;
-import cofh.core.util.helpers.ItemHelper;
-import cofh.thermaldynamics.duct.attachments.retriever.RetrieverItem;
+import cofh.thermaldynamics.duct.attachments.retriever.RetrieverFluid;
+import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
+import cofh.thermaldynamics.duct.fluid.DuctUnitFluid;
+import cofh.thermaldynamics.duct.fluid.GridFluid;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
-import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.multiblock.IGridTile;
 import cofh.thermaldynamics.multiblock.Route;
@@ -22,33 +25,32 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.Constants;
-import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.fluids.FluidStack;
 
 import java.util.Collections;
 import java.util.List;
 
-public class RequesterItem extends RetrieverItem implements IRequester<ItemStack> {
+public class RequesterFluid extends RetrieverFluid implements IRequester<FluidStack> {
 
-	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MOD_ID, "requester_item");
+	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MOD_ID, "requester_fluid");
 
-	private final ProcessItem process = new ProcessItem(this);
+	private final ProcessFluid process = new ProcessFluid(this);
 
-	public RequesterItem(TileGrid tile, byte side) {
+	public RequesterFluid(TileGrid tile, byte side) {
 		super(tile, side);
 	}
 
-	public RequesterItem(TileGrid tile, byte side, int type) {
+	public RequesterFluid(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
 		filter.handleFlagByte(24); // Whitelist by default
 	}
 
 	@Override
 	public String getInfo() {
-		return "tab." + ThermalLogistics.MOD_ID + ".requesterItem";
+		return "tab." + ThermalLogistics.MOD_ID + ".requesterFluid";
 	}
 
 	@Override
@@ -76,7 +78,11 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
-	public void handleItemSending() {
+	public void tick(int pass) {
+		GridFluid grid = fluidDuct.getGrid();
+		if (pass != 1 || grid == null || !isPowered || !isValidInput)
+			return;
+
 		process.tick();
 	}
 
@@ -115,12 +121,12 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
-	public List<ItemStack> getInputFrom(IRequester<ItemStack> requester) {
+	public List<FluidStack> getInputFrom(IRequester<FluidStack> requester) {
 		return process.getStacks(requester);
 	}
 
 	@Override
-	public List<ItemStack> getOutputTo(IRequester<ItemStack> requester) {
+	public List<FluidStack> getOutputTo(IRequester<FluidStack> requester) {
 		return Collections.emptyList();
 	}
 
@@ -130,44 +136,31 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
-	public int amountRequired(ItemStack stack) {
-		if (!filter.matchesFilter(stack))
+	public int amountRequired(FluidStack stack) {
+		DuctUnitFluid.Cache cache = fluidDuct.tileCache[side];
+		if (cache == null)
 			return 0;
 
-		int required = filter.getMaxStock();
+		int required = cache.getHandler(side ^ 1).fill(FluidUtils.copy(stack, Integer.MAX_VALUE), false);
+		for (Request<FluidStack> request : process.requests)
+			required -= request.getCount(stack);
 
-		// Items in inventory
-		IItemHandler inv = getCachedInv();
-		if (inv == null)
-			return 0;
-
-		for (int i = 0; i < inv.getSlots(); i++)
-			if (ItemHelper.itemsIdentical(inv.getStackInSlot(i), stack))
-				required -= inv.getStackInSlot(i).getCount();
-
-		// Items in requests
-		for (ItemStack item : process.getStacks())
-			if (ItemHelper.itemsIdentical(item, stack))
-				required -= item.getCount();
-
-		// Items traveling
-		StackMap map = itemDuct.getGrid().travelingItems.get(itemDuct.pos().offset(EnumFacing.byIndex(side)));
-		if (map != null)
-			for (ItemStack item : map.getItems())
-				if (ItemHelper.itemsIdentical(item, stack))
-					required -= item.getCount();
-
-		return required < 0 ? 0 : required;
+		return required;
 	}
 
 	@Override
-	public float getThrottle() {
+	public int getMaxSend() {
 		return 0;
 	}
 
 	@Override
+	public float getThrottle() {
+		return throttle[type];
+	}
+
+	@Override
 	public IGridTile getDuct() {
-		return itemDuct;
+		return fluidDuct;
 	}
 
 	@Override
@@ -181,13 +174,18 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
+	public byte getSpeed() {
+		return 0;
+	}
+
+	@Override
 	public ListWrapper<Route<DuctUnitItem, GridItem>> getRoutes() {
-		return routesWithInsertSideList;
+		return null;
 	}
 
 	@Override
 	public boolean hasMultiStack() {
-		return multiStack[type];
+		return false;
 	}
 
 	@Override
@@ -201,7 +199,7 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
-	public void onFinishCrafting(IRequester<ItemStack> requester, ItemStack stack) {
+	public void onFinishCrafting(IRequester<FluidStack> requester, FluidStack stack) {
 	}
 
 	@Override
@@ -209,12 +207,17 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
-	public void onExtract(ItemStack stack) {
+	public void onExtract(FluidStack stack) {
 	}
 
 	@Override
 	public void markDirty() {
 		baseTile.markChunkDirty();
+	}
+
+	@Override
+	public int tickDelay() {
+		return ServoItem.tickDelays[type];
 	}
 
 }

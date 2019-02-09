@@ -7,6 +7,7 @@ import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.TravelingItem;
+import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -124,7 +125,7 @@ public class RequestItem extends Request<ItemStack> {
 
 		DuctUnitItem duct = (DuctUnitItem) crafter.getDuct();
 
-		Route route1 = duct.getRoute(attachment.getDuct());
+		Route route1 = duct.getRoute((IGridTileRoute) attachment.getDuct());
 		if (route1 == null)
 			return;
 

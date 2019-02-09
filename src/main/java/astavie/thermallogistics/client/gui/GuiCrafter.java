@@ -3,8 +3,8 @@ package astavie.thermallogistics.client.gui;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.ICrafter;
-import astavie.thermallogistics.client.gui.element.ElementSlotItem;
 import astavie.thermallogistics.client.gui.tab.TabLink;
+import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.gui.element.ElementButton;
@@ -18,7 +18,6 @@ import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
 import cofh.thermaldynamics.gui.container.ContainerAttachmentBase;
 import com.google.common.primitives.Ints;
 import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 
 import java.util.LinkedList;
@@ -36,7 +35,8 @@ public class GuiCrafter extends GuiContainerCore {
 	private static final int[][] levelButtonPos = {{-1, -1}, {0, 204}, {80, 204}};
 	private static final int[][] flagButtonsPos = {{176, 0}, {176, 60}, {216, 0}, {216, 60}, {176, 120}, {216, 120}, {176, 180}, {216, 180},};
 
-	private final CrafterItem crafter;
+	private final ConnectionBase attachment;
+	private final ICrafter<?> crafter;
 	private final List<ElementBase> slots = new LinkedList<>();
 
 	private ElementButton splitButton;
@@ -44,14 +44,15 @@ public class GuiCrafter extends GuiContainerCore {
 	private ElementButton[] levelButtons = new ElementButton[FilterLogic.defaultLevels.length];
 	private int buttonSize;
 
-	public GuiCrafter(InventoryPlayer inventoryPlayer, CrafterItem crafter) {
-		super(new ContainerAttachmentBase(inventoryPlayer, crafter), TEXTURE);
+	public GuiCrafter(InventoryPlayer inventoryPlayer, ConnectionBase attachment, ICrafter<?> crafter) {
+		super(new ContainerAttachmentBase(inventoryPlayer, attachment), TEXTURE);
 		this.crafter = crafter;
-		this.crafter.getFilter();
-		this.name = crafter.getName();
+		this.attachment = attachment;
+		this.attachment.getFilter();
+		this.name = attachment.getName();
 		this.ySize = 204;
 
-		String info = crafter.getInfo();
+		String info = attachment.getInfo();
 		if (info != null) {
 			generateInfo(info);
 		}
@@ -66,21 +67,21 @@ public class GuiCrafter extends GuiContainerCore {
 			addTab(new TabInfo(this, myInfo));
 		}
 
-		if (crafter.canAlterRS())
-			addTab(new TabRedstoneControl(this, crafter));
+		if (attachment.canAlterRS())
+			addTab(new TabRedstoneControl(this, attachment));
 
 		addTab(new TabLink(this, crafter));
 
-		int[] flagNums = new int[crafter.filter.validFlags().length - 1];
-		System.arraycopy(crafter.filter.validFlags(), 1, flagNums, 0, flagNums.length);
+		int[] flagNums = new int[attachment.filter.validFlags().length - 1];
+		System.arraycopy(attachment.filter.validFlags(), 1, flagNums, 0, flagNums.length);
 
-		flagButtons = new ElementButton[crafter.filter.numFlags()];
+		flagButtons = new ElementButton[attachment.filter.numFlags()];
 
-		int[] levelNums = crafter.filter.getValidLevels();
+		int[] levelNums = attachment.filter.getValidLevels();
 		levelButtons = new ElementButton[FilterLogic.defaultLevels.length];
 
 		int buttonNo = flagNums.length + levelNums.length;
-		if (crafter.type > 0)
+		if (attachment.type > 0)
 			buttonNo++;
 
 		if (buttonNo != 0) {
@@ -89,16 +90,16 @@ public class GuiCrafter extends GuiContainerCore {
 			int x0 = xSize / 2 - buttonNo * (button_offset / 2) + 3;
 			int y0 = 38 + 2 * 18 + 8;
 
-			if (crafter.type > 0) {
+			if (attachment.type > 0) {
 				splitButton = new ElementButton(this, x0, y0, "split", 0, 0, 0, buttonSize, 0, buttonSize * 2, buttonSize, buttonSize, ICON_PATH);
 				addElement(splitButton);
 			}
 
-			int offset = crafter.type > 0 ? 1 : 0;
+			int offset = attachment.type > 0 ? 1 : 0;
 
 			for (int i = 0; i < flagNums.length; i++) {
 				int j = flagNums[i];
-				flagButtons[j] = new ElementButton(this, x0 + button_offset * (i + offset), y0, crafter.filter.flagType(j), flagButtonsPos[j][0], flagButtonsPos[j][1], flagButtonsPos[j][0], flagButtonsPos[j][1] + buttonSize, flagButtonsPos[j][0], flagButtonsPos[j][1] + buttonSize * 2, buttonSize, buttonSize, TEX_PATH);
+				flagButtons[j] = new ElementButton(this, x0 + button_offset * (i + offset), y0, attachment.filter.flagType(j), flagButtonsPos[j][0], flagButtonsPos[j][1], flagButtonsPos[j][0], flagButtonsPos[j][1] + buttonSize, flagButtonsPos[j][0], flagButtonsPos[j][1] + buttonSize * 2, buttonSize, buttonSize, TEX_PATH);
 				addElement(flagButtons[j]);
 			}
 			for (int i = 0; i < levelNums.length; i++) {
@@ -111,14 +112,14 @@ public class GuiCrafter extends GuiContainerCore {
 
 	private void setButtons() {
 		if (splitButton != null) {
-			int x = Math.min(CrafterItem.SIZE[crafter.type] / crafter.recipes.size() - 1, 3) * buttonSize;
+			int x = Math.min(CrafterItem.SIZE[attachment.type] / crafter.getRecipes().size() - 1, 3) * buttonSize;
 			splitButton.setSheetX(x);
 			splitButton.setHoverX(x);
-			splitButton.setToolTip("info.logistics.split." + crafter.recipes.size());
+			splitButton.setToolTip("info.logistics.split." + crafter.getRecipes().size());
 		}
 		for (int i = 0; i < flagButtons.length; i++) {
 			if (flagButtons[i] != null) {
-				boolean b = crafter.filter.getFlag(i);
+				boolean b = attachment.filter.getFlag(i);
 				int x = flagButtonsPos[i][0] + (b ? buttonSize : 0);
 				flagButtons[i].setSheetX(x);
 				flagButtons[i].setHoverX(x);
@@ -127,7 +128,7 @@ public class GuiCrafter extends GuiContainerCore {
 		}
 		for (int i = 0; i < levelButtons.length; i++) {
 			if (levelButtons[i] != null) {
-				int level = crafter.filter.getLevel(i);
+				int level = attachment.filter.getLevel(i);
 				int x = levelButtonPos[i][0] + level * buttonSize;
 				levelButtons[i].setSheetX(x);
 				levelButtons[i].setHoverX(x);
@@ -138,40 +139,40 @@ public class GuiCrafter extends GuiContainerCore {
 		elements.removeAll(slots);
 		slots.clear();
 
-		if (crafter.type > 0) {
-			int slots = CrafterItem.SIZE[crafter.type];
-			int recipeSlots = slots / crafter.recipes.size();
+		if (attachment.type > 0) {
+			int slots = CrafterItem.SIZE[attachment.type];
+			int recipeSlots = slots / crafter.getRecipes().size();
 
-			int start = slots * 9 + (crafter.recipes.size() - 1);
+			int start = slots * 9 + (crafter.getRecipes().size() - 1);
 			int x0 = xSize / 2 - start;
 			int y0 = 20;
 
-			for (int i = 0; i < crafter.recipes.size(); i++) {
+			for (int i = 0; i < crafter.getRecipes().size(); i++) {
 				for (int x = 0; x < recipeSlots; x++) {
 					int posX = x0 + (x + i * recipeSlots) * 18 + i * 2;
 
-					Slot up = new Slot(crafter, i, true, x * 2);
-					this.slots.add(addElement(new ElementSlotItem(this, posX, y0, up, up)));
+					Slot<?> up = new Slot<>(crafter, i, true, x * 2);
+					this.slots.add(addElement(StackHandler.getSlot(this, posX, y0, up)));
 
-					Slot down = new Slot(crafter, i, true, x * 2 + 1);
-					this.slots.add(addElement(new ElementSlotItem(this, posX, y0 + 18, down, down)));
+					Slot<?> down = new Slot<>(crafter, i, true, x * 2 + 1);
+					this.slots.add(addElement(StackHandler.getSlot(this, posX, y0 + 18, down)));
 
-					Slot output = new Slot(crafter, i, false, x);
-					this.slots.add(addElement(new ElementSlotItem(this, posX, y0 + 38, output, output)));
+					Slot<?> output = new Slot<>(crafter, i, false, x);
+					this.slots.add(addElement(StackHandler.getSlot(this, posX, y0 + 38, output)));
 				}
 			}
 		} else {
 			int x0 = xSize / 2;
 			int y0 = 38;
 
-			Slot left = new Slot(crafter, 0, true, 0);
-			this.slots.add(addElement(new ElementSlotItem(this, x0 - 18, y0, left, left)));
+			Slot<?> left = new Slot<>(crafter, 0, true, 0);
+			this.slots.add(addElement(StackHandler.getSlot(this, x0 - 18, y0, left)));
 
-			Slot right = new Slot(crafter, 0, true, 1);
-			this.slots.add(addElement(new ElementSlotItem(this, x0, y0, right, right)));
+			Slot<?> right = new Slot<>(crafter, 0, true, 1);
+			this.slots.add(addElement(StackHandler.getSlot(this, x0, y0, right)));
 
-			Slot output = new Slot(crafter, 0, false, 0);
-			this.slots.add(addElement(new ElementSlotItem(this, x0 - 9, y0 + 20, output, output)));
+			Slot<?> output = new Slot<>(crafter, 0, false, 0);
+			this.slots.add(addElement(StackHandler.getSlot(this, x0 - 9, y0 + 20, output)));
 		}
 	}
 
@@ -186,15 +187,15 @@ public class GuiCrafter extends GuiContainerCore {
 		if (splitButton != null && splitButton.getName().equals(buttonName)) {
 			int offset = mouseButton == 0 ? 1 : mouseButton == 1 ? -1 : 0;
 			if (offset != 0) {
-				int index = Ints.indexOf(CrafterItem.SPLITS[crafter.type], CrafterItem.SIZE[crafter.type] / crafter.recipes.size());
+				int index = Ints.indexOf(CrafterItem.SPLITS[attachment.type], CrafterItem.SIZE[attachment.type] / crafter.getRecipes().size());
 				if (index != -1) {
 					index += offset;
 					if (index < 0)
-						index = CrafterItem.SPLITS[crafter.type].length - 1;
-					else if (index >= CrafterItem.SPLITS[crafter.type].length)
+						index = CrafterItem.SPLITS[attachment.type].length - 1;
+					else if (index >= CrafterItem.SPLITS[attachment.type].length)
 						index = 0;
 
-					int split = CrafterItem.SPLITS[crafter.type][index];
+					int split = CrafterItem.SPLITS[attachment.type][index];
 					crafter.split(split);
 
 					playClickSound(0.8F);
@@ -212,8 +213,8 @@ public class GuiCrafter extends GuiContainerCore {
 		for (int i = 0; i < flagButtons.length; i++) {
 			ElementButton button = flagButtons[i];
 			if (button != null && button.getName().equals(buttonName)) {
-				if (crafter.filter.setFlag(i, !crafter.filter.getFlag(i))) {
-					if (crafter.filter.getFlag(i)) {
+				if (attachment.filter.setFlag(i, !attachment.filter.getFlag(i))) {
+					if (attachment.filter.getFlag(i)) {
 						playClickSound(0.8F);
 					} else {
 						playClickSound(0.6F);
@@ -227,10 +228,10 @@ public class GuiCrafter extends GuiContainerCore {
 			ElementButton button = levelButtons[i];
 			if (button != null && button.getName().equals(buttonName)) {
 				if (mouseButton == 0) {
-					crafter.filter.incLevel(i);
+					attachment.filter.incLevel(i);
 					playClickSound(0.8F);
 				} else if (mouseButton == 1) {
-					crafter.filter.decLevel(i);
+					attachment.filter.decLevel(i);
 					playClickSound(0.6F);
 				}
 				setButtons();
@@ -239,13 +240,13 @@ public class GuiCrafter extends GuiContainerCore {
 		}
 	}
 
-	public static class Slot implements Supplier<ItemStack>, Consumer<ItemStack> {
+	public static class Slot<I> implements Supplier<I>, Consumer<I> {
 
-		private final CrafterItem crafter;
+		private final ICrafter<I> crafter;
 		private final boolean input;
 		private final int recipe, index;
 
-		public Slot(CrafterItem crafter, int recipe, boolean input, int index) {
+		public Slot(ICrafter<I> crafter, int recipe, boolean input, int index) {
 			this.crafter = crafter;
 			this.recipe = recipe;
 			this.input = input;
@@ -253,14 +254,14 @@ public class GuiCrafter extends GuiContainerCore {
 		}
 
 		@Override
-		public void accept(ItemStack itemStack) {
-			if (recipe < crafter.recipes.size()) {
-				ICrafter.Recipe<ItemStack> recipe = crafter.recipes.get(this.recipe);
+		public void accept(I stack) {
+			if (recipe < crafter.getRecipes().size()) {
+				ICrafter.Recipe<I> recipe = crafter.getRecipes().get(this.recipe);
 				if (input) {
 					if (index < recipe.inputs.size())
-						recipe.inputs.set(index, itemStack);
+						recipe.inputs.set(index, stack);
 				} else if (index < recipe.outputs.size())
-					recipe.outputs.set(index, itemStack);
+					recipe.outputs.set(index, stack);
 			}
 
 			// Send to server
@@ -269,21 +270,25 @@ public class GuiCrafter extends GuiContainerCore {
 			packet.addInt(recipe);
 			packet.addBool(input);
 			packet.addInt(index);
-			packet.addItemStack(itemStack);
+			StackHandler.writePacket(packet, stack, false);
 			PacketHandler.sendToServer(packet);
 		}
 
 		@Override
-		public ItemStack get() {
-			if (recipe < crafter.recipes.size()) {
-				ICrafter.Recipe<ItemStack> recipe = crafter.recipes.get(this.recipe);
+		public I get() {
+			if (recipe < crafter.getRecipes().size()) {
+				ICrafter.Recipe<I> recipe = crafter.getRecipes().get(this.recipe);
 				if (input) {
 					if (index < recipe.inputs.size())
 						return recipe.inputs.get(index);
 				} else if (index < recipe.outputs.size())
 					return recipe.outputs.get(index);
 			}
-			return ItemStack.EMPTY;
+			return null;
+		}
+
+		public ICrafter<I> getCrafter() {
+			return crafter;
 		}
 
 	}

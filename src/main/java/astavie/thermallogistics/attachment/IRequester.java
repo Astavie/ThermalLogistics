@@ -3,7 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.util.RequesterReference;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
-import cofh.thermaldynamics.multiblock.IGridTileRoute;
+import cofh.thermaldynamics.multiblock.IGridTile;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
@@ -23,7 +23,9 @@ public interface IRequester<I> {
 
 	int getMaxSend();
 
-	IGridTileRoute getDuct();
+	float getThrottle();
+
+	IGridTile getDuct();
 
 	TileEntity getTile();
 
@@ -46,6 +48,8 @@ public interface IRequester<I> {
 	void onExtract(I stack);
 
 	void markDirty();
+
+	int tickDelay();
 
 	default ItemStack getTileIcon() {
 		TileEntity myTile = getCachedTile();

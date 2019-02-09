@@ -38,16 +38,19 @@ public class ElementSlotItem extends ElementSlot {
 	@Override
 	public boolean onMousePressed(int mouseX, int mouseY, int mouseButton) {
 		if (mouseButton < 2 && intersectsWith(mouseX, mouseY)) {
+			ItemStack get = stack.get();
 			ItemStack drag = gui.draggedStack.isEmpty() ? gui.mc.player.inventory.getItemStack() : gui.draggedStack;
 			ItemStack stack;
+
 			if (drag.isEmpty())
 				stack = ItemStack.EMPTY;
 			else if (mouseButton == 0)
 				stack = drag.copy();
-			else if (ItemHelper.itemsIdentical(this.stack.get(), drag))
-				stack = ItemHelper.cloneStack(this.stack.get(), this.stack.get().getCount() + 1);
+			else if (ItemHelper.itemsIdentical(get, drag))
+				stack = ItemHelper.cloneStack(get, get.getCount() + 1);
 			else
 				stack = ItemHelper.cloneStack(drag, 1);
+
 			consumer.accept(stack);
 			return true;
 		}

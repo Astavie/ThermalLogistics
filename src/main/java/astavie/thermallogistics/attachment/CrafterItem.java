@@ -21,7 +21,6 @@ import cofh.core.network.PacketTileInfo;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.core.util.helpers.ServerHelper;
 import cofh.thermaldynamics.ThermalDynamics;
-import cofh.thermaldynamics.duct.attachments.filter.IFilterItems;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
@@ -60,7 +59,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	public static final int[] SIZE = {1, 2, 3, 4, 6};
 	public static final int[][] SPLITS = {{1}, {2, 1}, {3, 1}, {4, 2, 1}, {6, 3, 2, 1}};
 
-	public final List<Recipe<ItemStack>> recipes = NonNullList.create();
+	private final List<Recipe<ItemStack>> recipes = NonNullList.create();
 
 	private final List<RequesterReference<?>> linked = NonNullList.create();
 
@@ -68,8 +67,6 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	// On the client this contains leftovers
 	private final RequestItem sent = new RequestItem(null);
-
-	private final IFilterItems itemFilter = new Filter(this);
 
 	public CrafterItem(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
@@ -226,11 +223,6 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 		// Handle input
 		process.tick();
-	}
-
-	@Override
-	public IFilterItems getItemFilter() {
-		return itemFilter;
 	}
 
 	@Override
@@ -412,7 +404,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public Object getGuiClient(InventoryPlayer inventory) {
-		return new GuiCrafter(inventory, this);
+		return new GuiCrafter(inventory, this, this);
 	}
 
 	@Override
@@ -494,6 +486,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		} else super.handleInfoPacketType(a, payload, isServer, player);
 	}
 
+	@Override
 	public void split(int split) {
 		ItemStack[] inputs = new ItemStack[SIZE[type] * 2];
 		ItemStack[] outputs = new ItemStack[SIZE[type]];
@@ -527,6 +520,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 			this.recipes.add(recipe);
 		}
+	}
+
+	@Override
+	public Class<ItemStack> getItemClass() {
+		return ItemStack.class;
 	}
 
 	private PacketTileInfo getGuiPacket() {
@@ -567,7 +565,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			List<?> outputs = ((ICrafter<?>) reference.getAttachment()).getOutputs();
 			packet.addInt(outputs.size());
 			for (Object object : outputs)
-				StackHandler.writePacket(packet, object);
+				StackHandler.writePacket(packet, object, true);
 		}
 	}
 
@@ -601,6 +599,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			outputs.addAll(recipe.outputs);
 		outputs.removeIf(ItemStack::isEmpty);
 		return outputs;
+	}
+
+	@Override
+	public List<Recipe<ItemStack>> getRecipes() {
+		return recipes;
 	}
 
 	@Override
@@ -710,6 +713,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				amount -= item.getCount();
 
 		return Math.max(amount, 0);
+	}
+
+	@Override
+	public float getThrottle() {
+		return 0;
 	}
 
 	private int required(ItemStack stack, boolean sent) {
@@ -909,31 +917,6 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		baseTile.markChunkDirty();
 	}
 
-	private static class Filter implements IFilterItems {
-
-		private final CrafterItem crafter;
-
-		private Filter(CrafterItem crafter) {
-			this.crafter = crafter;
-		}
-
-		@Override
-		public boolean matchesFilter(ItemStack item) {
-			return crafter.required(item, false) > 0;
-		}
-
-		@Override
-		public boolean shouldIncRouteItems() {
-			return crafter.filter.shouldIncRouteItems();
-		}
-
-		@Override
-		public int getMaxStock() {
-			return crafter.filter.getMaxStock();
-		}
-
-	}
-
 	private static class CacheWrapper extends DuctUnitItem.Cache {
 
 		private final CrafterItem crafter;
@@ -979,7 +962,14 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-			return inv.insertItem(slot, ItemHelper.cloneStack(stack, Math.min(stack.getCount(), crafter.required(stack, false))), simulate);
+			int required = Math.min(stack.getCount(), crafter.required(stack, false));
+			if (required == 0)
+				return stack;
+
+			int remaining = stack.getCount() - required;
+
+			ItemStack remainder = inv.insertItem(slot, ItemHelper.cloneStack(stack, required), simulate);
+			return ItemHelper.cloneStack(stack, remainder.getCount() + remaining);
 		}
 
 		@Nonnull

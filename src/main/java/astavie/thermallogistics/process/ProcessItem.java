@@ -9,6 +9,7 @@ import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
+import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
@@ -104,7 +105,7 @@ public class ProcessItem extends Process<ItemStack> {
 			if (item.isEmpty())
 				continue;
 
-			Route route1 = endPoint.getRoute(requester.getDuct());
+			Route route1 = endPoint.getRoute((IGridTileRoute) requester.getDuct());
 			if (route1 == null)
 				continue;
 
@@ -190,7 +191,7 @@ public class ProcessItem extends Process<ItemStack> {
 			DuctUnitItem endPoint = (DuctUnitItem) requester.getDuct();
 			byte side = requester.getSide();
 
-			DuctUnitItem.Cache cache = endPoint.tileCache[requester.getSide()];
+			DuctUnitItem.Cache cache = endPoint.tileCache[side];
 			if (cache == null || (!endPoint.isInput(side) && !endPoint.isOutput(side)) || !endPoint.parent.getConnectionType(side).allowTransfer)
 				continue;
 
