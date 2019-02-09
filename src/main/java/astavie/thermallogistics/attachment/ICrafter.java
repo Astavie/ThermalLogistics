@@ -2,6 +2,8 @@ package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.util.RequesterReference;
+import cofh.core.network.PacketTileInfo;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.NonNullList;
 
 import java.util.List;
@@ -20,6 +22,12 @@ public interface ICrafter<I> extends IRequester<I> {
 	boolean hasLinked(ICrafter<?> crafter);
 
 	int getRecipes(int index);
+
+	void sync(EntityPlayer player);
+
+	List<RequesterReference<?>> getLinked();
+
+	PacketTileInfo getNewPacket(byte type);
 
 	class Recipe<I> {
 

@@ -41,7 +41,7 @@ public interface IRequester<I> {
 
 	void onFinishCrafting(IRequester<I> requester, I stack);
 
-	void onFinishCrafting(int index, int recipes, int leftover, I stack);
+	void onFinishCrafting(int index, int recipes);
 
 	void onExtract(I stack);
 

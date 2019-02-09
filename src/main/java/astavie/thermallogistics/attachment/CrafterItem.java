@@ -3,11 +3,13 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.TLTextures;
 import astavie.thermallogistics.client.gui.GuiCrafter;
+import astavie.thermallogistics.inventory.ContainerCrafter;
 import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.process.RequestItem;
 import astavie.thermallogistics.util.RequesterReference;
+import astavie.thermallogistics.util.StackHandler;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
@@ -24,7 +26,6 @@ import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.gui.GuiHandler;
-import cofh.thermaldynamics.gui.container.ContainerAttachmentBase;
 import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.render.RenderDuct;
@@ -56,9 +57,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	public final List<Recipe<ItemStack>> recipes = NonNullList.create();
 
-	private final Set<RequesterReference<?>> linked = new HashSet<>();
+	private final List<RequesterReference<?>> linked = NonNullList.create();
 
 	private final ProcessItem process = new ProcessItem(this);
+
+	// On the client this contains leftovers
 	private final RequestItem sent = new RequestItem(null);
 
 	private final IFilterItems itemFilter = new Filter(this);
@@ -372,7 +375,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public Object getGuiServer(InventoryPlayer inventory) {
-		return new ContainerAttachmentBase(inventory, this);
+		return new ContainerCrafter(inventory, this);
 	}
 
 	@Override
@@ -384,7 +387,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	public void handleInfoPacketType(byte a, PacketBase payload, boolean isServer, EntityPlayer player) {
 		if (a == NETWORK_ID.GUI) {
 			if (isServer) {
-				if (payload.getByte() == 0) {
+				byte message = payload.getByte();
+				if (message == 0) {
 					int recipe = payload.getInt();
 					boolean input = payload.getBool();
 					int index = payload.getInt();
@@ -402,28 +406,57 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 							markDirty();
 						}
 					}
-				} else {
+				} else if (message == 1) {
 					int split = payload.getInt();
 					if (Ints.contains(SPLITS[type], split)) {
 						split(split);
 						markDirty();
 					}
+				} else if (message == 2) {
+					int n = payload.getInt();
+					if (n < linked.size())
+						linked.remove(n);
 				}
+
+				// Send to clients
+				PacketHandler.sendToAllAround(getGuiPacket(), baseTile);
 			} else {
-				recipes.clear();
-				int size = payload.getInt();
-				for (int i = 0; i < size; i++) {
-					Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+				byte message = payload.getByte();
+				if (message == 0) {
+					recipes.clear();
+					int size = payload.getInt();
+					for (int i = 0; i < size; i++) {
+						Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
 
-					int inputs = payload.getInt();
-					for (int j = 0; j < inputs; j++)
-						recipe.inputs.add(payload.getItemStack());
+						int inputs = payload.getInt();
+						for (int j = 0; j < inputs; j++)
+							recipe.inputs.add(payload.getItemStack());
 
-					int outputs = payload.getInt();
-					for (int j = 0; j < outputs; j++)
-						recipe.outputs.add(payload.getItemStack());
+						int outputs = payload.getInt();
+						for (int j = 0; j < outputs; j++)
+							recipe.outputs.add(payload.getItemStack());
 
-					recipes.add(recipe);
+						recipes.add(recipe);
+					}
+				}
+				if (message == 0 || message == 1) {
+					sent.stacks.clear();
+					linked.clear();
+
+					int leftovers = payload.getInt();
+					for (int i = 0; i < leftovers; i++)
+						sent.stacks.add(payload.getItemStack());
+
+					int links = payload.getInt();
+					for (int i = 0; i < links; i++) {
+						RequesterReference<?> reference = RequesterReference.readPacket(payload);
+
+						int outputs = payload.getInt();
+						for (int j = 0; j < outputs; j++)
+							reference.outputs.add(StackHandler.readPacket(payload));
+
+						linked.add(reference);
+					}
 				}
 			}
 		} else super.handleInfoPacketType(a, payload, isServer, player);
@@ -464,23 +497,66 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		}
 	}
 
+	private PacketTileInfo getGuiPacket() {
+		PacketTileInfo packet = getNewPacket(NETWORK_ID.GUI);
+		packet.addByte(0);
+
+		packet.addInt(recipes.size());
+		for (Recipe<ItemStack> recipe : recipes) {
+			packet.addInt(recipe.inputs.size());
+			for (ItemStack input : recipe.inputs)
+				packet.addItemStack(input);
+
+			packet.addInt(recipe.outputs.size());
+			for (ItemStack output : recipe.outputs)
+				packet.addItemStack(output);
+		}
+
+		writeSyncPacket(packet);
+		return packet;
+	}
+
+	private void writeSyncPacket(PacketTileInfo packet) {
+		RequestItem leftovers = new RequestItem(null);
+		for (Recipe<ItemStack> recipe : recipes)
+			for (ItemStack stack : recipe.leftovers.stacks)
+				leftovers.addStack(stack);
+
+		packet.addInt(leftovers.stacks.size());
+		for (ItemStack stack : leftovers.stacks)
+			packet.addItemStack(stack);
+
+		checkLinked();
+
+		packet.addInt(linked.size());
+		for (RequesterReference<?> reference : linked) {
+			RequesterReference.writePacket(packet, reference);
+
+			List<?> outputs = ((ICrafter<?>) reference.getAttachment()).getOutputs();
+			packet.addInt(outputs.size());
+			for (Object object : outputs)
+				StackHandler.writePacket(packet, object);
+		}
+	}
+
+	@Override
+	public void sync(EntityPlayer player) {
+		PacketTileInfo packet = getNewPacket(NETWORK_ID.GUI);
+		packet.addByte(1);
+
+		writeSyncPacket(packet);
+		PacketHandler.sendTo(packet, player);
+	}
+
+	@Override
+	public List<RequesterReference<?>> getLinked() {
+		return linked;
+	}
+
 	@Override
 	public boolean openGui(EntityPlayer player) {
 		if (ServerHelper.isServerWorld(baseTile.world())) {
-			PacketTileInfo packet = getNewPacket(NETWORK_ID.GUI);
-
-			packet.addInt(recipes.size());
-			for (Recipe<ItemStack> recipe : recipes) {
-				packet.addInt(recipe.inputs.size());
-				for (ItemStack input : recipe.inputs)
-					packet.addItemStack(input);
-
-				packet.addInt(recipe.outputs.size());
-				for (ItemStack output : recipe.outputs)
-					packet.addItemStack(output);
-			}
-
-			PacketHandler.sendTo(packet, player);
+			PacketHandler.sendTo(getGuiPacket(), player);
 			player.openGui(ThermalDynamics.instance, GuiHandler.TILE_ATTACHMENT_ID + side, baseTile.getWorld(), baseTile.x(), baseTile.y(), baseTile.z());
 		}
 		return true;
@@ -745,20 +821,33 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				if (recipes > 0) {
 					int leftover = count % output.getCount() > 0 ? output.getCount() - (count % output.getCount()) : 0;
 
-					checkLinked();
+					// Remove sent
+					for (ItemStack in : recipe.inputs)
+						if (!in.isEmpty())
+							sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
 
-					onFinishCrafting(i, recipes, leftover, stack);
+					// Add leftovers
+					for (ItemStack out : recipe.outputs) {
+						if (!out.isEmpty()) {
+							int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
+							if (amount > 0)
+								recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
+						}
+					}
+
+					checkLinked();
 					for (RequesterReference<?> reference : linked)
-						reference.getAttachment().onFinishCrafting(i, recipes, 0, null);
+						reference.getAttachment().onFinishCrafting(i, recipes);
 				}
 
+				markDirty();
 				return;
 			}
 		}
 	}
 
 	@Override
-	public void onFinishCrafting(int index, int recipes, int leftover, ItemStack stack) {
+	public void onFinishCrafting(int index, int recipes) {
 		if (index >= this.recipes.size())
 			return;
 
@@ -770,13 +859,9 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
 
 		// Add leftovers
-		for (ItemStack out : recipe.outputs) {
-			if (!out.isEmpty()) {
-				int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
-				if (amount > 0)
-					recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
-			}
-		}
+		for (ItemStack out : recipe.outputs)
+			if (!out.isEmpty())
+				recipe.leftovers.addStack(ItemHelper.cloneStack(out, out.getCount() * recipes));
 
 		markDirty();
 	}

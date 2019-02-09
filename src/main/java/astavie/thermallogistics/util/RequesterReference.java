@@ -8,19 +8,22 @@ import cofh.thermaldynamics.duct.tiles.TileGrid;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
-public class RequesterReference<I> {
+import java.util.List;
 
-	public static final RequesterReference EMPTY = new RequesterReference(0, BlockPos.ORIGIN, (byte) 0);
+public class RequesterReference<I> {
 
 	public final int dim;
 	public final BlockPos pos;
 	public final byte side;
 	public final int index;
+
+	public final List<I> outputs = NonNullList.create();
 
 	private long tick;
 	private IRequester<I> cache;
@@ -55,13 +58,6 @@ public class RequesterReference<I> {
 	}
 
 	public static void writePacket(PacketBase packet, RequesterReference<?> reference) {
-		if (reference == EMPTY) {
-			packet.addBool(false);
-			return;
-		}
-
-		packet.addBool(true);
-
 		packet.addInt(reference.dim);
 		packet.addCoords(reference.pos.getX(), reference.pos.getY(), reference.pos.getZ());
 		packet.addByte(reference.side);
@@ -73,16 +69,11 @@ public class RequesterReference<I> {
 	}
 
 	public static <I> RequesterReference<I> readPacket(PacketBase packet) {
-		if (packet.getBool()) {
-			RequesterReference<I> reference = new RequesterReference<>(packet.getInt(), packet.getCoords(), packet.getByte(), packet.getInt());
-			reference.icon = packet.getItemStack();
-			reference.tile = packet.getItemStack();
+		RequesterReference<I> reference = new RequesterReference<>(packet.getInt(), packet.getCoords(), packet.getByte(), packet.getInt());
+		reference.icon = packet.getItemStack();
+		reference.tile = packet.getItemStack();
 
-			return reference;
-		}
-
-		//noinspection unchecked
-		return (RequesterReference<I>) EMPTY;
+		return reference;
 	}
 
 	public boolean isLoaded() {

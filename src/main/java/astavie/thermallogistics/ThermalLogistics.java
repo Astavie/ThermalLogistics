@@ -26,6 +26,7 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.ModelRegistryEvent;
+import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
@@ -49,10 +50,16 @@ public class ThermalLogistics {
 	@Mod.Instance(MOD_ID)
 	public static ThermalLogistics INSTANCE;
 
+	public Configuration config;
+	public int refreshDelay;
+
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		AttachmentRegistry.registerAttachment(RequesterItem.ID, RequesterItem::new);
 		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
+
+		config = new Configuration(event.getSuggestedConfigurationFile());
+		refreshDelay = config.getInt("Refresh Delay", "General", 10, 1, 100, "The amount of ticks delay between sync packets from the server when looking at a GUI.");
 	}
 
 	@Mod.EventHandler
