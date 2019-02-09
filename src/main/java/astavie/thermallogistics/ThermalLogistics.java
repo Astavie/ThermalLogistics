@@ -1,5 +1,6 @@
 package astavie.thermallogistics;
 
+import astavie.thermallogistics.attachment.CrafterFluid;
 import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.RequesterFluid;
 import astavie.thermallogistics.attachment.RequesterItem;
@@ -45,6 +46,7 @@ public class ThermalLogistics {
 		AttachmentRegistry.registerAttachment(RequesterFluid.ID, RequesterFluid::new);
 
 		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
+		AttachmentRegistry.registerAttachment(CrafterFluid.ID, CrafterFluid::new);
 
 		config = new Configuration(event.getSuggestedConfigurationFile());
 		refreshDelay = config.getInt("Refresh Delay", Configuration.CATEGORY_GENERAL, 10, 1, 100, "The amount of ticks delay between sync packets from the server when looking at a GUI.");

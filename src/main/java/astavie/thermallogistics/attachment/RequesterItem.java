@@ -209,10 +209,6 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
-	public void onExtract(ItemStack stack) {
-	}
-
-	@Override
 	public void markDirty() {
 		baseTile.markChunkDirty();
 	}

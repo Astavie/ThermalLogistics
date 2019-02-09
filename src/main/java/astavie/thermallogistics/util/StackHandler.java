@@ -18,16 +18,16 @@ import java.util.List;
 
 public class StackHandler {
 
-	public static void writePacket(PacketBase packet, Object item, boolean identifier) {
-		if (item instanceof ItemStack) {
+	public static void writePacket(PacketBase packet, Object item, Class<?> c, boolean identifier) {
+		if (c == ItemStack.class) {
 			if (identifier)
 				packet.addByte(0);
 			packet.addItemStack((ItemStack) item);
-		} else if (item instanceof FluidStack) {
+		} else if (c == FluidStack.class) {
 			if (identifier)
 				packet.addByte(1);
 			packet.addFluidStack((FluidStack) item);
-		} else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
+		} else throw new IllegalArgumentException("Unknown item type " + c.getName());
 	}
 
 	@SuppressWarnings("unchecked")

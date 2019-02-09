@@ -5,12 +5,12 @@ import astavie.thermallogistics.client.TLTextures;
 import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.inventory.ContainerCrafter;
 import astavie.thermallogistics.process.Process;
-import astavie.thermallogistics.process.ProcessItem;
+import astavie.thermallogistics.process.ProcessFluid;
 import astavie.thermallogistics.process.Request;
-import astavie.thermallogistics.process.RequestItem;
+import astavie.thermallogistics.process.RequestFluid;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.StackHandler;
-import astavie.thermallogistics.util.TravelingItemLogistics;
+import codechicken.lib.fluid.FluidUtils;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
@@ -18,14 +18,15 @@ import codechicken.lib.vec.uv.IconTransformation;
 import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
-import cofh.core.util.helpers.ItemHelper;
+import cofh.core.util.helpers.FluidHelper;
 import cofh.core.util.helpers.ServerHelper;
 import cofh.thermaldynamics.ThermalDynamics;
+import cofh.thermaldynamics.duct.attachments.filter.IFilterFluid;
+import cofh.thermaldynamics.duct.attachments.servo.ServoFluid;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
+import cofh.thermaldynamics.duct.fluid.DuctUnitFluid;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
-import cofh.thermaldynamics.duct.item.StackMap;
-import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.gui.GuiHandler;
 import cofh.thermaldynamics.multiblock.IGridTile;
@@ -40,46 +41,49 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.Constants;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.oredict.OreDictionary;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.fluids.capability.IFluidTankProperties;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
+public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 
-	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MOD_ID, "crafter_item");
+	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MOD_ID, "crafter_fluid");
 
 	public static final int[] SIZE = {1, 2, 3, 4, 6};
 	public static final int[][] SPLITS = {{1}, {2, 1}, {3, 1}, {4, 2, 1}, {6, 3, 2, 1}};
 
-	private final List<Recipe<ItemStack>> recipes = NonNullList.create();
+	private final List<Recipe<FluidStack>> recipes = NonNullList.create();
 
 	private final List<RequesterReference<?>> linked = NonNullList.create();
 
-	private final ProcessItem process = new ProcessItem(this);
+	private final ProcessFluid process = new ProcessFluid(this);
 
 	// On the client this contains leftovers
-	private final RequestItem sent = new RequestItem(null);
+	private final RequestFluid sent = new RequestFluid(null);
 
-	public CrafterItem(TileGrid tile, byte side, int type) {
+	private final IFilterFluid filter = new Filter(this);
+
+	public CrafterFluid(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
 
-		Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
-		recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, ItemStack.EMPTY));
-		recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
+		Recipe<FluidStack> recipe = new Recipe<>(new RequestFluid(null));
+		recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, null));
+		recipe.outputs.addAll(Collections.nCopies(SIZE[type], null));
 
 		recipes.add(recipe);
 	}
 
-	public CrafterItem(TileGrid tile, byte side) {
+	public CrafterFluid(TileGrid tile, byte side) {
 		super(tile, side);
 	}
 
@@ -95,7 +99,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public String getInfo() {
-		return "tab." + ThermalLogistics.MOD_ID + ".crafterItem";
+		return "tab." + ThermalLogistics.MOD_ID + ".crafterFluid";
 	}
 
 	@Override
@@ -140,75 +144,54 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public void tick(int pass) {
-		if (pass == 0) {
-			if (itemDuct.tileCache[side] != null && !(itemDuct.tileCache[side] instanceof CacheWrapper))
-				itemDuct.tileCache[side] = new CacheWrapper(itemDuct.tileCache[side].tile, this);
+		if (pass == 0 && fluidDuct.tileCache[side] != null && !(fluidDuct.tileCache[side] instanceof CrafterFluid.CacheWrapper))
+			fluidDuct.tileCache[side] = new CrafterFluid.CacheWrapper(fluidDuct.tileCache[side].tile, this);
 
-			int size = itemDuct.itemsToAdd.size();
+		if (pass != 1 || fluidDuct.getGrid() == null || !isPowered || !isValidInput)
+			return;
 
-			a:
-			for (int i = 0; i < size; i++) {
-				TravelingItem item = itemDuct.itemsToAdd.get(i);
-				if (!(item instanceof TravelingItemLogistics)) {
-					for (Recipe<ItemStack> recipe : recipes) {
-						for (Request<ItemStack> request : recipe.requests) {
-							request.claim(this, item);
-							if (item.stack.isEmpty())
-								continue a;
-						}
-					}
-				}
-			}
-
-			itemDuct.itemsToAdd.removeIf(item -> item.stack.isEmpty());
-		}
-		super.tick(pass);
-	}
-
-	@Override
-	public void handleItemSending() {
 		// Check linked
 		checkLinked();
 
 		// Check requests
 		boolean changed = false;
 
-		for (Recipe<ItemStack> recipe : recipes)
-			changed |= ProcessItem.checkRequests(this, recipe.requests, IRequester::getInputFrom);
+		for (Recipe<FluidStack> recipe : recipes)
+			changed |= ProcessFluid.checkRequests(this, recipe.requests, IRequester::getInputFrom);
 
 		if (changed) {
-			Set<ItemStack> set = new HashSet<>();
+			Set<FluidStack> set = new HashSet<>();
 
 			a:
-			for (ItemStack stack : process.getStacks()) {
-				for (ItemStack compare : set) {
+			for (FluidStack stack : process.getStacks()) {
+				for (FluidStack compare : set) {
 					if (itemsIdentical(stack, compare)) {
-						compare.grow(stack.getCount());
+						compare.amount += stack.amount;
 						continue a;
 					}
 				}
 				set.add(stack.copy());
 			}
 
-			Map<ItemStack, Integer> map = set.stream().collect(Collectors.toMap(Function.identity(), item -> Math.max(item.getCount() - required(item, true), 0)));
+			Map<FluidStack, Integer> map = set.stream().collect(Collectors.toMap(Function.identity(), item -> Math.max(item.amount - required(item), 0)));
 			map.entrySet().removeIf(e -> e.getValue() == 0);
 
-			for (Iterator<Request<ItemStack>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
-				Request<ItemStack> request = iterator.next();
+			for (Iterator<Request<FluidStack>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
+				Request<FluidStack> request = iterator.next();
 
-				for (Iterator<ItemStack> iterator1 = request.stacks.iterator(); iterator1.hasNext(); ) {
-					ItemStack stack = iterator1.next();
+				for (Iterator<FluidStack> iterator1 = request.stacks.iterator(); iterator1.hasNext(); ) {
+					FluidStack stack = iterator1.next();
 
-					for (Iterator<Map.Entry<ItemStack, Integer>> iterator2 = map.entrySet().iterator(); iterator2.hasNext(); ) {
-						Map.Entry<ItemStack, Integer> entry = iterator2.next();
+					for (Iterator<Map.Entry<FluidStack, Integer>> iterator2 = map.entrySet().iterator(); iterator2.hasNext(); ) {
+						Map.Entry<FluidStack, Integer> entry = iterator2.next();
 						if (!itemsIdentical(entry.getKey(), stack))
 							continue;
 
-						int shrink = Math.min(stack.getCount(), entry.getValue());
-						stack.shrink(shrink);
+						int shrink = Math.min(stack.amount, entry.getValue());
+						stack.amount -= shrink;
 						entry.setValue(entry.getValue() - shrink);
 
-						if (stack.isEmpty())
+						if (stack.amount <= 0)
 							iterator1.remove();
 						if (entry.getValue() == 0)
 							iterator2.remove();
@@ -227,6 +210,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
+	public IFilterFluid getFluidFilter() {
+		return filter;
+	}
+
+	@Override
 	public void onNeighborChange() {
 		boolean wasPowered = isPowered;
 		super.onNeighborChange();
@@ -234,7 +222,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			process.requests.clear();
 			sent.stacks.clear();
 
-			for (Recipe<ItemStack> recipe : recipes) {
+			for (Recipe<FluidStack> recipe : recipes) {
 				recipe.requests.clear();
 				recipe.leftovers.stacks.clear();
 			}
@@ -249,7 +237,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			process.requests.clear();
 			sent.stacks.clear();
 
-			for (Recipe<ItemStack> recipe : recipes) {
+			for (Recipe<FluidStack> recipe : recipes) {
 				recipe.requests.clear();
 				recipe.leftovers.stacks.clear();
 			}
@@ -261,21 +249,21 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		super.writeToNBT(tag);
 
 		NBTTagList recipes = new NBTTagList();
-		for (Recipe<ItemStack> recipe : this.recipes) {
+		for (Recipe<FluidStack> recipe : this.recipes) {
 			NBTTagList inputs = new NBTTagList();
-			for (ItemStack stack : recipe.inputs)
-				inputs.appendTag(stack.writeToNBT(new NBTTagCompound()));
+			for (FluidStack stack : recipe.inputs)
+				inputs.appendTag(stack == null ? new NBTTagCompound() : stack.writeToNBT(new NBTTagCompound()));
 
 			NBTTagList outputs = new NBTTagList();
-			for (ItemStack stack : recipe.outputs)
-				outputs.appendTag(stack.writeToNBT(new NBTTagCompound()));
+			for (FluidStack stack : recipe.outputs)
+				outputs.appendTag(stack == null ? new NBTTagCompound() : stack.writeToNBT(new NBTTagCompound()));
 
 			NBTTagList requests = new NBTTagList();
-			for (Request<ItemStack> request : recipe.requests)
-				requests.appendTag(RequestItem.writeNBT(request));
+			for (Request<FluidStack> request : recipe.requests)
+				requests.appendTag(RequestFluid.writeNBT(request));
 
 			NBTTagList leftovers = new NBTTagList();
-			for (ItemStack stack : recipe.leftovers.stacks)
+			for (FluidStack stack : recipe.leftovers.stacks)
 				leftovers.appendTag(stack.writeToNBT(new NBTTagCompound()));
 
 			NBTTagCompound nbt = new NBTTagCompound();
@@ -287,7 +275,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		}
 
 		NBTTagList sent = new NBTTagList();
-		for (ItemStack stack : this.sent.stacks)
+		for (FluidStack stack : this.sent.stacks)
 			sent.appendTag(stack.writeToNBT(new NBTTagCompound()));
 
 		NBTTagList linked = new NBTTagList();
@@ -311,23 +299,23 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		for (int i = 0; i < recipes.tagCount(); i++) {
 			NBTTagCompound nbt = recipes.getCompoundTagAt(i);
 
-			Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+			Recipe<FluidStack> recipe = new Recipe<>(new RequestFluid(null));
 
 			NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
 			for (int j = 0; j < inputs.tagCount(); j++)
-				recipe.inputs.add(new ItemStack(inputs.getCompoundTagAt(j)));
+				recipe.inputs.add(FluidStack.loadFluidStackFromNBT(inputs.getCompoundTagAt(j)));
 
 			NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
 			for (int j = 0; j < outputs.tagCount(); j++)
-				recipe.outputs.add(new ItemStack(outputs.getCompoundTagAt(j)));
+				recipe.outputs.add(FluidStack.loadFluidStackFromNBT(outputs.getCompoundTagAt(j)));
 
 			NBTTagList requests = nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND);
 			for (int j = 0; j < requests.tagCount(); j++)
-				recipe.requests.add(RequestItem.readNBT(requests.getCompoundTagAt(j)));
+				recipe.requests.add(RequestFluid.readNBT(requests.getCompoundTagAt(j)));
 
 			NBTTagList leftovers = nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
 			for (int j = 0; j < leftovers.tagCount(); j++)
-				recipe.leftovers.stacks.add(new ItemStack(leftovers.getCompoundTagAt(j)));
+				recipe.leftovers.stacks.add(FluidStack.loadFluidStackFromNBT(leftovers.getCompoundTagAt(j)));
 
 			this.recipes.add(recipe);
 		}
@@ -336,7 +324,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 		NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < sent.tagCount(); i++)
-			this.sent.stacks.add(new ItemStack(sent.getCompoundTagAt(i)));
+			this.sent.stacks.add(FluidStack.loadFluidStackFromNBT(sent.getCompoundTagAt(i)));
 
 		NBTTagList linked = tag.getTagList("linked", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < linked.tagCount(); i++)
@@ -348,14 +336,14 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		super.writePortableData(player, tag);
 
 		NBTTagList recipes = new NBTTagList();
-		for (Recipe<ItemStack> recipe : this.recipes) {
+		for (Recipe<FluidStack> recipe : this.recipes) {
 			NBTTagList inputs = new NBTTagList();
-			for (ItemStack stack : recipe.inputs)
-				inputs.appendTag(stack.writeToNBT(new NBTTagCompound()));
+			for (FluidStack stack : recipe.inputs)
+				inputs.appendTag(stack == null ? new NBTTagCompound() : stack.writeToNBT(new NBTTagCompound()));
 
 			NBTTagList outputs = new NBTTagList();
-			for (ItemStack stack : recipe.outputs)
-				outputs.appendTag(stack.writeToNBT(new NBTTagCompound()));
+			for (FluidStack stack : recipe.outputs)
+				outputs.appendTag(stack == null ? new NBTTagCompound() : stack.writeToNBT(new NBTTagCompound()));
 
 			NBTTagCompound nbt = new NBTTagCompound();
 			nbt.setTag("inputs", inputs);
@@ -366,7 +354,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		tag.setString("DisplayType", new ItemStack(ThermalLogistics.Items.crafter).getTranslationKey() + ".name");
 
 		tag.setInteger("recipesType", type);
-		tag.setString("recipesClass", "ItemStack");
+		tag.setString("recipesClass", "FluidStack");
 		tag.setTag("recipes", recipes);
 	}
 
@@ -374,7 +362,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	public void readPortableData(EntityPlayer player, NBTTagCompound tag) {
 		super.readPortableData(player, tag);
 
-		if (tag.getInteger("recipesType") == type && tag.getString("recipesClass").equals("ItemStack")) {
+		if (tag.getInteger("recipesType") == type && tag.getString("recipesClass").equals("FluidStack")) {
 			recipes.clear();
 			sent.stacks.clear();
 
@@ -382,15 +370,15 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			for (int i = 0; i < recipes.tagCount(); i++) {
 				NBTTagCompound nbt = recipes.getCompoundTagAt(i);
 
-				Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+				Recipe<FluidStack> recipe = new Recipe<>(new RequestFluid(null));
 
 				NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
 				for (int j = 0; j < inputs.tagCount(); j++)
-					recipe.inputs.add(new ItemStack(inputs.getCompoundTagAt(j)));
+					recipe.inputs.add(FluidStack.loadFluidStackFromNBT(inputs.getCompoundTagAt(j)));
 
 				NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
 				for (int j = 0; j < outputs.tagCount(); j++)
-					recipe.outputs.add(new ItemStack(outputs.getCompoundTagAt(j)));
+					recipe.outputs.add(FluidStack.loadFluidStackFromNBT(outputs.getCompoundTagAt(j)));
 
 				this.recipes.add(recipe);
 			}
@@ -418,10 +406,10 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					int recipe = payload.getInt();
 					boolean input = payload.getBool();
 					int index = payload.getInt();
-					ItemStack stack = payload.getItemStack();
+					FluidStack stack = payload.getFluidStack();
 
 					if (recipe < recipes.size()) {
-						Recipe<ItemStack> r = recipes.get(recipe);
+						Recipe<FluidStack> r = recipes.get(recipe);
 						if (input) {
 							if (index < r.inputs.size()) {
 								r.inputs.set(index, stack);
@@ -452,15 +440,15 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					recipes.clear();
 					int size = payload.getInt();
 					for (int i = 0; i < size; i++) {
-						Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+						Recipe<FluidStack> recipe = new Recipe<>(new RequestFluid(null));
 
 						int inputs = payload.getInt();
 						for (int j = 0; j < inputs; j++)
-							recipe.inputs.add(payload.getItemStack());
+							recipe.inputs.add(payload.getFluidStack());
 
 						int outputs = payload.getInt();
 						for (int j = 0; j < outputs; j++)
-							recipe.outputs.add(payload.getItemStack());
+							recipe.outputs.add(payload.getFluidStack());
 
 						recipes.add(recipe);
 					}
@@ -471,7 +459,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 					int leftovers = payload.getInt();
 					for (int i = 0; i < leftovers; i++)
-						sent.stacks.add(payload.getItemStack());
+						sent.stacks.add(payload.getFluidStack());
 
 					int links = payload.getInt();
 					for (int i = 0; i < links; i++) {
@@ -490,13 +478,13 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public void split(int split) {
-		ItemStack[] inputs = new ItemStack[SIZE[type] * 2];
-		ItemStack[] outputs = new ItemStack[SIZE[type]];
+		FluidStack[] inputs = new FluidStack[SIZE[type] * 2];
+		FluidStack[] outputs = new FluidStack[SIZE[type]];
 
 		int recipeSize = SIZE[type] / recipes.size();
 
 		for (int i = 0; i < recipes.size(); i++) {
-			Recipe<ItemStack> recipe = recipes.get(i);
+			Recipe<FluidStack> recipe = recipes.get(i);
 
 			for (int j = 0; j < recipeSize; j++) {
 				inputs[(i * recipeSize + j) * 2] = recipe.inputs.get(j * 2);
@@ -511,7 +499,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 		int recipes = SIZE[type] / split;
 		for (int i = 0; i < recipes; i++) {
-			Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+			Recipe<FluidStack> recipe = new Recipe<>(new RequestFluid(null));
 
 			for (int j = 0; j < split; j++) {
 				recipe.inputs.add(inputs[(i * split + j) * 2]);
@@ -525,8 +513,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
-	public Class<ItemStack> getItemClass() {
-		return ItemStack.class;
+	public Class<FluidStack> getItemClass() {
+		return FluidStack.class;
 	}
 
 	private PacketTileInfo getGuiPacket() {
@@ -534,14 +522,14 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		packet.addByte(0);
 
 		packet.addInt(recipes.size());
-		for (Recipe<ItemStack> recipe : recipes) {
+		for (Recipe<FluidStack> recipe : recipes) {
 			packet.addInt(recipe.inputs.size());
-			for (ItemStack input : recipe.inputs)
-				packet.addItemStack(input);
+			for (FluidStack input : recipe.inputs)
+				packet.addFluidStack(input);
 
 			packet.addInt(recipe.outputs.size());
-			for (ItemStack output : recipe.outputs)
-				packet.addItemStack(output);
+			for (FluidStack output : recipe.outputs)
+				packet.addFluidStack(output);
 		}
 
 		writeSyncPacket(packet);
@@ -549,14 +537,14 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	private void writeSyncPacket(PacketTileInfo packet) {
-		RequestItem leftovers = new RequestItem(null);
-		for (Recipe<ItemStack> recipe : recipes)
-			for (ItemStack stack : recipe.leftovers.stacks)
+		RequestFluid leftovers = new RequestFluid(null);
+		for (Recipe<FluidStack> recipe : recipes)
+			for (FluidStack stack : recipe.leftovers.stacks)
 				leftovers.addStack(stack);
 
 		packet.addInt(leftovers.stacks.size());
-		for (ItemStack stack : leftovers.stacks)
-			packet.addItemStack(stack);
+		for (FluidStack stack : leftovers.stacks)
+			packet.addFluidStack(stack);
 
 		checkLinked();
 
@@ -595,56 +583,56 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
-	public List<ItemStack> getOutputs() {
-		List<ItemStack> outputs = NonNullList.create();
-		for (Recipe<ItemStack> recipe : recipes)
+	public List<FluidStack> getOutputs() {
+		List<FluidStack> outputs = new LinkedList<>();
+		for (Recipe<FluidStack> recipe : recipes)
 			outputs.addAll(recipe.outputs);
-		outputs.removeIf(ItemStack::isEmpty);
+		outputs.removeIf(Objects::isNull);
 		return outputs;
 	}
 
 	@Override
-	public List<Recipe<ItemStack>> getRecipes() {
+	public List<Recipe<FluidStack>> getRecipes() {
 		return recipes;
 	}
 
 	@Override
-	public Set<RequesterReference<ItemStack>> getBlacklist() {
-		Set<RequesterReference<ItemStack>> list = new HashSet<>();
+	public Set<RequesterReference<FluidStack>> getBlacklist() {
+		Set<RequesterReference<FluidStack>> list = new HashSet<>();
 		list.add(getReference());
 
-		for (Request<ItemStack> request : process.requests)
+		for (Request<FluidStack> request : process.requests)
 			list.addAll(request.blacklist);
 
 		return list;
 	}
 
 	@Override
-	public boolean request(IRequester<ItemStack> requester, ItemStack stack) {
-		for (Recipe<ItemStack> recipe : recipes) {
-			ItemStack output = ItemStack.EMPTY;
+	public boolean request(IRequester<FluidStack> requester, FluidStack stack) {
+		for (Recipe<FluidStack> recipe : recipes) {
+			FluidStack output = null;
 
-			for (ItemStack out : recipe.outputs) {
-				if (ItemHelper.itemsIdentical(out, stack)) {
+			for (FluidStack out : recipe.outputs) {
+				if (FluidHelper.isFluidEqual(out, stack)) {
 					output = out;
 					break;
 				}
 			}
 
-			if (output.isEmpty())
+			if (output == null)
 				continue;
 
 			// Add request
 			markDirty();
 
-			for (Request<ItemStack> request : recipe.requests) {
+			for (Request<FluidStack> request : recipe.requests) {
 				if (request.attachment.references(requester)) {
 					request.addStack(stack);
 					return true;
 				}
 			}
 
-			recipe.requests.add(new RequestItem(requester.getReference(), stack));
+			recipe.requests.add(new RequestFluid(requester.getReference(), stack));
 			return true;
 		}
 		return false;
@@ -679,14 +667,14 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
-	public List<ItemStack> getInputFrom(IRequester<ItemStack> requester) {
+	public List<FluidStack> getInputFrom(IRequester<FluidStack> requester) {
 		return process.getStacks(requester);
 	}
 
 	@Override
-	public List<ItemStack> getOutputTo(IRequester<ItemStack> requester) {
-		List<ItemStack> stacks = NonNullList.create();
-		for (Recipe<ItemStack> recipe : recipes)
+	public List<FluidStack> getOutputTo(IRequester<FluidStack> requester) {
+		List<FluidStack> stacks = NonNullList.create();
+		for (Recipe<FluidStack> recipe : recipes)
 			stacks.addAll(Process.getStacks(recipe.requests, requester));
 		return stacks;
 	}
@@ -696,42 +684,27 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		return isPowered;
 	}
 
-	private boolean itemsIdentical(ItemStack a, ItemStack b) {
-		if (!filter.getFlag(4) && a.getItem().getRegistryName().getNamespace().equals(b.getItem().getRegistryName().getNamespace()))
-			return true; // Same mod
-		if (!filter.getFlag(3) && !Collections.disjoint(Ints.asList(OreDictionary.getOreIDs(a)), Ints.asList(OreDictionary.getOreIDs(b))))
-			return true; // Same oredict
-
-		// Same item
-		return a.getItem() == b.getItem() && (filter.getFlag(1) || a.getMetadata() == b.getMetadata()) && (filter.getFlag(2) || ItemStack.areItemStackTagsEqual(a, b));
-	}
-
 	@Override
-	public int amountRequired(ItemStack stack) {
-		int amount = required(stack, true);
+	public int amountRequired(FluidStack stack) {
+		int amount = required(stack);
 
-		for (ItemStack item : process.getStacks())
+		for (FluidStack item : process.getStacks())
 			if (itemsIdentical(item, stack))
-				amount -= item.getCount();
+				amount -= item.amount;
 
 		return Math.max(amount, 0);
 	}
 
-	@Override
-	public float getThrottle() {
-		return 0;
-	}
-
-	private int required(ItemStack stack, boolean ducts) {
+	private int required(FluidStack stack) {
 		int amount = 0;
 		for (int i = 0; i < recipes.size(); i++) {
-			Recipe<ItemStack> recipe = recipes.get(i);
+			Recipe<FluidStack> recipe = recipes.get(i);
 
 			// Get amount required per recipe
 			int inputAmount = 0;
-			for (ItemStack input : recipe.inputs)
-				if (!input.isEmpty() && itemsIdentical(input, stack))
-					inputAmount += input.getCount();
+			for (FluidStack input : recipe.inputs)
+				if (input != null && itemsIdentical(input, stack))
+					inputAmount += input.amount;
 
 			if (inputAmount == 0)
 				continue;
@@ -744,19 +717,25 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			amount += inputAmount * recipes;
 		}
 
-		for (ItemStack item : this.sent.stacks)
+		for (FluidStack item : this.sent.stacks)
 			if (itemsIdentical(item, stack))
-				amount -= item.getCount();
-
-		if (ducts) {
-			StackMap map = itemDuct.getGrid().travelingItems.get(itemDuct.pos().offset(EnumFacing.byIndex(side)));
-			if (map != null)
-				for (ItemStack item : map.getItems())
-					if (itemsIdentical(item, stack))
-						amount -= item.getCount();
-		}
+				amount -= item.amount;
 
 		return Math.max(amount, 0);
+	}
+
+	@Override
+	public int getMaxSend() {
+		return 0;
+	}
+
+	private boolean itemsIdentical(FluidStack a, FluidStack b) {
+		return a.getFluid() == b.getFluid() && (super.filter.getFlag(2) || FluidStack.areFluidStackTagsEqual(a, b));
+	}
+
+	@Override
+	public float getThrottle() {
+		return throttle[type];
 	}
 
 	@Override
@@ -764,16 +743,16 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		if (index >= recipes.size())
 			return 0;
 
-		Recipe<ItemStack> recipe = recipes.get(index);
+		Recipe<FluidStack> recipe = recipes.get(index);
 
 		int recipes = 0;
-		for (ItemStack output : recipe.outputs) {
-			if (!output.isEmpty()) {
+		for (FluidStack output : recipe.outputs) {
+			if (output != null) {
 				int count = 0;
-				for (Request<ItemStack> request : recipe.requests) {
-					for (ItemStack item : request.stacks) {
-						if (ItemHelper.itemsIdentical(output, item)) {
-							count += item.getCount();
+				for (Request<FluidStack> request : recipe.requests) {
+					for (FluidStack item : request.stacks) {
+						if (FluidHelper.isFluidEqual(output, item)) {
+							count += item.amount;
 							break;
 						}
 					}
@@ -781,7 +760,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				count -= recipe.leftovers.getCount(output);
 
 				if (count > 0)
-					recipes = Math.max(recipes, (count - 1) / output.getCount() + 1);
+					recipes = Math.max(recipes, (count - 1) / output.amount + 1);
 			}
 		}
 		return recipes;
@@ -789,7 +768,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public IGridTile getDuct() {
-		return itemDuct;
+		return fluidDuct;
 	}
 
 	@Override
@@ -803,13 +782,18 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
+	public byte getSpeed() {
+		return 0;
+	}
+
+	@Override
 	public ListWrapper<Route<DuctUnitItem, GridItem>> getRoutes() {
-		return routesWithInsertSideList;
+		return null;
 	}
 
 	@Override
 	public boolean hasMultiStack() {
-		return multiStack[type];
+		return false;
 	}
 
 	@Override
@@ -823,25 +807,25 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
-	public void onFinishCrafting(IRequester<ItemStack> requester, ItemStack stack) {
+	public void onFinishCrafting(IRequester<FluidStack> requester, FluidStack stack) {
 		for (int i = 0; i < recipes.size(); i++) {
-			Recipe<ItemStack> recipe = recipes.get(i);
+			Recipe<FluidStack> recipe = recipes.get(i);
 			if (recipe.requests.isEmpty())
 				continue;
 
-			ItemStack output = ItemStack.EMPTY;
-			for (ItemStack out : recipe.outputs) {
-				if (ItemHelper.itemsIdentical(out, stack)) {
+			FluidStack output = null;
+			for (FluidStack out : recipe.outputs) {
+				if (FluidHelper.isFluidEqual(out, stack)) {
 					output = out;
 					break;
 				}
 			}
 
-			if (output.isEmpty())
+			if (output == null)
 				continue;
 
-			for (Iterator<Request<ItemStack>> iterator = recipe.requests.iterator(); iterator.hasNext(); ) {
-				Request<ItemStack> request = iterator.next();
+			for (Iterator<Request<FluidStack>> iterator = recipe.requests.iterator(); iterator.hasNext(); ) {
+				Request<FluidStack> request = iterator.next();
 				if (!request.attachment.references(requester))
 					continue;
 
@@ -850,37 +834,37 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					iterator.remove();
 
 				// Check leftovers
-				int count = stack.getCount();
+				int count = stack.amount;
 
-				for (Iterator<ItemStack> iterator1 = recipe.leftovers.stacks.iterator(); iterator1.hasNext(); ) {
-					ItemStack leftovers = iterator1.next();
-					if (ItemHelper.itemsIdentical(leftovers, stack)) {
-						int amount = Math.min(leftovers.getCount(), stack.getCount());
-						leftovers.shrink(amount);
+				for (Iterator<FluidStack> iterator1 = recipe.leftovers.stacks.iterator(); iterator1.hasNext(); ) {
+					FluidStack leftovers = iterator1.next();
+					if (FluidHelper.isFluidEqual(leftovers, stack)) {
+						int amount = Math.min(leftovers.amount, stack.amount);
+						leftovers.amount -= amount;
 						count -= amount;
 
-						if (leftovers.isEmpty())
+						if (leftovers.amount <= 0)
 							iterator1.remove();
 
 						break;
 					}
 				}
 
-				int recipes = (count - 1) / output.getCount() + 1;
+				int recipes = (count - 1) / output.amount + 1;
 				if (recipes > 0) {
-					int leftover = count % output.getCount() > 0 ? output.getCount() - (count % output.getCount()) : 0;
+					int leftover = count % output.amount > 0 ? output.amount - (count % output.amount) : 0;
 
 					// Remove sent
-					for (ItemStack in : recipe.inputs)
-						if (!in.isEmpty())
-							sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
+					for (FluidStack in : recipe.inputs)
+						if (in != null)
+							sent.decreaseStack(FluidUtils.copy(in, in.amount * recipes));
 
 					// Add leftovers
-					for (ItemStack out : recipe.outputs) {
-						if (!out.isEmpty()) {
-							int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
+					for (FluidStack out : recipe.outputs) {
+						if (out != null) {
+							int amount = FluidHelper.isFluidEqual(out, stack) ? leftover : out.amount * recipes;
 							if (amount > 0)
-								recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
+								recipe.leftovers.addStack(FluidUtils.copy(out, amount));
 						}
 					}
 
@@ -900,17 +884,17 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		if (index >= this.recipes.size())
 			return;
 
-		Recipe<ItemStack> recipe = this.recipes.get(index);
+		Recipe<FluidStack> recipe = this.recipes.get(index);
 
 		// Remove sent
-		for (ItemStack in : recipe.inputs)
-			if (!in.isEmpty())
-				sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
+		for (FluidStack in : recipe.inputs)
+			if (in != null)
+				sent.decreaseStack(FluidUtils.copy(in, in.amount * recipes));
 
 		// Add leftovers
-		for (ItemStack out : recipe.outputs)
-			if (!out.isEmpty())
-				recipe.leftovers.addStack(ItemHelper.cloneStack(out, out.getCount() * recipes));
+		for (FluidStack out : recipe.outputs)
+			if (out != null)
+				recipe.leftovers.addStack(FluidUtils.copy(out, out.amount * recipes));
 
 		markDirty();
 	}
@@ -920,76 +904,82 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		baseTile.markChunkDirty();
 	}
 
-	private static class CacheWrapper extends DuctUnitItem.Cache {
+	@Override
+	public int tickDelay() {
+		return ServoItem.tickDelays[type];
+	}
 
-		private final CrafterItem crafter;
+	private static class Filter implements IFilterFluid {
 
-		private CacheWrapper(@Nonnull TileEntity tile, @Nonnull CrafterItem attachment) {
-			super(tile, attachment);
-			this.crafter = attachment;
+		private final CrafterFluid crafter;
+
+		private Filter(CrafterFluid crafter) {
+			this.crafter = crafter;
 		}
 
 		@Override
-		public IItemHandler getItemHandler(int face) {
-			return new Inventory(crafter, super.getItemHandler(EnumFacing.byIndex(face)));
-		}
-
-		@Override
-		public IItemHandler getItemHandler(EnumFacing face) {
-			return new Inventory(crafter, super.getItemHandler(face));
+		public boolean allowFluid(FluidStack fluid) {
+			return crafter.recipes.stream().anyMatch(recipe -> recipe.inputs.stream().anyMatch(input -> FluidHelper.isFluidEqual(input, fluid)));
 		}
 
 	}
 
-	private static class Inventory implements IItemHandler {
+	private static class CacheWrapper extends DuctUnitFluid.Cache {
 
-		private final CrafterItem crafter;
-		private final IItemHandler inv;
+		private final CrafterFluid crafter;
 
-		private Inventory(CrafterItem crafter, IItemHandler inv) {
+		private CacheWrapper(TileEntity tile, @Nonnull CrafterFluid crafter) {
+			super(tile, crafter.filter);
 			this.crafter = crafter;
-			this.inv = inv;
 		}
 
 		@Override
-		public int getSlots() {
-			return inv.getSlots();
+		public IFluidHandler getHandler(int side) {
+			return new Tank(crafter, super.getHandler(side));
 		}
 
-		@Nonnull
-		@Override
-		public ItemStack getStackInSlot(int slot) {
-			return inv.getStackInSlot(slot);
+	}
+
+	private static class Tank implements IFluidHandler {
+
+		private final CrafterFluid crafter;
+		private final IFluidHandler handler;
+
+		private Tank(CrafterFluid crafter, IFluidHandler handler) {
+			this.crafter = crafter;
+			this.handler = handler;
 		}
 
-		@Nonnull
 		@Override
-		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-			int required = Math.min(stack.getCount(), crafter.required(stack, false));
+		public IFluidTankProperties[] getTankProperties() {
+			return handler.getTankProperties();
+		}
+
+		@Override
+		public int fill(FluidStack resource, boolean doFill) {
+			int required = Math.min(resource.amount, crafter.required(resource));
 			if (required == 0)
-				return stack;
+				return 0;
 
-			int remaining = stack.getCount() - required;
-
-			ItemStack remainder = inv.insertItem(slot, ItemHelper.cloneStack(stack, required), simulate);
-
-			if (!simulate) {
-				crafter.sent.addStack(ItemHelper.cloneStack(stack, required - remainder.getCount()));
+			int fill = handler.fill(FluidUtils.copy(resource, required), doFill);
+			if (doFill) {
+				crafter.sent.addStack(FluidUtils.copy(resource, fill));
 				crafter.markDirty();
 			}
 
-			return ItemHelper.cloneStack(stack, remainder.getCount() + remaining);
+			return fill;
 		}
 
-		@Nonnull
+		@Nullable
 		@Override
-		public ItemStack extractItem(int slot, int amount, boolean simulate) {
-			return inv.extractItem(slot, amount, simulate);
+		public FluidStack drain(FluidStack resource, boolean doDrain) {
+			return handler.drain(resource, doDrain);
 		}
 
+		@Nullable
 		@Override
-		public int getSlotLimit(int slot) {
-			return inv.getSlotLimit(slot);
+		public FluidStack drain(int maxDrain, boolean doDrain) {
+			return handler.drain(maxDrain, doDrain);
 		}
 
 	}

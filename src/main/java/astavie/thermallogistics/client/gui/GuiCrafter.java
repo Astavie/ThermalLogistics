@@ -270,7 +270,7 @@ public class GuiCrafter extends GuiContainerCore {
 			packet.addInt(recipe);
 			packet.addBool(input);
 			packet.addInt(index);
-			StackHandler.writePacket(packet, stack, false);
+			StackHandler.writePacket(packet, stack, crafter.getItemClass(), false);
 			PacketHandler.sendToServer(packet);
 		}
 

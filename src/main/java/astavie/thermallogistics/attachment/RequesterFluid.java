@@ -207,10 +207,6 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 	}
 
 	@Override
-	public void onExtract(FluidStack stack) {
-	}
-
-	@Override
 	public void markDirty() {
 		baseTile.markChunkDirty();
 	}

@@ -163,6 +163,9 @@ public class ProcessItem extends Process<ItemStack> {
 
 	@Override
 	public void tick() {
+		if (requester.getDuct().world().getTotalWorldTime() % requester.tickDelay() != 0)
+			return;
+
 		// Check requests
 		checkRequests(requester, requests, IRequester::getOutputTo);
 
@@ -246,7 +249,6 @@ public class ProcessItem extends Process<ItemStack> {
 
 			ItemStack extract = extract(requester, handler, requester::amountRequired, endPoint, side, cache, inv);
 			if (!extract.isEmpty()) {
-				requester.onExtract(extract);
 				routes.advanceCursor();
 				return;
 			}

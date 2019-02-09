@@ -45,8 +45,6 @@ public interface IRequester<I> {
 
 	void onFinishCrafting(int index, int recipes);
 
-	void onExtract(I stack);
-
 	void markDirty();
 
 	int tickDelay();
