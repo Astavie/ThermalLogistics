@@ -1,6 +1,8 @@
 package astavie.thermallogistics.process;
 
+import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.util.RequesterReference;
+import cofh.thermaldynamics.duct.item.TravelingItem;
 import net.minecraft.util.NonNullList;
 
 import javax.annotation.Nonnull;
@@ -44,6 +46,8 @@ public abstract class Request<I> implements Comparable<Request<?>> {
 	public abstract void decreaseStack(I stack);
 
 	public abstract int getCount(I stack);
+
+	public abstract void claim(ICrafter<I> crafter, TravelingItem item);
 
 	@Override
 	public int compareTo(@Nonnull Request<?> request) {

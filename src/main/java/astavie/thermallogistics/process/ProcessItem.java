@@ -3,12 +3,12 @@ package astavie.thermallogistics.process;
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.IRequester;
 import astavie.thermallogistics.util.RequesterReference;
+import astavie.thermallogistics.util.TravelingItemLogistics;
 import cofh.core.util.helpers.InventoryHelper;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
-import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
@@ -128,7 +128,7 @@ public class ProcessItem extends Process<ItemStack> {
 				}
 			}
 
-			endPoint.insertNewItem(new TravelingItem(item, endPoint, route1, (byte) (side ^ 1), requester.getSpeed()));
+			endPoint.insertNewItem(new TravelingItemLogistics(item, endPoint, route1, (byte) (side ^ 1), requester.getSpeed()));
 			return item;
 		}
 		return ItemStack.EMPTY;
@@ -175,6 +175,11 @@ public class ProcessItem extends Process<ItemStack> {
 
 		for (Iterator<Request<ItemStack>> iterator = requests.iterator(); iterator.hasNext(); ) {
 			Request<ItemStack> request = iterator.next();
+			if (request.stacks.isEmpty()) {
+				iterator.remove();
+				continue;
+			}
+
 			if (!request.attachment.isLoaded())
 				continue;
 
@@ -235,7 +240,7 @@ public class ProcessItem extends Process<ItemStack> {
 				continue;
 
 			IItemHandler inv = cache.getItemHandler(side ^ 1);
-			if (inv == null)
+			if (inv == null || inv.equals(handler))
 				continue;
 
 			ItemStack extract = extract(requester, handler, requester::amountRequired, endPoint, side, cache, inv);

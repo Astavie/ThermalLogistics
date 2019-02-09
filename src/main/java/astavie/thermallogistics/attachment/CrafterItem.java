@@ -10,6 +10,7 @@ import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.process.RequestItem;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.StackHandler;
+import astavie.thermallogistics.util.TravelingItemLogistics;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
@@ -24,6 +25,7 @@ import cofh.thermaldynamics.duct.attachments.filter.IFilterItems;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
+import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.gui.GuiHandler;
 import cofh.thermaldynamics.multiblock.IGridTileRoute;
@@ -38,12 +40,15 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.oredict.OreDictionary;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -133,6 +138,33 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				}
 			}
 		}
+	}
+
+	@Override
+	public void tick(int pass) {
+		if (pass == 0) {
+			if (itemDuct.tileCache[side] != null && !(itemDuct.tileCache[side] instanceof CacheWrapper))
+				itemDuct.tileCache[side] = new CacheWrapper(itemDuct.tileCache[side].tile, this);
+
+			int size = itemDuct.itemsToAdd.size();
+
+			a:
+			for (int i = 0; i < size; i++) {
+				TravelingItem item = itemDuct.itemsToAdd.get(i);
+				if (!(item instanceof TravelingItemLogistics)) {
+					for (Recipe<ItemStack> recipe : recipes) {
+						for (Request<ItemStack> request : recipe.requests) {
+							request.claim(this, item);
+							if (item.stack.isEmpty())
+								continue a;
+						}
+					}
+				}
+			}
+
+			itemDuct.itemsToAdd.removeIf(item -> item.stack.isEmpty());
+		}
+		super.tick(pass);
 	}
 
 	@Override
@@ -898,6 +930,67 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		@Override
 		public int getMaxStock() {
 			return crafter.filter.getMaxStock();
+		}
+
+	}
+
+	private static class CacheWrapper extends DuctUnitItem.Cache {
+
+		private final CrafterItem crafter;
+
+		private CacheWrapper(@Nonnull TileEntity tile, @Nonnull CrafterItem attachment) {
+			super(tile, attachment);
+			this.crafter = attachment;
+		}
+
+		@Override
+		public IItemHandler getItemHandler(int face) {
+			return new Inventory(crafter, super.getItemHandler(face));
+		}
+
+		@Override
+		public IItemHandler getItemHandler(EnumFacing face) {
+			return new Inventory(crafter, super.getItemHandler(face));
+		}
+
+	}
+
+	private static class Inventory implements IItemHandler {
+
+		private final CrafterItem crafter;
+		private final IItemHandler inv;
+
+		private Inventory(CrafterItem crafter, IItemHandler inv) {
+			this.crafter = crafter;
+			this.inv = inv;
+		}
+
+		@Override
+		public int getSlots() {
+			return inv.getSlots();
+		}
+
+		@Nonnull
+		@Override
+		public ItemStack getStackInSlot(int slot) {
+			return inv.getStackInSlot(slot);
+		}
+
+		@Nonnull
+		@Override
+		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
+			return inv.insertItem(slot, ItemHelper.cloneStack(stack, Math.min(stack.getCount(), crafter.required(stack, false))), simulate);
+		}
+
+		@Nonnull
+		@Override
+		public ItemStack extractItem(int slot, int amount, boolean simulate) {
+			return inv.extractItem(slot, amount, simulate);
+		}
+
+		@Override
+		public int getSlotLimit(int slot) {
+			return inv.getSlotLimit(slot);
 		}
 
 	}

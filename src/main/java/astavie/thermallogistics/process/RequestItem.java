@@ -1,8 +1,13 @@
 package astavie.thermallogistics.process;
 
+import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.attachment.IRequester;
 import astavie.thermallogistics.util.RequesterReference;
 import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.ItemHelper;
+import cofh.thermaldynamics.duct.item.DuctUnitItem;
+import cofh.thermaldynamics.duct.item.TravelingItem;
+import cofh.thermaldynamics.multiblock.Route;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -109,6 +114,31 @@ public class RequestItem extends Request<ItemStack> {
 			if (ItemHelper.itemsIdentical(item, stack))
 				return item.getCount();
 		return 0;
+	}
+
+	@Override
+	public void claim(ICrafter<ItemStack> crafter, TravelingItem item) {
+		IRequester<ItemStack> attachment = this.attachment.getAttachment();
+		if (attachment == null)
+			return;
+
+		DuctUnitItem duct = (DuctUnitItem) crafter.getDuct();
+
+		Route route1 = duct.getRoute(attachment.getDuct());
+		if (route1 == null)
+			return;
+
+		ItemStack removed = item.stack.splitStack(Math.min(getCount(item.stack), item.stack.getCount()));
+		if (removed.isEmpty())
+			return;
+
+		crafter.onFinishCrafting(attachment, removed);
+		decreaseStack(removed);
+
+		route1 = route1.copy();
+		route1.pathDirections.add(attachment.getSide());
+
+		duct.insertNewItem(new TravelingItem(removed, duct, route1, (byte) (crafter.getSide() ^ 1), attachment.getSpeed()));
 	}
 
 }

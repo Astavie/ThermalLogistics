@@ -26,6 +26,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.items.IItemHandler;
 
 import java.util.Collections;
 import java.util.List;
@@ -134,6 +135,15 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 			return 0;
 
 		int required = filter.getMaxStock();
+
+		// Items in inventory
+		IItemHandler inv = getCachedInv();
+		if (inv == null)
+			return 0;
+
+		for (int i = 0; i < inv.getSlots(); i++)
+			if (ItemHelper.itemsIdentical(inv.getStackInSlot(i), stack))
+				required -= inv.getStackInSlot(i).getCount();
 
 		// Items in requests
 		for (ItemStack item : process.getStacks())
