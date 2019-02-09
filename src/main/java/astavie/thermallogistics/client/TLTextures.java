@@ -27,7 +27,7 @@ public class TLTextures {
 		registerAttachment(event.getMap(), REQUESTER, "requester");
 		registerAttachment(event.getMap(), CRAFTER, "crafter");
 
-		ICON_LINK = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MOD_ID, "items/manager_1"));
+		ICON_LINK = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MOD_ID, "items/manager"));
 		ICON_ARROW_RIGHT = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MOD_ID, "gui/icons/arrow_right"));
 		ICON_FLUID = event.getMap().registerSprite(new ResourceLocation("items/bucket_water"));
 

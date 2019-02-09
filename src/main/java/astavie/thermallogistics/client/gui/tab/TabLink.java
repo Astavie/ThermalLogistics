@@ -2,7 +2,6 @@ package astavie.thermallogistics.client.gui.tab;
 
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.client.TLTextures;
-import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
@@ -19,7 +18,7 @@ import net.minecraft.client.renderer.RenderHelper;
 import java.io.IOException;
 import java.util.List;
 
-public class TabLinks extends TabBase {
+public class TabLink extends TabBase {
 
 	private static final int HEIGHT = 18;
 
@@ -30,9 +29,9 @@ public class TabLinks extends TabBase {
 
 	private int first = 0;
 
-	public TabLinks(GuiCrafter gui) {
+	public TabLink(GuiContainerCore gui, ICrafter<?> crafter) {
 		super(gui);
-		this.crafter = gui.crafter;
+		this.crafter = crafter;
 
 		this.maxHeight = 96;
 		this.backgroundColor = 0xc46d00;
@@ -41,9 +40,9 @@ public class TabLinks extends TabBase {
 		this.max = crafter.getLinked().size() - num;
 	}
 
-	public TabLinks(GuiCrafter gui, int side) {
+	public TabLink(GuiContainerCore gui, int side, ICrafter<?> crafter) {
 		super(gui, side);
-		this.crafter = gui.crafter;
+		this.crafter = crafter;
 
 		this.maxHeight = 96;
 		this.backgroundColor = 0xc46d00;

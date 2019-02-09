@@ -5,28 +5,23 @@ item.logistics.requester.hardened.name=Hardened Requester
 item.logistics.requester.reinforced.name=Reinforced Requester
 item.logistics.requester.signalum.name=Signalum Requester
 item.logistics.requester.resonant.name=Resonant Requester
-item.logistics.requester.info=Pulls distant items/fluids to itself and requests crafters to craft missing items.
+item.logistics.requester.info=Pulls or crafts items/fluids to itself.
 
 item.logistics.crafter.basic.name=Crafter
 item.logistics.crafter.hardened.name=Hardened Crafter
 item.logistics.crafter.reinforced.name=Reinforced Crafter
 item.logistics.crafter.signalum.name=Signalum Crafter
 item.logistics.crafter.resonant.name=Resonant Crafter
-item.logistics.crafter.info=Pulls distant items/fluids to itself when a request is given to craft items.
+item.logistics.crafter.info=Crafts items/fluids on request.
 
 item.logistics.multiplexer.basic.name=Servo Multiplexer
 item.logistics.multiplexer.hardened.name=Hardened Servo Multiplexer
 item.logistics.multiplexer.reinforced.name=Reinforced Servo Multiplexer
 item.logistics.multiplexer.signalum.name=Signalum Servo Multiplexer
 item.logistics.multiplexer.resonant.name=Resonant Servo Multiplexer
-item.logistics.multiplexer.info=Allows you to put the functionality of multiple servos on a single servo.
+item.logistics.multiplexer.info=Contains multiple servos within itself.
 
-item.logistics.manager.basic.name=Network Manager (Basic)
-item.logistics.manager.hardened.name=Network Manager (Hardened)
-item.logistics.manager.reinforced.name=Network Manager (Reinforced)
-item.logistics.manager.signalum.name=Network Manager (Signalum)
-item.logistics.manager.resonant.name=Network Manager (Resonant)
-item.logistics.manager.creative.name=Network Manager (Creative)
+item.logistics.manager.name=Network Manager
 
 item.logistics.terminal.item.name=Terminal
 tile.logistics.terminal.item.name=Terminal
@@ -64,6 +59,7 @@ info.logistics.manager.d.0=Starting link...
 info.logistics.manager.d.1=Unable to link. Please try again.
 info.logistics.manager.d.2=These crafters are already linked.
 info.logistics.manager.d.3=Linked successfully!
+info.logistics.manager.d.4=Link cancelled.
 
 info.logistics.manager.e.0=Items travelling to this duct
 info.logistics.manager.e.1=%s x %s

@@ -4,7 +4,7 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.client.gui.element.ElementSlotItem;
-import astavie.thermallogistics.client.gui.tab.TabLinks;
+import astavie.thermallogistics.client.gui.tab.TabLink;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.gui.element.ElementButton;
@@ -36,8 +36,8 @@ public class GuiCrafter extends GuiContainerCore {
 	private static final int[][] levelButtonPos = {{-1, -1}, {0, 204}, {80, 204}};
 	private static final int[][] flagButtonsPos = {{176, 0}, {176, 60}, {216, 0}, {216, 60}, {176, 120}, {216, 120}, {176, 180}, {216, 180},};
 
-	public final CrafterItem crafter;
-	public final List<ElementBase> slots = new LinkedList<>();
+	private final CrafterItem crafter;
+	private final List<ElementBase> slots = new LinkedList<>();
 
 	private ElementButton splitButton;
 	private ElementButton[] flagButtons = new ElementButton[0];
@@ -69,7 +69,7 @@ public class GuiCrafter extends GuiContainerCore {
 		if (crafter.canAlterRS())
 			addTab(new TabRedstoneControl(this, crafter));
 
-		addTab(new TabLinks(this));
+		addTab(new TabLink(this, crafter));
 
 		int[] flagNums = new int[crafter.filter.validFlags().length - 1];
 		System.arraycopy(crafter.filter.validFlags(), 1, flagNums, 0, flagNums.length);
