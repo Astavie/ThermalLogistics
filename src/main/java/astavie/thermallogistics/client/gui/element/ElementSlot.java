@@ -50,7 +50,7 @@ public abstract class ElementSlot extends ElementBase {
 
 	@Override
 	public void addTooltip(List<String> list) {
-		if (intersectsWith(gui.getMouseX(), gui.getMouseY()) && gui.mc.player.inventory.getItemStack().isEmpty())
+		if (gui.mc.player.inventory.getItemStack().isEmpty())
 			addTooltip(gui.getMouseX(), gui.getMouseY(), list);
 	}
 

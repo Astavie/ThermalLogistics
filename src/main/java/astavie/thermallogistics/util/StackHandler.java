@@ -6,6 +6,7 @@ import astavie.thermallogistics.client.gui.element.ElementSlotItem;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.network.PacketBase;
+import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
@@ -43,8 +44,10 @@ public class StackHandler {
 	@SideOnly(Side.CLIENT)
 	public static void render(GuiContainerCore gui, int x, int y, Object item, boolean count) {
 		if (item instanceof ItemStack) {
+			RenderHelper.enableGUIStandardItemLighting();
 			gui.drawItemStack((ItemStack) item, x, y, true, count ? null : "");
 		} else if (item instanceof FluidStack) {
+			GlStateManager.disableLighting();
 			gui.drawFluid(x, y, (FluidStack) item, 16, 16);
 
 			if (count) {

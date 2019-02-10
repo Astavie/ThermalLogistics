@@ -1,8 +1,10 @@
 package astavie.thermallogistics.client.gui;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.attachment.CrafterFluid;
 import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.client.gui.tab.TabFluid;
 import astavie.thermallogistics.client.gui.tab.TabLink;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
@@ -19,13 +21,15 @@ import cofh.thermaldynamics.gui.container.ContainerAttachmentBase;
 import com.google.common.primitives.Ints;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fluids.FluidStack;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class GuiCrafter extends GuiContainerCore {
+public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 
 	private static final String ICON_PATH = ThermalLogistics.MOD_ID + ":textures/gui/crafter.png";
 
@@ -43,6 +47,9 @@ public class GuiCrafter extends GuiContainerCore {
 	private ElementButton[] flagButtons = new ElementButton[0];
 	private ElementButton[] levelButtons = new ElementButton[FilterLogic.defaultLevels.length];
 	private int buttonSize;
+
+	private TabFluid tab = null;
+	private FluidStack fluid = null;
 
 	public GuiCrafter(InventoryPlayer inventoryPlayer, ConnectionBase attachment, ICrafter<?> crafter) {
 		super(new ContainerAttachmentBase(inventoryPlayer, attachment), TEXTURE);
@@ -71,6 +78,8 @@ public class GuiCrafter extends GuiContainerCore {
 			addTab(new TabRedstoneControl(this, attachment));
 
 		addTab(new TabLink(this, crafter));
+		if (attachment instanceof CrafterFluid)
+			addTab(tab = new TabFluid(this, this));
 
 		int[] flagNums = new int[attachment.filter.validFlags().length - 1];
 		System.arraycopy(attachment.filter.validFlags(), 1, flagNums, 0, flagNums.length);
@@ -183,6 +192,29 @@ public class GuiCrafter extends GuiContainerCore {
 	}
 
 	@Override
+	protected void mouseClicked(int mX, int mY, int mouseButton) throws IOException {
+		if (fluid != null && slots.stream().noneMatch(slot -> slot.intersectsWith(mX - guiLeft, mY - guiTop)))
+			fluid = null;
+		else
+			super.mouseClicked(mX, mY, mouseButton);
+	}
+
+	@Override
+	protected boolean hasClickedOutside(int x, int y, int left, int top) {
+		boolean yes = super.hasClickedOutside(x, y, left, top);
+		if (yes && tab != null && tab.slot.intersectsWith(x - left - tab.posX(), y - top - tab.getPosY()))
+			return false;
+		return yes;
+	}
+
+	@Override
+	protected void keyTyped(char characterTyped, int keyPressed) throws IOException {
+		if (tab != null && tab.isFullyOpened() && tab.onKeyTyped(characterTyped, keyPressed))
+			return;
+		super.keyTyped(characterTyped, keyPressed);
+	}
+
+	@Override
 	public void handleElementButtonClick(String buttonName, int mouseButton) {
 		if (splitButton != null && splitButton.getName().equals(buttonName)) {
 			int offset = mouseButton == 0 ? 1 : mouseButton == 1 ? -1 : 0;
@@ -238,6 +270,23 @@ public class GuiCrafter extends GuiContainerCore {
 				return;
 			}
 		}
+	}
+
+	@Override
+	protected void drawGuiContainerForegroundLayer(int x, int y) {
+		super.drawGuiContainerForegroundLayer(x, y);
+		if (fluid != null)
+			StackHandler.render(this, x - guiLeft - 8, y - guiTop - 8, fluid, true);
+	}
+
+	@Override
+	public FluidStack getFluid() {
+		return fluid;
+	}
+
+	@Override
+	public void setFluid(FluidStack fluid) {
+		this.fluid = fluid;
 	}
 
 	public static class Slot<I> implements Supplier<I>, Consumer<I> {

@@ -28,9 +28,12 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	protected final ElementSlider slider = new SliderVertical(this, 174, 18, 12, 52, 0);
 
 	protected final ElementTextField amount = new ElementTextFieldLimited(this, 44, 77, 70, 10).setFilter("0123456789", false);
+
 	protected final List<Triple<I, Long, Boolean>> filter = NonNullList.create();
 	protected final TileTerminal<I> tile;
+
 	protected I selected;
+
 	protected final ElementButtonManaged button = new ElementButtonManaged(this, 117, 74, 50, 16, "") {
 		@Override
 		public void onClick() {

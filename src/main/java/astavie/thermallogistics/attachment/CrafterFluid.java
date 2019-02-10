@@ -676,8 +676,8 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 	}
 
 	@Override
-	public boolean isEnabled() {
-		return isPowered;
+	public boolean isDisabled() {
+		return !isPowered;
 	}
 
 	@Override

@@ -688,8 +688,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
-	public boolean isEnabled() {
-		return isPowered;
+	public boolean isDisabled() {
+		return !isPowered;
 	}
 
 	private boolean itemsIdentical(ItemStack a, ItemStack b) {

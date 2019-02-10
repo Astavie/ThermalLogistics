@@ -133,8 +133,8 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 	}
 
 	@Override
-	public boolean isEnabled() {
-		return isPowered;
+	public boolean isDisabled() {
+		return !isPowered;
 	}
 
 	@Override

@@ -37,7 +37,7 @@ public class ProcessItem extends Process<ItemStack> {
 			Request<ItemStack> request = iterator.next();
 			if (request.attachment.isLoaded()) {
 				IRequester<ItemStack> attachment = request.attachment.getAttachment();
-				if (attachment == null || !attachment.isEnabled()) {
+				if (attachment == null || attachment.isDisabled()) {
 					iterator.remove();
 					requester.markDirty();
 				} else {
@@ -258,7 +258,7 @@ public class ProcessItem extends Process<ItemStack> {
 
 		// Check crafters
 		for (ICrafter<ItemStack> crafter : crafters) {
-			if (crafter == requester || !crafter.isEnabled())
+			if (crafter == requester || crafter.isDisabled())
 				continue;
 
 			Set<RequesterReference<ItemStack>> blacklist = crafter.getBlacklist();

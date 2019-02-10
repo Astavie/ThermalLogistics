@@ -45,9 +45,8 @@ import java.util.stream.Stream;
 public abstract class TileTerminal<I> extends TileNameable implements ITickable {
 
 	public final InventorySpecial requester = new InventorySpecial(1, i -> i.getItem() == ThermalLogistics.Items.requester, null);
-
-	// Client-only
 	public final List<Triple<I, Long, Boolean>> terminal = NonNullList.create();
+
 	protected final Requester[] processes = new Requester[6];
 
 	private final Set<Container> registry = new HashSet<>();
@@ -173,8 +172,9 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 
 	@Override
 	public void update() {
+		boolean b = requester.get().isEmpty();
 		for (Requester requester : processes) {
-			if (requester.getDuct() != null)
+			if (!b && requester.getDuct() != null)
 				requester.process.tick();
 			else
 				requester.process.requests.clear();
@@ -217,8 +217,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 		}
 
 		@Override
-		public boolean isEnabled() {
-			return true;
+		public boolean isDisabled() {
+			return false;
 		}
 
 		@Override

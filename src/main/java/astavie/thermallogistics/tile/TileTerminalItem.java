@@ -268,7 +268,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-			ItemStack remainder = super.insertItem(slot, stack.copy(), simulate);
+			ItemStack remainder = super.insertItem(slot, stack, simulate);
 			if (!simulate)
 				tile.requests.decreaseStack(ItemHelper.cloneStack(stack, stack.getCount() - remainder.getCount()));
 			return remainder;

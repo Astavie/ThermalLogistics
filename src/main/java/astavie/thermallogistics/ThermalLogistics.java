@@ -64,7 +64,6 @@ public class ThermalLogistics {
 
 	@Mod.EventHandler
 	public void postInit(FMLPostInitializationEvent event) {
-
 	}
 
 	@GameRegistry.ObjectHolder(MOD_ID)

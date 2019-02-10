@@ -17,7 +17,7 @@ public interface IRequester<I> {
 
 	List<I> getOutputTo(IRequester<I> requester);
 
-	boolean isEnabled();
+	boolean isDisabled();
 
 	int amountRequired(I stack);
 

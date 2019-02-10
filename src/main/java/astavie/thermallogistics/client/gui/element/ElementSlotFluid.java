@@ -1,9 +1,9 @@
 package astavie.thermallogistics.client.gui.element;
 
+import astavie.thermallogistics.client.gui.IFluidGui;
+import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.util.helpers.FluidHelper;
-import cofh.core.util.helpers.StringHelper;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -28,23 +28,8 @@ public class ElementSlotFluid extends ElementSlot {
 	@Override
 	protected void drawSlot(int mouseX, int mouseY) {
 		FluidStack fluid = this.fluid.get();
-		if (fluid != null) {
-			GlStateManager.disableLighting();
-			gui.drawFluid(posX + 1, posY + 1, fluid, 16, 16);
-
-			if (count) {
-				GlStateManager.pushMatrix();
-
-				GlStateManager.disableDepth();
-				GlStateManager.disableBlend();
-
-				GlStateManager.scale(0.5, 0.5, 0.5);
-				String amount = StringHelper.getScaledNumber(fluid.amount);
-				gui.getFontRenderer().drawStringWithShadow(amount, (posX + 17) * 2 - gui.getFontRenderer().getStringWidth(amount), (posY + 13) * 2, 0xFFFFFF);
-
-				GlStateManager.popMatrix();
-			}
-		}
+		if (fluid != null)
+			StackHandler.render(gui, posX + 1, posY + 1, fluid, count);
 	}
 
 	@Override
@@ -57,8 +42,13 @@ public class ElementSlotFluid extends ElementSlot {
 	public boolean onMousePressed(int mouseX, int mouseY, int mouseButton) {
 		if (mouseButton < 2 && intersectsWith(mouseX, mouseY)) {
 			FluidStack get = fluid.get();
-			FluidStack drag = FluidHelper.getFluidForFilledItem(gui.draggedStack.isEmpty() ? gui.mc.player.inventory.getItemStack() : gui.draggedStack);
+			FluidStack drag = null;
 			FluidStack fluid;
+
+			if (gui instanceof IFluidGui)
+				drag = ((IFluidGui) gui).getFluid();
+			if (drag == null)
+				drag = FluidHelper.getFluidForFilledItem(gui.draggedStack.isEmpty() ? gui.mc.player.inventory.getItemStack() : gui.draggedStack);
 
 			if (drag == null)
 				fluid = null;

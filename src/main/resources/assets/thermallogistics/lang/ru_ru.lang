@@ -21,8 +21,6 @@ tile.logistics.terminal.item.name=Терминал
 
 info.logistics.input=Импорт ввода
 info.logistics.output=Импорт вывода
-info.logistics.fluid.input=Добавить ввод
-info.logistics.fluid.output=Добавить вывод
 
 info.logistics.networks=Подключенные сети: %s
 
@@ -50,3 +48,24 @@ info.logistics.manager.e.1=%s x %s
 info.logistics.manager.e.2=Нет предметов, перемещающихся в эту трубу
 
 gui.logistics.terminal.request=Запрос
+
+# Untranslated
+item.logistics.multiplexer.basic.name=Servo Multiplexer
+item.logistics.multiplexer.hardened.name=Hardened Servo Multiplexer
+item.logistics.multiplexer.reinforced.name=Reinforced Servo Multiplexer
+item.logistics.multiplexer.signalum.name=Signalum Servo Multiplexer
+item.logistics.multiplexer.resonant.name=Resonant Servo Multiplexer
+item.logistics.multiplexer.info=Contains multiple servos within itself.
+
+info.logistics.fluid.get=Get Fluid
+
+info.logistics.servos=Servo Slots: %s
+
+info.logistics.split.1=Recipes: 1
+info.logistics.split.2=Recipes: 2
+info.logistics.split.3=Recipes: 3
+info.logistics.split.4=Recipes: 4
+info.logistics.split.5=Recipes: 5
+info.logistics.split.6=Recipes: 6
+
+info.logistics.manager.d.4=Link cancelled.

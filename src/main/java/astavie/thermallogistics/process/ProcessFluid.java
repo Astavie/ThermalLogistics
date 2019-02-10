@@ -34,7 +34,7 @@ public class ProcessFluid extends Process<FluidStack> {
 			Request<FluidStack> request = iterator.next();
 			if (request.attachment.isLoaded()) {
 				IRequester<FluidStack> attachment = request.attachment.getAttachment();
-				if (attachment == null || !attachment.isEnabled()) {
+				if (attachment == null || attachment.isDisabled()) {
 					iterator.remove();
 					requester.markDirty();
 				} else {
@@ -205,7 +205,7 @@ public class ProcessFluid extends Process<FluidStack> {
 
 		// Check crafters
 		for (ICrafter<FluidStack> crafter : crafters) {
-			if (crafter == requester || !crafter.isEnabled())
+			if (crafter == requester || crafter.isDisabled())
 				continue;
 
 			Set<RequesterReference<FluidStack>> blacklist = crafter.getBlacklist();

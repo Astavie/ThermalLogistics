@@ -127,8 +127,8 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
-	public boolean isEnabled() {
-		return isPowered;
+	public boolean isDisabled() {
+		return !isPowered;
 	}
 
 	@Override
