@@ -10,8 +10,11 @@ import cofh.thermaldynamics.duct.fluid.DuctUnitFluid;
 import cofh.thermaldynamics.duct.fluid.FluidTankGrid;
 import cofh.thermaldynamics.duct.fluid.GridFluid;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 
 import java.util.Iterator;
@@ -82,6 +85,14 @@ public class ProcessFluid extends Process<FluidStack> {
 	public void tick() {
 		// Check requests
 		checkRequests(requester, requests, IRequester::getOutputTo);
+
+		TileEntity tile = requester.getCachedTile();
+		if (tile == null || !tile.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, EnumFacing.byIndex(requester.getSide() ^ 1)))
+			return;
+
+		IFluidHandler myHandler = tile.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, EnumFacing.byIndex(requester.getSide() ^ 1));
+		if (myHandler == null)
+			return;
 
 		GridFluid grid = ((DuctUnitFluid) requester.getDuct()).getGrid();
 		FluidTankGrid tank = grid.myTank;
@@ -167,7 +178,7 @@ public class ProcessFluid extends Process<FluidStack> {
 					continue;
 
 				IFluidHandler handler = cache.getHandler(side ^ 1);
-				if (handler == null)
+				if (handler == null || handler.equals(myHandler))
 					continue;
 
 				FluidStack drainFluid = handler.drain(maxInput, false);

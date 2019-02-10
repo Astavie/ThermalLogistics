@@ -65,9 +65,9 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	private final List<RequesterReference<?>> linked = NonNullList.create();
 
 	private final ProcessItem process = new ProcessItem(this);
-
-	// On the client this contains leftovers
 	private final RequestItem sent = new RequestItem(null);
+
+	private int index = 0;
 
 	public CrafterItem(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
@@ -466,12 +466,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					}
 				}
 				if (message == 0 || message == 1) {
-					sent.stacks.clear();
 					linked.clear();
-
-					int leftovers = payload.getInt();
-					for (int i = 0; i < leftovers; i++)
-						sent.stacks.add(payload.getItemStack());
 
 					int links = payload.getInt();
 					for (int i = 0; i < links; i++) {
@@ -549,15 +544,6 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	private void writeSyncPacket(PacketTileInfo packet) {
-		RequestItem leftovers = new RequestItem(null);
-		for (Recipe<ItemStack> recipe : recipes)
-			for (ItemStack stack : recipe.leftovers.stacks)
-				leftovers.addStack(stack);
-
-		packet.addInt(leftovers.stacks.size());
-		for (ItemStack stack : leftovers.stacks)
-			packet.addItemStack(stack);
-
 		checkLinked();
 
 		packet.addInt(linked.size());
@@ -578,6 +564,16 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 		writeSyncPacket(packet);
 		PacketHandler.sendTo(packet, player);
+	}
+
+	@Override
+	public int getIndex() {
+		return index;
+	}
+
+	@Override
+	public void setIndex(int index) {
+		this.index = index;
 	}
 
 	@Override
@@ -737,9 +733,9 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				continue;
 
 			// Get amount of recipes needed
-			int recipes = getRecipes(i);
+			int recipes = getRequiredRecipes(i);
 			for (RequesterReference<?> reference : linked)
-				recipes = Math.max(recipes, ((ICrafter<?>) reference.getAttachment()).getRecipes(i));
+				recipes = Math.max(recipes, ((ICrafter<?>) reference.getAttachment()).getRequiredRecipes(i));
 
 			amount += inputAmount * recipes;
 		}
@@ -760,7 +756,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
-	public int getRecipes(int index) {
+	public int getRequiredRecipes(int index) {
 		if (index >= recipes.size())
 			return 0;
 

@@ -4,14 +4,18 @@ import astavie.thermallogistics.attachment.CrafterFluid;
 import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.RequesterFluid;
 import astavie.thermallogistics.attachment.RequesterItem;
+import astavie.thermallogistics.block.BlockTerminalItem;
 import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.item.ItemManager;
 import astavie.thermallogistics.item.ItemRequester;
+import astavie.thermallogistics.tile.TileTerminalItem;
 import cofh.core.util.core.IInitializer;
 import cofh.thermaldynamics.duct.AttachmentRegistry;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.crafting.IRecipe;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.RegistryEvent;
@@ -55,7 +59,7 @@ public class ThermalLogistics {
 
 	@Mod.EventHandler
 	public void init(FMLInitializationEvent event) {
-
+		TileEntity.register(Blocks.terminal_item.getRegistryName().toString(), TileTerminalItem.class);
 	}
 
 	@Mod.EventHandler
@@ -65,6 +69,8 @@ public class ThermalLogistics {
 
 	@GameRegistry.ObjectHolder(MOD_ID)
 	public static class Blocks {
+
+		public static final BlockTerminalItem terminal_item = null;
 
 	}
 
@@ -82,32 +88,44 @@ public class ThermalLogistics {
 	public static class RegistryHandler {
 
 		@SubscribeEvent
+		public static void registerBlocks(RegistryEvent.Register<Block> event) {
+			register(event.getRegistry(), new BlockTerminalItem("terminal", "item"));
+		}
+
+		@SubscribeEvent
 		public static void registerItems(RegistryEvent.Register<Item> event) {
+			// Items
 			register(event.getRegistry(), new ItemRequester("requester"));
 			register(event.getRegistry(), new ItemCrafter("crafter"));
 
 			register(event.getRegistry(), new ItemManager("manager"));
-		}
 
-		@SubscribeEvent
-		public static void registerBlocks(RegistryEvent.Register<Block> event) {
-
+			// Blocks
+			registerBlock(event.getRegistry(), Blocks.terminal_item);
 		}
 
 		@SubscribeEvent
 		public static void registerRecipes(RegistryEvent.Register<IRecipe> event) {
+			// Items
 			Items.requester.initialize();
 			Items.crafter.initialize();
 
 			Items.manager.initialize();
+
+			// Blocks
+			Blocks.terminal_item.initialize();
 		}
 
 		@SubscribeEvent
 		public static void registerModels(ModelRegistryEvent event) {
+			// Items
 			Items.requester.registerModels();
 			Items.crafter.registerModels();
 
 			Items.manager.registerModels();
+
+			// Blocks
+			Blocks.terminal_item.registerModels();
 		}
 
 		private static <V extends IForgeRegistryEntry<V>> void register(IForgeRegistry<V> registry, IInitializer i) {
@@ -115,6 +133,10 @@ public class ThermalLogistics {
 
 			//noinspection unchecked
 			registry.register((V) i);
+		}
+
+		private static void registerBlock(IForgeRegistry<Item> registry, Block block) {
+			registry.register(new ItemBlock(block).setRegistryName(block.getRegistryName()));
 		}
 
 	}

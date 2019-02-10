@@ -21,29 +21,15 @@ public interface IRequester<I> {
 
 	int amountRequired(I stack);
 
-	int getMaxSend();
-
-	float getThrottle();
-
 	IGridTile getDuct();
 
 	TileEntity getTile();
 
 	byte getSide();
 
-	byte getSpeed();
-
-	ListWrapper<Route<DuctUnitItem, GridItem>> getRoutes();
-
-	boolean hasMultiStack();
-
 	TileEntity getCachedTile();
 
 	ItemStack getIcon();
-
-	void onFinishCrafting(IRequester<I> requester, I stack);
-
-	void onFinishCrafting(int index, int recipes);
 
 	void markDirty();
 
@@ -57,7 +43,29 @@ public interface IRequester<I> {
 	}
 
 	default RequesterReference<I> getReference() {
-		return new RequesterReference<>(getTile().getWorld().provider.getDimension(), getTile().getPos(), getSide());
+		return new RequesterReference<>(getTile().getWorld().provider.getDimension(), getTile().getPos(), getSide(), getIndex());
 	}
+
+	// Crafter
+	void onFinishCrafting(IRequester<I> requester, I stack);
+
+	void onFinishCrafting(int index, int recipes);
+
+	int getIndex();
+
+	// Multiplexer
+	void setIndex(int index);
+
+	// ItemStack
+	int getMaxSend();
+
+	byte getSpeed();
+
+	ListWrapper<Route<DuctUnitItem, GridItem>> getRoutes();
+
+	boolean hasMultiStack();
+
+	// FluidStack
+	float getThrottle();
 
 }

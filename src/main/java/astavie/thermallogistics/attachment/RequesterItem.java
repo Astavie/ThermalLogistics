@@ -37,6 +37,8 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 
 	private final ProcessItem process = new ProcessItem(this);
 
+	private int index = 0;
+
 	public RequesterItem(TileGrid tile, byte side) {
 		super(tile, side);
 	}
@@ -158,6 +160,16 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 					required -= item.getCount();
 
 		return required < 0 ? 0 : required;
+	}
+
+	@Override
+	public int getIndex() {
+		return index;
+	}
+
+	@Override
+	public void setIndex(int index) {
+		this.index = index;
 	}
 
 	@Override

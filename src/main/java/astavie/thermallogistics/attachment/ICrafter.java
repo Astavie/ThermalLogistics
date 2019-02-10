@@ -22,7 +22,7 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	boolean hasLinked(ICrafter<?> crafter);
 
-	int getRecipes(int index);
+	int getRequiredRecipes(int index);
 
 	void sync(EntityPlayer player);
 

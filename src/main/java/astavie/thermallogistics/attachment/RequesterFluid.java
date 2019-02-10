@@ -39,6 +39,8 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 
 	private final ProcessFluid process = new ProcessFluid(this);
 
+	private int index = 0;
+
 	public RequesterFluid(TileGrid tile, byte side) {
 		super(tile, side);
 	}
@@ -146,6 +148,16 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 			required -= request.getCount(stack);
 
 		return required;
+	}
+
+	@Override
+	public int getIndex() {
+		return index;
+	}
+
+	@Override
+	public void setIndex(int index) {
+		this.index = index;
 	}
 
 	@Override

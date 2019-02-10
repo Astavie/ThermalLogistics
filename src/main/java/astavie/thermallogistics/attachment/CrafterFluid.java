@@ -67,11 +67,11 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 	private final List<RequesterReference<?>> linked = NonNullList.create();
 
 	private final ProcessFluid process = new ProcessFluid(this);
-
-	// On the client this contains leftovers
 	private final RequestFluid sent = new RequestFluid(null);
 
 	private final IFilterFluid filter = new Filter(this);
+
+	private int index = 0;
 
 	public CrafterFluid(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
@@ -454,12 +454,7 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 					}
 				}
 				if (message == 0 || message == 1) {
-					sent.stacks.clear();
 					linked.clear();
-
-					int leftovers = payload.getInt();
-					for (int i = 0; i < leftovers; i++)
-						sent.stacks.add(payload.getFluidStack());
 
 					int links = payload.getInt();
 					for (int i = 0; i < links; i++) {
@@ -537,15 +532,6 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 	}
 
 	private void writeSyncPacket(PacketTileInfo packet) {
-		RequestFluid leftovers = new RequestFluid(null);
-		for (Recipe<FluidStack> recipe : recipes)
-			for (FluidStack stack : recipe.leftovers.stacks)
-				leftovers.addStack(stack);
-
-		packet.addInt(leftovers.stacks.size());
-		for (FluidStack stack : leftovers.stacks)
-			packet.addFluidStack(stack);
-
 		checkLinked();
 
 		packet.addInt(linked.size());
@@ -557,6 +543,16 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 			for (Object object : outputs)
 				StackHandler.writePacket(packet, object, getItemClass(), true);
 		}
+	}
+
+	@Override
+	public int getIndex() {
+		return index;
+	}
+
+	@Override
+	public void setIndex(int index) {
+		this.index = index;
 	}
 
 	@Override
@@ -710,9 +706,9 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 				continue;
 
 			// Get amount of recipes needed
-			int recipes = getRecipes(i);
+			int recipes = getRequiredRecipes(i);
 			for (RequesterReference<?> reference : linked)
-				recipes = Math.max(recipes, ((ICrafter<?>) reference.getAttachment()).getRecipes(i));
+				recipes = Math.max(recipes, ((ICrafter<?>) reference.getAttachment()).getRequiredRecipes(i));
 
 			amount += inputAmount * recipes;
 		}
@@ -739,7 +735,7 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 	}
 
 	@Override
-	public int getRecipes(int index) {
+	public int getRequiredRecipes(int index) {
 		if (index >= recipes.size())
 			return 0;
 
