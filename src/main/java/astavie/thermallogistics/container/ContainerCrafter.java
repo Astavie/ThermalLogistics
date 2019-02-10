@@ -1,4 +1,4 @@
-package astavie.thermallogistics.inventory;
+package astavie.thermallogistics.container;
 
 import astavie.thermallogistics.attachment.ICrafter;
 import cofh.thermaldynamics.duct.Attachment;

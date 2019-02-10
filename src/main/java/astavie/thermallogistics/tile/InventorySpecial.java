@@ -1,4 +1,4 @@
-package astavie.thermallogistics.tile.inventory;
+package astavie.thermallogistics.tile;
 
 import codechicken.lib.inventory.InventorySimple;
 import net.minecraft.item.ItemStack;

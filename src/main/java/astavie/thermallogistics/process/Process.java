@@ -1,6 +1,7 @@
 package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.IRequester;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.NonNullList;
 
 import java.util.Collections;
@@ -21,6 +22,10 @@ public abstract class Process<I> {
 				return request.stacks;
 		return Collections.emptyList();
 	}
+
+	public abstract NBTTagList writeNbt();
+
+	public abstract void readNbt(NBTTagList nbt);
 
 	public List<I> getStacks(IRequester<I> requester) {
 		return getStacks(requests, requester);

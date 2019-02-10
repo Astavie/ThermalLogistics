@@ -41,24 +41,52 @@ public class StackHandler {
 	}
 
 	@SideOnly(Side.CLIENT)
-	public static void render(GuiContainerCore gui, int x, int y, Object item, boolean overlay) {
+	public static void render(GuiContainerCore gui, int x, int y, Object item, boolean count) {
 		if (item instanceof ItemStack) {
-			gui.drawItemStack((ItemStack) item, x, y, overlay, null);
+			gui.drawItemStack((ItemStack) item, x, y, true, !count ? "" : null);
 		} else if (item instanceof FluidStack) {
 			gui.drawFluid(x, y, (FluidStack) item, 16, 16);
-			if (overlay) {
-				GlStateManager.pushMatrix();
 
+			if (count) {
+				GlStateManager.disableLighting();
 				GlStateManager.disableDepth();
 				GlStateManager.disableBlend();
 
+				GlStateManager.pushMatrix();
+
 				GlStateManager.scale(0.5, 0.5, 0.5);
-				String amount = StringHelper.getScaledNumber(((FluidStack) item).amount);
+				String amount = StringHelper.formatNumber(((FluidStack) item).amount);
 				gui.getFontRenderer().drawStringWithShadow(amount, (x + 16) * 2 - gui.getFontRenderer().getStringWidth(amount), (y + 12) * 2, 0xFFFFFF);
 
 				GlStateManager.popMatrix();
+
+				GlStateManager.enableLighting();
+				GlStateManager.enableDepth();
 			}
 		} else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
+	}
+
+	@SideOnly(Side.CLIENT)
+	public static void render(GuiContainerCore gui, int x, int y, Object item, String text) {
+		if (item instanceof ItemStack)
+			gui.drawItemStack((ItemStack) item, x, y, true, "");
+		else if (item instanceof FluidStack)
+			gui.drawFluid(x, y, (FluidStack) item, 16, 16);
+		else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
+
+		GlStateManager.disableLighting();
+		GlStateManager.disableDepth();
+		GlStateManager.disableBlend();
+
+		GlStateManager.pushMatrix();
+
+		GlStateManager.scale(0.5, 0.5, 0.5);
+		gui.getFontRenderer().drawStringWithShadow(text, (x + 16) * 2 - gui.getFontRenderer().getStringWidth(text), (y + 12) * 2, 0xFFFFFF);
+
+		GlStateManager.popMatrix();
+
+		GlStateManager.enableLighting();
+		GlStateManager.enableDepth();
 	}
 
 	@SideOnly(Side.CLIENT)

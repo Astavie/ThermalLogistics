@@ -68,6 +68,7 @@ public class ProcessFluid extends Process<FluidStack> {
 		return changed;
 	}
 
+	@Override
 	public NBTTagList writeNbt() {
 		NBTTagList requests = new NBTTagList();
 		for (Request<FluidStack> request : this.requests)
@@ -75,6 +76,7 @@ public class ProcessFluid extends Process<FluidStack> {
 		return requests;
 	}
 
+	@Override
 	public void readNbt(NBTTagList nbt) {
 		requests.clear();
 		for (int i = 0; i < nbt.tagCount(); i++)

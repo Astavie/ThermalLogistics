@@ -15,8 +15,8 @@ import cofh.thermaldynamics.duct.fluid.DuctUnitFluid;
 import cofh.thermaldynamics.duct.fluid.GridFluid;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
+import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
-import cofh.thermaldynamics.multiblock.IGridTile;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.render.RenderDuct;
 import cofh.thermaldynamics.util.ListWrapper;
@@ -171,7 +171,7 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 	}
 
 	@Override
-	public IGridTile getDuct() {
+	public DuctUnit getDuct() {
 		return fluidDuct;
 	}
 

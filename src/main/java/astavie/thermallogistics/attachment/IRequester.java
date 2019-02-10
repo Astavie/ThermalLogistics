@@ -3,7 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.util.RequesterReference;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
-import cofh.thermaldynamics.multiblock.IGridTile;
+import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
@@ -21,7 +21,7 @@ public interface IRequester<I> {
 
 	int amountRequired(I stack);
 
-	IGridTile getDuct();
+	DuctUnit getDuct();
 
 	TileEntity getTile();
 
