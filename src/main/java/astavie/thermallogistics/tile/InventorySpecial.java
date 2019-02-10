@@ -21,7 +21,7 @@ public class InventorySpecial extends InventorySimple {
 	@Override
 	public void setInventorySlotContents(int slot, @Nonnull ItemStack stack) {
 		super.setInventorySlotContents(slot, stack);
-		if (!stack.isEmpty() && consumer != null)
+		if (consumer != null)
 			consumer.accept(stack);
 	}
 

@@ -11,14 +11,14 @@ import net.minecraftforge.client.model.ModelLoader;
 
 import javax.annotation.Nonnull;
 
-public abstract class ItemLogisticsAttachment extends ItemAttachment {
+public abstract class ItemAttachmentLogistics extends ItemAttachment {
 
 	public static final String[] NAMES = {"basic", "hardened", "reinforced", "signalum", "resonant"};
 	public static final EnumRarity[] RARITY = {EnumRarity.COMMON, EnumRarity.COMMON, EnumRarity.UNCOMMON, EnumRarity.UNCOMMON, EnumRarity.RARE};
 
 	private final String name;
 
-	public ItemLogisticsAttachment(String name) {
+	public ItemAttachmentLogistics(String name) {
 		this.name = name;
 		setTranslationKey("logistics." + name);
 		setRegistryName(name);

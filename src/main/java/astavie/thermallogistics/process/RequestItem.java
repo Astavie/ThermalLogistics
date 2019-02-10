@@ -14,14 +14,9 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
 
-import java.util.Collection;
 import java.util.Iterator;
 
 public class RequestItem extends Request<ItemStack> {
-
-	public RequestItem(RequesterReference<ItemStack> attachment, Collection<ItemStack> stacks) {
-		super(attachment, stacks);
-	}
 
 	public RequestItem(RequesterReference<ItemStack> attachment) {
 		super(attachment);

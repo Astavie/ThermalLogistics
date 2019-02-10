@@ -21,7 +21,7 @@ import net.minecraft.world.World;
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class ItemCrafter extends ItemLogisticsAttachment {
+public class ItemCrafter extends ItemAttachmentLogistics {
 
 	public ItemCrafter(String name) {
 		super(name);

@@ -38,6 +38,8 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 		}
 	};
 
+	private String cache = "";
+
 	public GuiTerminal(TileTerminal<I> tile, Container container, ResourceLocation texture) {
 		super(container, texture);
 		this.tile = tile;
@@ -96,10 +98,15 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 			}
 		}
 
-		updateFilter();
+		if (tile.refresh || !search.getText().equals(cache)) {
+			tile.refresh = false;
+			cache = search.getText();
 
-		slider.setLimits(0, Math.max((filter.size() - 1) / 9 - 2, 0));
-		slider.setEnabled(filter.size() > 27);
+			updateFilter();
+
+			slider.setLimits(0, Math.max((filter.size() - 1) / 9 - 2, 0));
+			slider.setEnabled(filter.size() > 27);
+		}
 	}
 
 	@Override

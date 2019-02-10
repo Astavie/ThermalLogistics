@@ -6,7 +6,6 @@ import cofh.thermaldynamics.duct.item.TravelingItem;
 import net.minecraft.util.NonNullList;
 
 import javax.annotation.Nonnull;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,11 +25,6 @@ public abstract class Request<I> implements Comparable<Request<?>> {
 		this(attachment, ID++);
 	}
 
-	public Request(RequesterReference<I> attachment, Collection<I> stacks) {
-		this(attachment, ID++);
-		this.stacks.addAll(stacks);
-	}
-
 	public Request(RequesterReference<I> attachment, I stack) {
 		this(attachment, ID++);
 		this.stacks.add(stack);
@@ -39,6 +33,8 @@ public abstract class Request<I> implements Comparable<Request<?>> {
 	protected Request(RequesterReference<I> attachment, long id) {
 		this.attachment = attachment;
 		this.id = id;
+		if (ID <= id)
+			ID = id + 1;
 	}
 
 	public abstract void addStack(I stack);

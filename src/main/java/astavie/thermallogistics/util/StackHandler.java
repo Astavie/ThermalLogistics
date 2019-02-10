@@ -43,7 +43,7 @@ public class StackHandler {
 	@SideOnly(Side.CLIENT)
 	public static void render(GuiContainerCore gui, int x, int y, Object item, boolean count) {
 		if (item instanceof ItemStack) {
-			gui.drawItemStack((ItemStack) item, x, y, true, !count ? "" : null);
+			gui.drawItemStack((ItemStack) item, x, y, true, count ? null : "");
 		} else if (item instanceof FluidStack) {
 			gui.drawFluid(x, y, (FluidStack) item, 16, 16);
 

@@ -52,6 +52,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 
 	private final Set<Container> registry = new HashSet<>();
 
+	public boolean refresh = false;
+
 	public TileTerminal() {
 		for (byte i = 0; i < 6; i++)
 			processes[i] = new Requester<>(this, i);
@@ -74,12 +76,15 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 	public void handleTileInfoPacket(PacketBase payload, boolean isServer, EntityPlayer thePlayer) {
 		if (isServer) {
 			request(payload);
+			markChunkDirty();
 		} else {
 			terminal.clear();
 
 			int size = payload.getInt();
 			for (int i = 0; i < size; i++)
 				terminal.add(Triple.of(StackHandler.readPacket(payload), payload.getLong(), payload.getBool()));
+
+			refresh = true;
 		}
 	}
 

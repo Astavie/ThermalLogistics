@@ -10,7 +10,6 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 
-import java.util.Collection;
 import java.util.Iterator;
 
 public class RequestFluid extends Request<FluidStack> {
@@ -19,12 +18,8 @@ public class RequestFluid extends Request<FluidStack> {
 		super(attachment);
 	}
 
-	public RequestFluid(RequesterReference<FluidStack> attachment, Collection<FluidStack> stacks) {
-		super(attachment, stacks);
-	}
-
 	public RequestFluid(RequesterReference<FluidStack> attachment, FluidStack stack) {
-		super(attachment, stack);
+		super(attachment, stack.copy());
 	}
 
 	private RequestFluid(RequesterReference<FluidStack> attachment, long id) {
