@@ -3,6 +3,7 @@ package astavie.thermallogistics.util;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.container.ContainerTerminal;
+import cofh.core.network.PacketHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -17,7 +18,7 @@ public class EventHandler {
 			if (event.player.openContainer instanceof ContainerCrafter)
 				((ContainerCrafter) event.player.openContainer).crafter.sync(event.player);
 			else if (event.player.openContainer instanceof ContainerTerminal)
-				((ContainerTerminal) event.player.openContainer).tile.sync(event.player);
+				PacketHandler.sendTo(((ContainerTerminal) event.player.openContainer).tile.getSyncPacket(), event.player);
 		}
 	}
 

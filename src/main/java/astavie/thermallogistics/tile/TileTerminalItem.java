@@ -12,6 +12,7 @@ import astavie.thermallogistics.process.RequestItem;
 import astavie.thermallogistics.util.StackHandler;
 import codechicken.lib.inventory.InventorySimple;
 import cofh.core.network.PacketBase;
+import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
@@ -35,10 +36,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class TileTerminalItem extends TileTerminal<ItemStack> {
 
@@ -49,8 +47,10 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	@Override
 	protected void sync(PacketBase packet) {
 		packet.addInt(requests.stacks.size());
-		for (ItemStack stack : requests.stacks)
-			packet.addItemStack(stack);
+		for (ItemStack stack : requests.stacks) {
+			packet.addItemStack(ItemHelper.cloneStack(stack, 1));
+			packet.addInt(stack.getCount());
+		}
 	}
 
 	@Override
@@ -58,7 +58,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		requests.stacks.clear();
 		int size = packet.getInt();
 		for (int i = 0; i < size; i++)
-			requests.stacks.add(packet.getItemStack());
+			requests.stacks.add(ItemHelper.cloneStack(packet.getItemStack(), packet.getInt()));
 	}
 
 	@Override
@@ -66,58 +66,54 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		if (message == 1) {
 			int index = packet.getInt();
 			if (index < requests.stacks.size()) {
-				requests.stacks.remove(index);
+				ItemStack remove = requests.stacks.remove(index);
+				markChunkDirty();
 
-				Set<ItemStack> set = new HashSet<>();
+				PacketHandler.sendToAllAround(getSyncPacket(), this);
+
+				int shrink = 0;
 
 				a:
 				for (Requester requester : processes) {
 					for (Object object : requester.process.getStacks()) {
 						ItemStack stack = (ItemStack) object;
-						for (ItemStack compare : set) {
-							if (ItemHelper.itemsIdentical(stack, compare)) {
-								compare.grow(stack.getCount());
-								continue a;
-							}
+						if (ItemHelper.itemsIdentical(stack, remove)) {
+							shrink += stack.getCount();
+							continue a;
 						}
-						set.add(stack.copy());
 					}
 				}
 
-				Map<ItemStack, Integer> map = set.stream().collect(Collectors.toMap(Function.identity(), item -> Math.max(item.getCount() - requests.getCount(item), 0)));
-				map.entrySet().removeIf(e -> e.getValue() == 0);
+				shrink -= requests.getCount(remove);
+				if (shrink <= 0)
+					return;
 
 				for (Requester requester : processes) {
-					for (@SuppressWarnings("unchecked") Iterator<Request<ItemStack>> iterator = requester.process.requests.iterator(); iterator.hasNext() && !map.isEmpty(); ) {
-						Request<ItemStack> request = iterator.next();
+					for (Iterator iterator = requester.process.requests.iterator(); iterator.hasNext(); ) {
+						//noinspection unchecked
+						Request<ItemStack> request = (Request<ItemStack>) iterator.next();
 
-						for (Iterator<ItemStack> iterator1 = request.stacks.iterator(); iterator1.hasNext() && !map.isEmpty(); ) {
+						for (Iterator<ItemStack> iterator1 = request.stacks.iterator(); iterator1.hasNext(); ) {
 							ItemStack stack = iterator1.next();
+							if (!ItemHelper.itemsIdentical(remove, stack))
+								continue;
 
-							for (Iterator<Map.Entry<ItemStack, Integer>> iterator2 = map.entrySet().iterator(); iterator2.hasNext(); ) {
-								Map.Entry<ItemStack, Integer> entry = iterator2.next();
-								if (!ItemHelper.itemsIdentical(entry.getKey(), stack))
-									continue;
+							int count = Math.min(stack.getCount(), shrink);
+							stack.shrink(count);
+							shrink -= count;
 
-								int shrink = Math.min(stack.getCount(), entry.getValue());
-								stack.shrink(shrink);
-								entry.setValue(entry.getValue() - shrink);
+							if (stack.isEmpty())
+								iterator1.remove();
 
-								if (stack.isEmpty())
-									iterator1.remove();
-								if (entry.getValue() == 0)
-									iterator2.remove();
-
-								break;
-							}
+							break;
 						}
 
 						if (request.stacks.isEmpty())
 							iterator.remove();
+						if (shrink == 0)
+							return;
 					}
 				}
-
-				markChunkDirty();
 			}
 		}
 	}
@@ -247,9 +243,6 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 			for (DuctUnitItem start : duct.getGrid().nodeSet) {
 				for (byte side = 0; side < 6; side++) {
-					if (start == duct && side == (requester.side ^ 1))
-						continue;
-
 					if ((!start.isInput(side) && !start.isOutput(side)) || !start.parent.getConnectionType(side).allowTransfer)
 						continue;
 
@@ -280,21 +273,25 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 					if (cache == null)
 						continue;
 
-					if (cache.tile != null && cache.tile instanceof ICrafter) {
-						a:
-						//noinspection unchecked
-						for (ItemStack out : ((ICrafter<ItemStack>) cache.tile).getOutputs()) {
-							if (out.isEmpty())
-								continue;
-							for (int i = 0; i < terminal.size(); i++) {
-								Triple<ItemStack, Long, Boolean> stack = terminal.get(i);
-								if (!ItemHelper.itemsIdentical(out, stack.getLeft()))
+					if (cache.tile != null) {
+						if (cache.tile == this)
+							continue;
+						if (cache.tile instanceof ICrafter) {
+							a:
+							//noinspection unchecked
+							for (ItemStack out : ((ICrafter<ItemStack>) cache.tile).getOutputs()) {
+								if (out.isEmpty())
 									continue;
-								if (!stack.getRight())
-									terminal.set(i, Triple.of(stack.getLeft(), stack.getMiddle(), true));
-								continue a;
+								for (int i = 0; i < terminal.size(); i++) {
+									Triple<ItemStack, Long, Boolean> stack = terminal.get(i);
+									if (!ItemHelper.itemsIdentical(out, stack.getLeft()))
+										continue;
+									if (!stack.getRight())
+										terminal.set(i, Triple.of(stack.getLeft(), stack.getMiddle(), true));
+									continue a;
+								}
+								terminal.add(Triple.of(ItemHelper.cloneStack(out, 1), 0L, true));
 							}
-							terminal.add(Triple.of(ItemHelper.cloneStack(out, 1), 0L, true));
 						}
 					}
 
@@ -354,8 +351,10 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				return stack;
 
 			ItemStack remainder = super.insertItem(slot, insert, simulate);
-			if (!simulate)
+			if (!simulate) {
 				tile.requests.decreaseStack(ItemHelper.cloneStack(insert, insert.getCount() - remainder.getCount()));
+				PacketHandler.sendToAllAround(tile.getSyncPacket(), tile);
+			}
 
 			return ItemHelper.cloneStack(stack, stack.getCount() - insert.getCount() + remainder.getCount());
 		}

@@ -7,10 +7,7 @@ import cofh.core.block.TileNameable;
 import cofh.core.render.IModelRegister;
 import cofh.core.util.CoreUtils;
 import cofh.core.util.RayTracer;
-import cofh.core.util.helpers.FluidHelper;
-import cofh.core.util.helpers.ItemHelper;
-import cofh.core.util.helpers.ServerHelper;
-import cofh.core.util.helpers.WrenchHelper;
+import cofh.core.util.helpers.*;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.PropertyBool;
 import net.minecraft.block.properties.PropertyEnum;
@@ -272,11 +269,7 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 		}
 
 		public EnumFacing getFace() {
-			if (ordinal() < NORTH.ordinal())
-				return EnumFacing.UP;
-			if (ordinal() > EAST.ordinal())
-				return EnumFacing.DOWN;
-			return EnumFacing.byIndex(ordinal() - NORTH.ordinal() + 2);
+			return EnumFacing.byIndex(MathHelper.clamp(ordinal() - 3, 0, 5));
 		}
 
 	}

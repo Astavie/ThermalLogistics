@@ -58,7 +58,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 			processes[i] = new Requester<>(this, i);
 	}
 
-	public void sync(EntityPlayer player) {
+	public PacketTileInfo getSyncPacket() {
 		updateTerminal();
 
 		PacketTileInfo packet = PacketTileInfo.newPacket(this);
@@ -73,8 +73,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 
 		// Other
 		sync(packet);
-
-		PacketHandler.sendTo(packet, player);
+		return packet;
 	}
 
 	protected abstract void sync(PacketBase packet);
@@ -90,6 +89,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 			if (message == 0) {
 				request(payload);
 				markChunkDirty();
+				PacketHandler.sendToAllAround(getSyncPacket(), this);
 			} else read(payload, message);
 		} else {
 			terminal.clear();
@@ -180,7 +180,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 	@Override
 	public boolean openGui(EntityPlayer player) {
 		if (hasGui()) {
-			sync(player);
+			PacketHandler.sendTo(getSyncPacket(), player);
 			player.openGui(getMod(), GuiHandler.TILE_ID, world, pos.getX(), pos.getY(), pos.getZ());
 		}
 		return hasGui();

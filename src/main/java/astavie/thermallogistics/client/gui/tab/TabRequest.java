@@ -1,6 +1,5 @@
 package astavie.thermallogistics.client.gui.tab;
 
-import astavie.thermallogistics.client.TLTextures;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.tab.TabBase;
@@ -60,7 +59,7 @@ public class TabRequest extends TabBase {
 	@Override
 	protected void drawForeground() {
 		GlStateManager.disableLighting();
-		drawTabIcon(TLTextures.ICON_LINK);
+		drawTabIcon(list.isEmpty() ? CoreTextures.ICON_RS_TORCH_OFF : CoreTextures.ICON_RS_TORCH_ON);
 		if (!isFullyOpened())
 			return;
 
@@ -133,6 +132,7 @@ public class TabRequest extends TabBase {
 			int y = shiftedMouseY - 22;
 			if (x >= 53 && x < 69 && y >= 0 && y < HEIGHT * num) {
 				int n = first + (y / HEIGHT);
+				list.remove(n);
 
 				PacketTileInfo packet = PacketTileInfo.newPacket(tile);
 				packet.addByte(1);
