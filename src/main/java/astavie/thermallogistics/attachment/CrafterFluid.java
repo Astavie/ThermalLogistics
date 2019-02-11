@@ -176,10 +176,10 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 			Map<FluidStack, Integer> map = set.stream().collect(Collectors.toMap(Function.identity(), item -> Math.max(item.amount - required(item), 0)));
 			map.entrySet().removeIf(e -> e.getValue() == 0);
 
-			for (Iterator<Request<FluidStack>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
+			for (Iterator<Request<FluidStack>> iterator = process.requests.iterator(); iterator.hasNext() && !map.isEmpty(); ) {
 				Request<FluidStack> request = iterator.next();
 
-				for (Iterator<FluidStack> iterator1 = request.stacks.iterator(); iterator1.hasNext(); ) {
+				for (Iterator<FluidStack> iterator1 = request.stacks.iterator(); iterator1.hasNext() && !map.isEmpty(); ) {
 					FluidStack stack = iterator1.next();
 
 					for (Iterator<Map.Entry<FluidStack, Integer>> iterator2 = map.entrySet().iterator(); iterator2.hasNext(); ) {

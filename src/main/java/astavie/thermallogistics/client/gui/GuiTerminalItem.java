@@ -1,6 +1,7 @@
 package astavie.thermallogistics.client.gui;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.client.gui.tab.TabRequest;
 import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.tile.TileTerminalItem;
 import cofh.core.util.helpers.ItemHelper;
@@ -18,6 +19,12 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		super(tile, new ContainerTerminalItem(tile, inventory), new ResourceLocation(ThermalLogistics.MOD_ID, "textures/gui/terminal.png"));
 		this.xSize = 194;
 		this.ySize = 250;
+	}
+
+	@Override
+	public void initGui() {
+		super.initGui();
+		addTab(new TabRequest(this, ((TileTerminalItem) tile).requests.stacks, tile)).setOffsets(-18, 74);
 	}
 
 	@Override

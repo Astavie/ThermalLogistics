@@ -7,6 +7,7 @@ import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.ProcessItem;
+import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.process.RequestItem;
 import astavie.thermallogistics.util.StackHandler;
 import codechicken.lib.inventory.InventorySimple;
@@ -33,13 +34,93 @@ import org.apache.commons.lang3.tuple.Triple;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 	public final InventorySimple inventory = new InventorySimple(27);
 
-	private final RequestItem requests = new RequestItem(null);
+	public final RequestItem requests = new RequestItem(null);
+
+	@Override
+	protected void sync(PacketBase packet) {
+		packet.addInt(requests.stacks.size());
+		for (ItemStack stack : requests.stacks)
+			packet.addItemStack(stack);
+	}
+
+	@Override
+	protected void read(PacketBase packet) {
+		requests.stacks.clear();
+		int size = packet.getInt();
+		for (int i = 0; i < size; i++)
+			requests.stacks.add(packet.getItemStack());
+	}
+
+	@Override
+	protected void read(PacketBase packet, byte message) {
+		if (message == 1) {
+			int index = packet.getInt();
+			if (index < requests.stacks.size()) {
+				requests.stacks.remove(index);
+
+				Set<ItemStack> set = new HashSet<>();
+
+				a:
+				for (Requester requester : processes) {
+					for (Object object : requester.process.getStacks()) {
+						ItemStack stack = (ItemStack) object;
+						for (ItemStack compare : set) {
+							if (ItemHelper.itemsIdentical(stack, compare)) {
+								compare.grow(stack.getCount());
+								continue a;
+							}
+						}
+						set.add(stack.copy());
+					}
+				}
+
+				Map<ItemStack, Integer> map = set.stream().collect(Collectors.toMap(Function.identity(), item -> Math.max(item.getCount() - requests.getCount(item), 0)));
+				map.entrySet().removeIf(e -> e.getValue() == 0);
+
+				for (Requester requester : processes) {
+					for (@SuppressWarnings("unchecked") Iterator<Request<ItemStack>> iterator = requester.process.requests.iterator(); iterator.hasNext() && !map.isEmpty(); ) {
+						Request<ItemStack> request = iterator.next();
+
+						for (Iterator<ItemStack> iterator1 = request.stacks.iterator(); iterator1.hasNext() && !map.isEmpty(); ) {
+							ItemStack stack = iterator1.next();
+
+							for (Iterator<Map.Entry<ItemStack, Integer>> iterator2 = map.entrySet().iterator(); iterator2.hasNext(); ) {
+								Map.Entry<ItemStack, Integer> entry = iterator2.next();
+								if (!ItemHelper.itemsIdentical(entry.getKey(), stack))
+									continue;
+
+								int shrink = Math.min(stack.getCount(), entry.getValue());
+								stack.shrink(shrink);
+								entry.setValue(entry.getValue() - shrink);
+
+								if (stack.isEmpty())
+									iterator1.remove();
+								if (entry.getValue() == 0)
+									iterator2.remove();
+
+								break;
+							}
+						}
+
+						if (request.stacks.isEmpty())
+							iterator.remove();
+					}
+				}
+
+				markChunkDirty();
+			}
+		}
+	}
 
 	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
@@ -268,10 +349,15 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-			ItemStack remainder = super.insertItem(slot, stack, simulate);
+			ItemStack insert = ItemHelper.cloneStack(stack, tile.requests.getCount(stack));
+			if (insert.isEmpty())
+				return stack;
+
+			ItemStack remainder = super.insertItem(slot, insert, simulate);
 			if (!simulate)
-				tile.requests.decreaseStack(ItemHelper.cloneStack(stack, stack.getCount() - remainder.getCount()));
-			return remainder;
+				tile.requests.decreaseStack(ItemHelper.cloneStack(insert, insert.getCount() - remainder.getCount()));
+
+			return ItemHelper.cloneStack(stack, stack.getCount() - insert.getCount() + remainder.getCount());
 		}
 
 	}

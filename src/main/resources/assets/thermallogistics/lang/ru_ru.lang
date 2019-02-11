@@ -26,7 +26,7 @@ info.logistics.networks=Подключенные сети: %s
 
 info.logistics.tab.link=Связанные создатели
 info.logistics.tab.fluid=Добавить жидкость
-info.logistics.tab.requests=Запросы
+info.logistics.tab.request=Запросы
 
 info.logistics.manager.a.0=Используйте на сервоприводе для мониторинга системы.
 info.logistics.manager.a.1=Используйте на двух создателях, чтобы связать их.

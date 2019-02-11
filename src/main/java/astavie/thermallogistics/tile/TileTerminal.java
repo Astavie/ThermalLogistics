@@ -62,20 +62,35 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 		updateTerminal();
 
 		PacketTileInfo packet = PacketTileInfo.newPacket(this);
+
+		// Terminal
 		packet.addInt(terminal.size());
 		for (Triple<I, Long, Boolean> stack : terminal) {
 			StackHandler.writePacket(packet, stack.getLeft(), getItemClass(), true);
 			packet.addLong(stack.getMiddle());
 			packet.addBool(stack.getRight());
 		}
+
+		// Other
+		sync(packet);
+
 		PacketHandler.sendTo(packet, player);
 	}
+
+	protected abstract void sync(PacketBase packet);
+
+	protected abstract void read(PacketBase packet);
+
+	protected abstract void read(PacketBase packet, byte message);
 
 	@Override
 	public void handleTileInfoPacket(PacketBase payload, boolean isServer, EntityPlayer thePlayer) {
 		if (isServer) {
-			request(payload);
-			markChunkDirty();
+			byte message = payload.getByte();
+			if (message == 0) {
+				request(payload);
+				markChunkDirty();
+			} else read(payload, message);
 		} else {
 			terminal.clear();
 
@@ -84,6 +99,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 				terminal.add(Triple.of(StackHandler.readPacket(payload), payload.getLong(), payload.getBool()));
 
 			refresh = true;
+			read(payload);
 		}
 	}
 

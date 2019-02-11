@@ -37,7 +37,11 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	protected final ElementButtonManaged button = new ElementButtonManaged(this, 117, 74, 50, 16, "") {
 		@Override
 		public void onClick() {
-			request();
+			PacketTileInfo packet = PacketTileInfo.newPacket(tile);
+			packet.addByte(0);
+			StackHandler.writePacket(packet, selected, tile.getItemClass(), true);
+			packet.addInt(Integer.parseInt(amount.getText()));
+			PacketHandler.sendToServer(packet);
 		}
 	};
 
@@ -50,13 +54,6 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 	private Slot requester() {
 		return inventorySlots.inventorySlots.get(0);
-	}
-
-	private void request() {
-		PacketTileInfo packet = PacketTileInfo.newPacket(tile);
-		StackHandler.writePacket(packet, selected, tile.getItemClass(), true);
-		packet.addInt(Integer.parseInt(amount.getText()));
-		PacketHandler.sendToServer(packet);
 	}
 
 	@Override

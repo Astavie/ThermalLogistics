@@ -193,10 +193,10 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			Map<ItemStack, Integer> map = set.stream().collect(Collectors.toMap(Function.identity(), item -> Math.max(item.getCount() - required(item, true), 0)));
 			map.entrySet().removeIf(e -> e.getValue() == 0);
 
-			for (Iterator<Request<ItemStack>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
+			for (Iterator<Request<ItemStack>> iterator = process.requests.iterator(); iterator.hasNext() && !map.isEmpty(); ) {
 				Request<ItemStack> request = iterator.next();
 
-				for (Iterator<ItemStack> iterator1 = request.stacks.iterator(); iterator1.hasNext(); ) {
+				for (Iterator<ItemStack> iterator1 = request.stacks.iterator(); iterator1.hasNext() && !map.isEmpty(); ) {
 					ItemStack stack = iterator1.next();
 
 					for (Iterator<Map.Entry<ItemStack, Integer>> iterator2 = map.entrySet().iterator(); iterator2.hasNext(); ) {
