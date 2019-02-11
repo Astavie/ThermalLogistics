@@ -307,40 +307,67 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		recipes.clear();
 		sent.stacks.clear();
 
-		NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < recipes.tagCount(); i++) {
-			NBTTagCompound nbt = recipes.getCompoundTagAt(i);
-
+		if (tag.hasKey("Inputs") || tag.hasKey("Outputs") || tag.hasKey("Linked")) {
+			// Legacy nbt format
 			Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+			recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, ItemStack.EMPTY));
+			recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
 
-			NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < inputs.tagCount(); j++)
-				recipe.inputs.add(new ItemStack(inputs.getCompoundTagAt(j)));
+			NBTTagList inputs = tag.getTagList("Inputs", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < inputs.tagCount(); i++) {
+				NBTTagCompound compound = inputs.getCompoundTagAt(i);
+				recipe.inputs.set(compound.getInteger("Slot"), new ItemStack(compound));
+			}
 
-			NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < outputs.tagCount(); j++)
-				recipe.outputs.add(new ItemStack(outputs.getCompoundTagAt(j)));
+			NBTTagList outputs = tag.getTagList("Outputs", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < outputs.tagCount(); i++) {
+				NBTTagCompound compound = outputs.getCompoundTagAt(i);
+				recipe.outputs.set(compound.getInteger("Slot"), new ItemStack(compound));
+			}
 
-			NBTTagList requests = nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < requests.tagCount(); j++)
-				recipe.requests.add(RequestItem.readNBT(requests.getCompoundTagAt(j)));
+			recipes.add(recipe);
 
-			NBTTagList leftovers = nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < leftovers.tagCount(); j++)
-				recipe.leftovers.stacks.add(new ItemStack(leftovers.getCompoundTagAt(j)));
+			NBTTagList linked = tag.getTagList("Linked", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < linked.tagCount(); i++) {
+				NBTTagCompound compound = linked.getCompoundTagAt(i);
+				this.linked.add(RequesterReference.readNBT(compound));
+			}
+		} else {
+			NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < recipes.tagCount(); i++) {
+				NBTTagCompound nbt = recipes.getCompoundTagAt(i);
 
-			this.recipes.add(recipe);
+				Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+
+				NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < inputs.tagCount(); j++)
+					recipe.inputs.add(new ItemStack(inputs.getCompoundTagAt(j)));
+
+				NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < outputs.tagCount(); j++)
+					recipe.outputs.add(new ItemStack(outputs.getCompoundTagAt(j)));
+
+				NBTTagList requests = nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < requests.tagCount(); j++)
+					recipe.requests.add(RequestItem.readNBT(requests.getCompoundTagAt(j)));
+
+				NBTTagList leftovers = nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < leftovers.tagCount(); j++)
+					recipe.leftovers.stacks.add(new ItemStack(leftovers.getCompoundTagAt(j)));
+
+				this.recipes.add(recipe);
+			}
+
+			process.readNbt(tag.getTagList("process", Constants.NBT.TAG_COMPOUND));
+
+			NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < sent.tagCount(); i++)
+				this.sent.stacks.add(new ItemStack(sent.getCompoundTagAt(i)));
+
+			NBTTagList linked = tag.getTagList("linked", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < linked.tagCount(); i++)
+				this.linked.add(RequesterReference.readNBT(linked.getCompoundTagAt(i)));
 		}
-
-		process.readNbt(tag.getTagList("process", Constants.NBT.TAG_COMPOUND));
-
-		NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < sent.tagCount(); i++)
-			this.sent.stacks.add(new ItemStack(sent.getCompoundTagAt(i)));
-
-		NBTTagList linked = tag.getTagList("linked", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < linked.tagCount(); i++)
-			this.linked.add(RequesterReference.readNBT(linked.getCompoundTagAt(i)));
 	}
 
 	@Override

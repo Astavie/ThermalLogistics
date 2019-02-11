@@ -295,40 +295,67 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 		recipes.clear();
 		sent.stacks.clear();
 
-		NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < recipes.tagCount(); i++) {
-			NBTTagCompound nbt = recipes.getCompoundTagAt(i);
-
+		if (tag.hasKey("Inputs") || tag.hasKey("Outputs") || tag.hasKey("Linked")) {
+			// Legacy nbt format
 			Recipe<FluidStack> recipe = new Recipe<>(new RequestFluid(null));
+			recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, null));
+			recipe.outputs.addAll(Collections.nCopies(SIZE[type], null));
 
-			NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < inputs.tagCount(); j++)
-				recipe.inputs.add(FluidStack.loadFluidStackFromNBT(inputs.getCompoundTagAt(j)));
+			NBTTagList inputs = tag.getTagList("Inputs", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < inputs.tagCount(); i++) {
+				NBTTagCompound compound = inputs.getCompoundTagAt(i);
+				recipe.inputs.set(compound.getInteger("Slot"), FluidStack.loadFluidStackFromNBT(compound));
+			}
 
-			NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < outputs.tagCount(); j++)
-				recipe.outputs.add(FluidStack.loadFluidStackFromNBT(outputs.getCompoundTagAt(j)));
+			NBTTagList outputs = tag.getTagList("Outputs", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < outputs.tagCount(); i++) {
+				NBTTagCompound compound = outputs.getCompoundTagAt(i);
+				recipe.outputs.set(compound.getInteger("Slot"), FluidStack.loadFluidStackFromNBT(compound));
+			}
 
-			NBTTagList requests = nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < requests.tagCount(); j++)
-				recipe.requests.add(RequestFluid.readNBT(requests.getCompoundTagAt(j)));
+			recipes.add(recipe);
 
-			NBTTagList leftovers = nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
-			for (int j = 0; j < leftovers.tagCount(); j++)
-				recipe.leftovers.stacks.add(FluidStack.loadFluidStackFromNBT(leftovers.getCompoundTagAt(j)));
+			NBTTagList linked = tag.getTagList("Linked", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < linked.tagCount(); i++) {
+				NBTTagCompound compound = linked.getCompoundTagAt(i);
+				this.linked.add(RequesterReference.readNBT(compound));
+			}
+		} else {
+			NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < recipes.tagCount(); i++) {
+				NBTTagCompound nbt = recipes.getCompoundTagAt(i);
 
-			this.recipes.add(recipe);
+				Recipe<FluidStack> recipe = new Recipe<>(new RequestFluid(null));
+
+				NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < inputs.tagCount(); j++)
+					recipe.inputs.add(FluidStack.loadFluidStackFromNBT(inputs.getCompoundTagAt(j)));
+
+				NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < outputs.tagCount(); j++)
+					recipe.outputs.add(FluidStack.loadFluidStackFromNBT(outputs.getCompoundTagAt(j)));
+
+				NBTTagList requests = nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < requests.tagCount(); j++)
+					recipe.requests.add(RequestFluid.readNBT(requests.getCompoundTagAt(j)));
+
+				NBTTagList leftovers = nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < leftovers.tagCount(); j++)
+					recipe.leftovers.stacks.add(FluidStack.loadFluidStackFromNBT(leftovers.getCompoundTagAt(j)));
+
+				this.recipes.add(recipe);
+			}
+
+			process.readNbt(tag.getTagList("process", Constants.NBT.TAG_COMPOUND));
+
+			NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < sent.tagCount(); i++)
+				this.sent.stacks.add(FluidStack.loadFluidStackFromNBT(sent.getCompoundTagAt(i)));
+
+			NBTTagList linked = tag.getTagList("linked", Constants.NBT.TAG_COMPOUND);
+			for (int i = 0; i < linked.tagCount(); i++)
+				this.linked.add(RequesterReference.readNBT(linked.getCompoundTagAt(i)));
 		}
-
-		process.readNbt(tag.getTagList("process", Constants.NBT.TAG_COMPOUND));
-
-		NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < sent.tagCount(); i++)
-			this.sent.stacks.add(FluidStack.loadFluidStackFromNBT(sent.getCompoundTagAt(i)));
-
-		NBTTagList linked = tag.getTagList("linked", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < linked.tagCount(); i++)
-			this.linked.add(RequesterReference.readNBT(linked.getCompoundTagAt(i)));
 	}
 
 	@Override

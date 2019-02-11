@@ -5,14 +5,12 @@ item.logistics.requester.hardened.name=Усиленный запросчик
 item.logistics.requester.reinforced.name=Укреплённый запросчик
 item.logistics.requester.signalum.name=Синаловый запросчик
 item.logistics.requester.resonant.name=Резонирующий запросчик
-item.logistics.requester.info=Тянет отдаленные предметы/жидкости к себе и просит создателей изготовить недостающие предметы.
 
 item.logistics.crafter.basic.name=Создатель
 item.logistics.crafter.hardened.name=Усиленный создатель
 item.logistics.crafter.reinforced.name=Укреплённый создатель
 item.logistics.crafter.signalum.name=Синаловый создатель
 item.logistics.crafter.resonant.name=Резонирующий создатель
-item.logistics.crafter.info=Тянет отдаленные предметы/жидкости к себе, когда дается запрос на создание предметов.
 
 item.logistics.manager.name=Сетевой менеджер
 
@@ -50,6 +48,10 @@ info.logistics.manager.e.2=Нет предметов, перемещающихс
 gui.logistics.terminal.request=Запрос
 
 # Untranslated
+item.logistics.requester.info=Pulls or crafts items/fluids to itself.
+
+item.logistics.crafter.info=Crafts items/fluids on request.
+
 item.logistics.multiplexer.basic.name=Servo Multiplexer
 item.logistics.multiplexer.hardened.name=Hardened Servo Multiplexer
 item.logistics.multiplexer.reinforced.name=Reinforced Servo Multiplexer
