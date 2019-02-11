@@ -1,10 +1,16 @@
 package astavie.thermallogistics.container;
 
+import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.tile.TileTerminalItem;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Slot;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class ContainerTerminalItem extends ContainerTerminal {
+
+	@SideOnly(Side.CLIENT)
+	public GuiTerminalItem gui;
 
 	public ContainerTerminalItem(TileTerminalItem tile, InventoryPlayer inventory) {
 		super(tile, inventory);

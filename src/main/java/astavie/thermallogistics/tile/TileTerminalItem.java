@@ -13,15 +13,19 @@ import astavie.thermallogistics.util.StackHandler;
 import codechicken.lib.inventory.InventorySimple;
 import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
+import cofh.core.util.helpers.InventoryHelper;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.EnumFacing;
@@ -29,7 +33,9 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.wrapper.CombinedInvWrapper;
 import net.minecraftforge.items.wrapper.InvWrapper;
+import net.minecraftforge.items.wrapper.PlayerMainInvWrapper;
 import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
@@ -62,7 +68,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	}
 
 	@Override
-	protected void read(PacketBase packet, byte message) {
+	protected void read(PacketBase packet, byte message, EntityPlayer player) {
 		if (message == 1) {
 			int index = packet.getInt();
 			if (index < requests.stacks.size()) {
@@ -115,6 +121,91 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 					}
 				}
 			}
+		} else if (message == 2) {
+			boolean shift = packet.getBool();
+
+			Ingredient[] ingredients = new Ingredient[9];
+			for (int i = 0; i < 9; i++) {
+				ItemStack[] stacks = new ItemStack[packet.getInt()];
+				for (int j = 0; j < stacks.length; j++)
+					stacks[j] = packet.getItemStack();
+				ingredients[i] = Ingredient.fromStacks(stacks);
+			}
+
+			ItemStack craft = packet.getItemStack();
+			ItemStack hand = player.inventory.getItemStack();
+			if (!shift && !hand.isEmpty() && (!ItemHelper.itemsIdentical(craft, hand) || craft.getCount() + hand.getCount() > hand.getMaxStackSize()))
+				return;
+
+			b:
+			//noinspection LoopConditionNotUpdatedInsideLoop
+			do {
+				// Check if there is enough room
+				if (shift) {
+					IItemHandler handler = new CombinedInvWrapper(new InvWrapper(inventory), new PlayerMainInvWrapper(player.inventory));
+					if (!InventoryHelper.insertStackIntoInventory(handler, craft, true).isEmpty())
+						break;
+				}
+
+				// Get available items
+				RequestItem items = new RequestItem(null);
+				for (int slot = 0; slot < inventory.getSizeInventory(); slot++)
+					if (!inventory.getStackInSlot(slot).isEmpty())
+						items.addStack(inventory.getStackInSlot(slot));
+				for (ItemStack stack : player.inventory.mainInventory)
+					if (!stack.isEmpty())
+						items.addStack(stack);
+
+				// Check if those items are enough
+				a:
+				for (Ingredient ingredient : ingredients) {
+					if (ingredient == Ingredient.EMPTY)
+						continue;
+					for (Iterator<ItemStack> iterator = items.stacks.iterator(); iterator.hasNext(); ) {
+						ItemStack stack = iterator.next();
+						if (ingredient.apply(stack)) {
+							stack.shrink(1);
+							if (stack.isEmpty())
+								iterator.remove();
+							continue a;
+						}
+					}
+					break b;
+				}
+
+				// Craft item
+				a:
+				for (Ingredient ingredient : ingredients) {
+					if (ingredient == Ingredient.EMPTY)
+						continue;
+
+					for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
+						ItemStack stack = inventory.getStackInSlot(slot);
+						if (ingredient.apply(stack)) {
+							inventory.decrStackSize(slot, 1);
+							continue a;
+						}
+					}
+					for (int slot = 0; slot < player.inventory.mainInventory.size(); slot++) {
+						ItemStack stack = player.inventory.getStackInSlot(slot);
+						if (ingredient.apply(stack)) {
+							player.inventory.decrStackSize(slot, 1);
+							continue a;
+						}
+					}
+				}
+
+				// Add item
+				if (shift) {
+					IItemHandler handler = new CombinedInvWrapper(new InvWrapper(inventory), new PlayerMainInvWrapper(player.inventory));
+					InventoryHelper.insertStackIntoInventory(handler, craft, false);
+				} else {
+					player.inventory.setItemStack(hand.isEmpty() ? craft : ItemHelper.cloneStack(hand, hand.getCount() + craft.getCount()));
+					((EntityPlayerMP) player).updateHeldItem();
+				}
+			} while (shift);
+
+			player.openContainer.detectAndSendChanges();
 		}
 	}
 

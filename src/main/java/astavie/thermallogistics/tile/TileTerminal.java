@@ -80,17 +80,17 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 
 	protected abstract void read(PacketBase packet);
 
-	protected abstract void read(PacketBase packet, byte message);
+	protected abstract void read(PacketBase packet, byte message, EntityPlayer player);
 
 	@Override
-	public void handleTileInfoPacket(PacketBase payload, boolean isServer, EntityPlayer thePlayer) {
+	public void handleTileInfoPacket(PacketBase payload, boolean isServer, EntityPlayer player) {
 		if (isServer) {
 			byte message = payload.getByte();
 			if (message == 0) {
 				request(payload);
 				markChunkDirty();
 				PacketHandler.sendToAllAround(getSyncPacket(), this);
-			} else read(payload, message);
+			} else read(payload, message, player);
 		} else {
 			terminal.clear();
 
@@ -211,8 +211,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 
 	protected static class Requester<I> implements IRequester<I> {
 
-		protected final TileTerminal<I> terminal;
-		protected final byte side;
+		private final TileTerminal<I> terminal;
+		private final byte side;
 
 		protected final Process<I> process;
 

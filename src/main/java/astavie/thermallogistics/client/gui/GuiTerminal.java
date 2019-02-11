@@ -37,22 +37,26 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	protected final ElementButtonManaged button = new ElementButtonManaged(this, 117, 74, 50, 16, "") {
 		@Override
 		public void onClick() {
-			PacketTileInfo packet = PacketTileInfo.newPacket(tile);
-			packet.addByte(0);
-			StackHandler.writePacket(packet, selected, tile.getItemClass(), true);
-			packet.addInt(Integer.parseInt(amount.getText()));
-			PacketHandler.sendToServer(packet);
+			request(selected, amount.getText().isEmpty() ? 1 : Integer.parseInt(amount.getText()));
 		}
 	};
 
 	private String cache = "";
+
+	protected void request(I stack, int amount) {
+		PacketTileInfo packet = PacketTileInfo.newPacket(tile);
+		packet.addByte(0);
+		StackHandler.writePacket(packet, stack, tile.getItemClass(), true);
+		packet.addInt(amount);
+		PacketHandler.sendToServer(packet);
+	}
 
 	public GuiTerminal(TileTerminal<I> tile, Container container, ResourceLocation texture) {
 		super(container, texture);
 		this.tile = tile;
 	}
 
-	private Slot requester() {
+	protected Slot requester() {
 		return inventorySlots.inventorySlots.get(0);
 	}
 
@@ -88,11 +92,14 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 		button.setEnabled(false);
 
-		if (amount.isEnabled() && !amount.getText().isEmpty()) {
+		long count = 1L;
+		if (!amount.getText().isEmpty())
+			count = Long.parseLong(amount.getText());
+
+		if (amount.isEnabled()) {
 			for (Triple<I, Long, Boolean> stack : tile.terminal) {
 				if (isSelected(stack.getLeft())) {
-					long parse = Long.parseLong(amount.getText());
-					button.setEnabled(parse <= Integer.MAX_VALUE && (stack.getRight() || stack.getMiddle() >= parse));
+					button.setEnabled(count <= Integer.MAX_VALUE && (stack.getRight() || stack.getMiddle() >= count));
 					break;
 				}
 			}

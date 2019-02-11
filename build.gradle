@@ -48,12 +48,12 @@ dependencies {
 
 	// Mod Compatibility
     deobfCompile "cofh:ThermalExpansion:${mc_version}+:universal@jar"
+	deobfCompile "mezz.jei:jei_${mc_version}:+@jar"
 
 	// Runtime
 	runtime "cofh:CoFHWorld:${mc_version}+:universal@jar"
 	runtime "cofh:ThermalCultivation:${mc_version}+:universal@jar"
 	runtime "cofh:ThermalInnovation:${mc_version}+:universal@jar"
-	runtime "mezz.jei:jei_${mc_version}:+@jar"
 }
 
 processResources {

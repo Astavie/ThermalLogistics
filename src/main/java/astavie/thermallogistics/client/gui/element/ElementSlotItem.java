@@ -3,6 +3,7 @@ package astavie.thermallogistics.client.gui.element;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.core.util.helpers.RenderHelper;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
 
 import java.util.List;
@@ -14,17 +15,30 @@ public class ElementSlotItem extends ElementSlot {
 	private final Supplier<ItemStack> stack;
 	private final Consumer<ItemStack> consumer;
 
-	public ElementSlotItem(GuiContainerCore gui, int posX, int posY, Supplier<ItemStack> stack, Consumer<ItemStack> consumer) {
+	private final boolean count;
+
+	public ElementSlotItem(GuiContainerCore gui, int posX, int posY, Supplier<ItemStack> stack, Consumer<ItemStack> consumer, boolean count) {
 		super(gui, posX, posY);
 		this.stack = stack;
 		this.consumer = consumer;
+		this.count = count;
 	}
 
 	@Override
 	protected void drawSlot(int mouseX, int mouseY) {
-		if (!stack.get().isEmpty()) {
+		ItemStack item = stack.get();
+		if (!item.isEmpty()) {
+			FontRenderer font = null;
+			if (!item.isEmpty()) {
+				font = item.getItem().getFontRenderer(item);
+			}
+			if (font == null) {
+				font = gui.getFontRenderer();
+			}
+
 			RenderHelper.enableGUIStandardItemLighting();
-			gui.drawItemStack(stack.get(), posX + 1, posY + 1, true, null);
+			gui.itemRender.renderItemAndEffectIntoGUI(item, posX + 1, posY + 1);
+			gui.itemRender.renderItemOverlayIntoGUI(font, item, posX + 1, posY + 1 - (gui.draggedStack.isEmpty() ? 0 : 8), count ? null : "");
 		}
 	}
 
@@ -54,6 +68,10 @@ public class ElementSlotItem extends ElementSlot {
 			return true;
 		}
 		return false;
+	}
+
+	public ItemStack get() {
+		return stack.get();
 	}
 
 }

@@ -18,6 +18,7 @@ public class TLTextures {
 	public static TextureAtlasSprite ICON_LINK;
 	public static TextureAtlasSprite ICON_ARROW_RIGHT;
 	public static TextureAtlasSprite ICON_FLUID;
+	public static TextureAtlasSprite ICON_CRAFTING;
 
 	@SubscribeEvent
 	public static void onTextureStitch(TextureStitchEvent.Pre event) {
@@ -27,6 +28,7 @@ public class TLTextures {
 		ICON_LINK = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MOD_ID, "items/manager"));
 		ICON_ARROW_RIGHT = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MOD_ID, "gui/icons/arrow_right"));
 		ICON_FLUID = event.getMap().registerSprite(new ResourceLocation("items/bucket_water"));
+		ICON_CRAFTING = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MOD_ID, "gui/icons/crafting"));
 	}
 
 	private static void registerAttachment(TextureMap map, TextureAtlasSprite[][] array, String name) {

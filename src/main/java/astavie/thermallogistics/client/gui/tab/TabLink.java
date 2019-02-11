@@ -30,14 +30,7 @@ public class TabLink extends TabBase {
 	private int first = 0;
 
 	public TabLink(GuiContainerCore gui, ICrafter<?> crafter) {
-		super(gui);
-		this.crafter = crafter;
-
-		this.maxHeight = 96;
-		this.backgroundColor = 0xc46d00;
-
-		this.num = Math.min((maxHeight - 24) / HEIGHT, crafter.getLinked().size());
-		this.max = crafter.getLinked().size() - num;
+		this(gui, RIGHT, crafter);
 	}
 
 	public TabLink(GuiContainerCore gui, int side, ICrafter<?> crafter) {

@@ -43,6 +43,7 @@ info.logistics.split.6=Recipes: 6
 info.logistics.tab.link=Linked Crafters
 info.logistics.tab.fluid=Add Fluid
 info.logistics.tab.request=Requests
+info.logistics.tab.crafting=Crafting
 
 info.logistics.manager.a.0=Use on a servo to monitor the system.
 info.logistics.manager.a.1=Use on two crafters to link them.

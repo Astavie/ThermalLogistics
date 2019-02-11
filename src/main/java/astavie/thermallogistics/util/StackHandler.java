@@ -108,7 +108,7 @@ public class StackHandler {
 	public static ElementBase getSlot(GuiContainerCore gui, int x, int y, GuiCrafter.Slot<?> slot) {
 		Class<?> c = slot.getCrafter().getItemClass();
 		if (c == ItemStack.class)
-			return new ElementSlotItem(gui, x, y, (GuiCrafter.Slot<ItemStack>) slot, (GuiCrafter.Slot<ItemStack>) slot);
+			return new ElementSlotItem(gui, x, y, (GuiCrafter.Slot<ItemStack>) slot, (GuiCrafter.Slot<ItemStack>) slot, true);
 		else if (c == FluidStack.class)
 			return new ElementSlotFluid(gui, x, y, (GuiCrafter.Slot<FluidStack>) slot, (GuiCrafter.Slot<FluidStack>) slot, true);
 		else throw new IllegalArgumentException("Unknown item type " + c.getName());
