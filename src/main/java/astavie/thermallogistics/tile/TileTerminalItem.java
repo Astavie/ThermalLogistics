@@ -16,9 +16,11 @@ import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.InventoryHelper;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
+import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.item.StackMap;
+import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -206,6 +208,29 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			} while (shift);
 
 			player.openContainer.detectAndSendChanges();
+		} else if (message == 3) {
+			if (requester.get().isEmpty())
+				return;
+
+			int type = requester.get().getMetadata();
+			ItemStack hand = player.inventory.getItemStack();
+
+			for (Requester requester : processes) {
+				DuctUnitItem duct = (DuctUnitItem) requester.getDuct();
+				if (duct == null)
+					continue;
+
+				//noinspection unchecked
+				TravelingItem item = ServoItem.findRouteForItem(hand, requester.getRoutes().iterator(), duct, requester.getSide(), ServoItem.range[type], ServoItem.speedBoost[type]);
+				if (item == null)
+					continue;
+
+				duct.insertNewItem(item);
+
+				player.inventory.setItemStack(ItemStack.EMPTY);
+				((EntityPlayerMP) player).updateHeldItem();
+				break;
+			}
 		}
 	}
 

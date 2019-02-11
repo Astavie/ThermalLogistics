@@ -126,6 +126,23 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	}
 
 	@Override
+	protected void mouseClicked(int mX, int mY, int mouseButton) throws IOException {
+		if (button.isVisible() && !Minecraft.getMinecraft().player.inventory.getItemStack().isEmpty()) {
+			int mouseX = mX - guiLeft - 7;
+			int mouseY = mY - guiTop - 17;
+
+			if (mouseX >= 0 && mouseX < 9 * 18 && mouseY >= 0 && mouseY < 3 * 18) {
+				PacketTileInfo packet = PacketTileInfo.newPacket(tile);
+				packet.addByte(3);
+				PacketHandler.sendToServer(packet);
+				return;
+			}
+		}
+
+		super.mouseClicked(mX, mY, mouseButton);
+	}
+
+	@Override
 	protected boolean hasClickedOutside(int x, int y, int left, int top) {
 		boolean yes = super.hasClickedOutside(x, y, left, top);
 		if (yes) {

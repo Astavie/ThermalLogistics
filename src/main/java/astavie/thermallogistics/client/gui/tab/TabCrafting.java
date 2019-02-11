@@ -1,17 +1,14 @@
 package astavie.thermallogistics.client.gui.tab;
 
 import astavie.thermallogistics.client.TLTextures;
-import astavie.thermallogistics.client.gui.element.ElementSlot;
 import astavie.thermallogistics.client.gui.element.ElementSlotItem;
 import astavie.thermallogistics.util.Shared;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.*;
 import cofh.core.gui.element.tab.TabBase;
 import cofh.core.inventory.InventoryCraftingFalse;
-import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
@@ -59,42 +56,15 @@ public class TabCrafting extends TabBase {
 
 		addElement(new ElementSimple(gui, x + 3 * 18 + 6, y + 18 + 1).setTexture(GuiContainerCore.TEX_ARROW_RIGHT, 64, 16).setSize(24, 16));
 
-		addElement(output = new ElementSlot(gui, x + 5 * 18, y + 18) {
-
-			@Override
-			protected void drawSlot(int mouseX, int mouseY) {
-				InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
-				for (int i = 0; i < 9; i++)
-					inventory.setInventorySlotContents(i, shared[i].get());
-				IRecipe recipe = CraftingManager.findMatchingRecipe(inventory, Minecraft.getMinecraft().world);
-
-				if (recipe != null) {
-					ItemStack item = recipe.getCraftingResult(inventory);
-
-					FontRenderer font = null;
-					if (!item.isEmpty()) {
-						font = item.getItem().getFontRenderer(item);
-					}
-					if (font == null) {
-						font = gui.getFontRenderer();
-					}
-
-					RenderHelper.enableGUIStandardItemLighting();
-					gui.itemRender.renderItemAndEffectIntoGUI(item, posX + 1, posY + 1);
-					gui.itemRender.renderItemOverlayIntoGUI(font, item, posX + 1, posY + 1 - (gui.draggedStack.isEmpty() ? 0 : 8), null);
-				}
-			}
-
-			@Override
-			protected void addTooltip(int mouseX, int mouseY, List<String> list) {
-				InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
-				for (int i = 0; i < 9; i++)
-					inventory.setInventorySlotContents(i, shared[i].get());
-				IRecipe recipe = CraftingManager.findMatchingRecipe(inventory, Minecraft.getMinecraft().world);
-
-				if (recipe != null)
-					list.addAll(gui.getItemToolTip(recipe.getCraftingResult(inventory)));
-			}
+		addElement(output = new ElementSlotItem(gui, x + 5 * 18, y + 18, () -> {
+			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
+			for (int i = 0; i < 9; i++)
+				inventory.setInventorySlotContents(i, shared[i].get());
+			IRecipe recipe = CraftingManager.findMatchingRecipe(inventory, Minecraft.getMinecraft().world);
+			if (recipe != null)
+				return recipe.getCraftingResult(inventory);
+			return ItemStack.EMPTY;
+		}, null, true) {
 
 			@Override
 			public boolean onMousePressed(int mouseX, int mouseY, int mouseButton) {
