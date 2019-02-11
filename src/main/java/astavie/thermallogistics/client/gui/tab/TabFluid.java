@@ -79,7 +79,7 @@ public class TabFluid extends TabBase {
 	public void addTooltip(List<String> list) {
 		if (!isFullyOpened())
 			list.add(getTitle());
-		else if (slot.intersectsWith(gui.getMouseX() - posX(), gui.getMouseY() - getPosY()))
+		else if (slot.intersectsWith(gui.getMouseX() - posX(), gui.getMouseY() - posY))
 			slot.addTooltip(list);
 	}
 

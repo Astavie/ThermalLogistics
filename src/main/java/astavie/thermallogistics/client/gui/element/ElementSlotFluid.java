@@ -2,9 +2,9 @@ package astavie.thermallogistics.client.gui.element;
 
 import astavie.thermallogistics.client.gui.IFluidGui;
 import astavie.thermallogistics.util.StackHandler;
+import codechicken.lib.fluid.FluidUtils;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.util.helpers.FluidHelper;
-import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
 import java.util.List;
@@ -54,13 +54,10 @@ public class ElementSlotFluid extends ElementSlot {
 				fluid = null;
 			else if (mouseButton == 0 || !count)
 				fluid = drag.copy();
-			else if (FluidHelper.isFluidEqual(get, drag)) {
-				fluid = get.copy();
-				fluid.amount += Fluid.BUCKET_VOLUME;
-			} else {
+			else if (FluidHelper.isFluidEqual(get, drag))
+				fluid = FluidUtils.copy(get, get.amount + drag.amount);
+			else
 				fluid = drag.copy();
-				fluid.amount = Fluid.BUCKET_VOLUME;
-			}
 
 			consumer.accept(fluid);
 			return true;

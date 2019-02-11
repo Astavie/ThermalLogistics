@@ -47,8 +47,10 @@ public class StackHandler {
 			RenderHelper.enableGUIStandardItemLighting();
 			gui.drawItemStack((ItemStack) item, x, y, true, count ? null : "");
 		} else if (item instanceof FluidStack) {
+			FluidStack fluid = (FluidStack) item;
+
 			GlStateManager.disableLighting();
-			gui.drawFluid(x, y, (FluidStack) item, 16, 16);
+			gui.drawFluid(x, y, fluid, 16, 16);
 
 			if (count) {
 				GlStateManager.disableLighting();
@@ -58,7 +60,7 @@ public class StackHandler {
 				GlStateManager.pushMatrix();
 
 				GlStateManager.scale(0.5, 0.5, 0.5);
-				String amount = StringHelper.formatNumber(((FluidStack) item).amount);
+				String amount = StringHelper.formatNumber(fluid.amount);
 				gui.getFontRenderer().drawStringWithShadow(amount, (x + 16) * 2 - gui.getFontRenderer().getStringWidth(amount), (y + 12) * 2, 0xFFFFFF);
 
 				GlStateManager.popMatrix();

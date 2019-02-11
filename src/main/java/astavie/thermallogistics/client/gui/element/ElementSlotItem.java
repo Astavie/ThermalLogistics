@@ -24,8 +24,7 @@ public class ElementSlotItem extends ElementSlot {
 	protected void drawSlot(int mouseX, int mouseY) {
 		if (!stack.get().isEmpty()) {
 			RenderHelper.enableGUIStandardItemLighting();
-			gui.itemRender.renderItemAndEffectIntoGUI(stack.get(), posX + 1, posY + 1);
-			gui.itemRender.renderItemOverlayIntoGUI(gui.getFontRenderer(), stack.get(), posX + 1, posY + 1 - (gui.draggedStack.isEmpty() ? 0 : 8), null);
+			gui.drawItemStack(stack.get(), posX + 1, posY + 1, true, null);
 		}
 	}
 

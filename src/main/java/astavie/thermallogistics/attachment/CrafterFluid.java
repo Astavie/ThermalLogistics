@@ -580,11 +580,18 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 
 	@Override
 	public List<FluidStack> getOutputs() {
-		List<FluidStack> outputs = new LinkedList<>();
+		List<FluidStack> outputs = NonNullList.create();
 		for (Recipe<FluidStack> recipe : recipes)
-			outputs.addAll(recipe.outputs);
-		outputs.removeIf(Objects::isNull);
+			outputs.addAll(getOutputs(recipe));
 		return outputs;
+	}
+
+	private List<FluidStack> getOutputs(Recipe<FluidStack> recipe) {
+		RequestFluid request = new RequestFluid(null);
+		for (FluidStack fluid : recipe.outputs)
+			if (fluid != null)
+				request.addStack(fluid);
+		return request.stacks;
 	}
 
 	@Override
@@ -610,8 +617,10 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 
 			for (FluidStack out : recipe.outputs) {
 				if (FluidHelper.isFluidEqual(out, stack)) {
-					output = out;
-					break;
+					if (output == null)
+						output = out;
+					else
+						output.amount += out.amount;
 				}
 			}
 
@@ -742,22 +751,20 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 		Recipe<FluidStack> recipe = recipes.get(index);
 
 		int recipes = 0;
-		for (FluidStack output : recipe.outputs) {
-			if (output != null) {
-				int count = 0;
-				for (Request<FluidStack> request : recipe.requests) {
-					for (FluidStack item : request.stacks) {
-						if (FluidHelper.isFluidEqual(output, item)) {
-							count += item.amount;
-							break;
-						}
+		for (FluidStack output : getOutputs(recipe)) {
+			int count = 0;
+			for (Request<FluidStack> request : recipe.requests) {
+				for (FluidStack item : request.stacks) {
+					if (FluidHelper.isFluidEqual(output, item)) {
+						count += item.amount;
+						break;
 					}
 				}
-				count -= recipe.leftovers.getCount(output);
-
-				if (count > 0)
-					recipes = Math.max(recipes, (count - 1) / output.amount + 1);
 			}
+			count -= recipe.leftovers.getCount(output);
+
+			if (count > 0)
+				recipes = Math.max(recipes, (count - 1) / output.amount + 1);
 		}
 		return recipes;
 	}
@@ -812,8 +819,10 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 			FluidStack output = null;
 			for (FluidStack out : recipe.outputs) {
 				if (FluidHelper.isFluidEqual(out, stack)) {
-					output = out;
-					break;
+					if (output == null)
+						output = out;
+					else
+						output.amount += out.amount;
 				}
 			}
 
@@ -856,12 +865,10 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 							sent.decreaseStack(FluidUtils.copy(in, in.amount * recipes));
 
 					// Add leftovers
-					for (FluidStack out : recipe.outputs) {
-						if (out != null) {
-							int amount = FluidHelper.isFluidEqual(out, stack) ? leftover : out.amount * recipes;
-							if (amount > 0)
-								recipe.leftovers.addStack(FluidUtils.copy(out, amount));
-						}
+					for (FluidStack out : getOutputs(recipe)) {
+						int amount = FluidHelper.isFluidEqual(out, stack) ? leftover : out.amount * recipes;
+						if (amount > 0)
+							recipe.leftovers.addStack(FluidUtils.copy(out, amount));
 					}
 
 					checkLinked();

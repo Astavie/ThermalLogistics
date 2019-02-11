@@ -19,6 +19,7 @@ import cofh.thermaldynamics.duct.attachments.ConnectionBase;
 import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
 import cofh.thermaldynamics.gui.container.ContainerAttachmentBase;
 import com.google.common.primitives.Ints;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidStack;
@@ -201,9 +202,13 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 
 	@Override
 	protected boolean hasClickedOutside(int x, int y, int left, int top) {
+		if (fluid != null)
+			return false;
+
 		boolean yes = super.hasClickedOutside(x, y, left, top);
 		if (yes && tab != null && tab.slot.intersectsWith(x - left - tab.posX(), y - top - tab.getPosY()))
 			return false;
+
 		return yes;
 	}
 
@@ -275,8 +280,30 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 	@Override
 	protected void drawGuiContainerForegroundLayer(int x, int y) {
 		super.drawGuiContainerForegroundLayer(x, y);
-		if (fluid != null)
+		if (fluid != null) {
+			GlStateManager.pushMatrix();
+			GlStateManager.translate(0.0F, 0.0F, 64.0F);
+			this.zLevel = 200.0F;
+			itemRender.zLevel = 200.0F;
+
 			StackHandler.render(this, x - guiLeft - 8, y - guiTop - 8, fluid, true);
+
+			this.zLevel = 0.0F;
+			itemRender.zLevel = 0.0F;
+			GlStateManager.popMatrix();
+		}
+	}
+
+	@Override
+	protected void renderHoveredToolTip(int x, int y) {
+		if (fluid == null)
+			super.renderHoveredToolTip(x, y);
+	}
+
+	@Override
+	public void addTooltips(List<String> tooltip) {
+		if (fluid == null)
+			super.addTooltips(tooltip);
 	}
 
 	@Override

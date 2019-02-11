@@ -594,9 +594,16 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	public List<ItemStack> getOutputs() {
 		List<ItemStack> outputs = NonNullList.create();
 		for (Recipe<ItemStack> recipe : recipes)
-			outputs.addAll(recipe.outputs);
-		outputs.removeIf(ItemStack::isEmpty);
+			outputs.addAll(getOutputs(recipe));
 		return outputs;
+	}
+
+	private List<ItemStack> getOutputs(Recipe<ItemStack> recipe) {
+		RequestItem request = new RequestItem(null);
+		for (ItemStack item : recipe.outputs)
+			if (!item.isEmpty())
+				request.addStack(item);
+		return request.stacks;
 	}
 
 	@Override
@@ -622,8 +629,10 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 			for (ItemStack out : recipe.outputs) {
 				if (ItemHelper.itemsIdentical(out, stack)) {
-					output = out;
-					break;
+					if (output.isEmpty())
+						output = out;
+					else
+						output.grow(out.getCount());
 				}
 			}
 
@@ -763,22 +772,20 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		Recipe<ItemStack> recipe = recipes.get(index);
 
 		int recipes = 0;
-		for (ItemStack output : recipe.outputs) {
-			if (!output.isEmpty()) {
-				int count = 0;
-				for (Request<ItemStack> request : recipe.requests) {
-					for (ItemStack item : request.stacks) {
-						if (ItemHelper.itemsIdentical(output, item)) {
-							count += item.getCount();
-							break;
-						}
+		for (ItemStack output : getOutputs(recipe)) {
+			int count = 0;
+			for (Request<ItemStack> request : recipe.requests) {
+				for (ItemStack item : request.stacks) {
+					if (ItemHelper.itemsIdentical(output, item)) {
+						count += item.getCount();
+						break;
 					}
 				}
-				count -= recipe.leftovers.getCount(output);
-
-				if (count > 0)
-					recipes = Math.max(recipes, (count - 1) / output.getCount() + 1);
 			}
+			count -= recipe.leftovers.getCount(output);
+
+			if (count > 0)
+				recipes = Math.max(recipes, (count - 1) / output.getCount() + 1);
 		}
 		return recipes;
 	}
@@ -828,8 +835,10 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			ItemStack output = ItemStack.EMPTY;
 			for (ItemStack out : recipe.outputs) {
 				if (ItemHelper.itemsIdentical(out, stack)) {
-					output = out;
-					break;
+					if (output.isEmpty())
+						output = out;
+					else
+						output.grow(out.getCount());
 				}
 			}
 
@@ -872,12 +881,10 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 							sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
 
 					// Add leftovers
-					for (ItemStack out : recipe.outputs) {
-						if (!out.isEmpty()) {
-							int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
-							if (amount > 0)
-								recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
-						}
+					for (ItemStack out : getOutputs(recipe)) {
+						int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
+						if (amount > 0)
+							recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
 					}
 
 					checkLinked();
