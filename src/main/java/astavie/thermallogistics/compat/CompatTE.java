@@ -51,9 +51,26 @@ public class CompatTE implements ICrafterWrapper<TileCrafter> {
 
 		// Inputs
 		if (SideConfig.allowInsertion(sides.sideTypes[tile.sideCache[side]])) {
+			// Get fluid type
+			FluidStack fluid = null;
+			if (tile.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null)) {
+				for (int i = 0; i < 9; i++) {
+					ItemStack stack = tile.inventory[TileCrafter.SLOT_CRAFTING_START + i];
+					if (FluidHelper.isFluidHandler(stack)) {
+						fluid = FluidHelper.getFluidForFilledItem(stack);
+						break;
+					}
+				}
+			}
+
+			// Get items excluding fluid containers
 			RequestItem request = new RequestItem(null);
-			for (int i = 0; i < 9; i++)
-				request.addStack(tile.inventory[TileCrafter.SLOT_CRAFTING_START + i]);
+			for (int i = 0; i < 9; i++) {
+				ItemStack stack = tile.inventory[TileCrafter.SLOT_CRAFTING_START + i];
+				if (fluid != null && FluidHelper.isFluidEqual(fluid, FluidHelper.getFluidForFilledItem(stack)))
+					continue;
+				request.addStack(stack);
+			}
 
 			for (int i = 0; i < recipe.inputs.size(); i++) {
 				if (i == request.stacks.size())
@@ -84,14 +101,12 @@ public class CompatTE implements ICrafterWrapper<TileCrafter> {
 		// Input
 		if (SideConfig.allowInsertion(sides.sideTypes[tile.sideCache[side]]) && tile.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null)) {
 			// Get fluid type
-			FluidStack fluid = tile.getTankFluid();
-			if (fluid == null || fluid.amount == 0) {
-				for (int i = 0; i < 9; i++) {
-					ItemStack stack = tile.inventory[TileCrafter.SLOT_CRAFTING_START + i];
-					if (FluidHelper.isFluidHandler(stack)) {
-						fluid = FluidHelper.getFluidForFilledItem(stack);
-						break;
-					}
+			FluidStack fluid = null;
+			for (int i = 0; i < 9; i++) {
+				ItemStack stack = tile.inventory[TileCrafter.SLOT_CRAFTING_START + i];
+				if (FluidHelper.isFluidHandler(stack)) {
+					fluid = FluidHelper.getFluidForFilledItem(stack);
+					break;
 				}
 			}
 

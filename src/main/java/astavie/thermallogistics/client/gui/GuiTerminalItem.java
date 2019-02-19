@@ -66,9 +66,11 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		List<Triple<ItemStack, Long, Boolean>> copy = new LinkedList<>();
 
 		for (ItemStack stack : tile.inventory.items)
-			copy.add(Triple.of(ItemHelper.cloneStack(stack, 1), (long) stack.getCount(), false));
+			if (!stack.isEmpty())
+				copy.add(Triple.of(ItemHelper.cloneStack(stack, 1), (long) stack.getCount(), false));
 		for (ItemStack stack : Minecraft.getMinecraft().player.inventory.mainInventory)
-			copy.add(Triple.of(ItemHelper.cloneStack(stack, 1), (long) stack.getCount(), false));
+			if (!stack.isEmpty())
+				copy.add(Triple.of(ItemHelper.cloneStack(stack, 1), (long) stack.getCount(), false));
 
 		copy.addAll(tile.terminal);
 
@@ -88,7 +90,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 			for (int i = 0; i < copy.size(); i++) {
 				Triple<ItemStack, Long, Boolean> triple = copy.get(i);
-				if (triple.getMiddle() == 0L)
+				if (!triple.getRight() && triple.getMiddle() == 0L)
 					continue;
 
 				if (!item.test(triple.getLeft()))
