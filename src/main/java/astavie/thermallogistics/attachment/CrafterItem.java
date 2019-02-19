@@ -147,22 +147,27 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				itemDuct.tileCache[side] = new CacheWrapper(itemDuct.tileCache[side].tile, this);
 
 			int size = itemDuct.itemsToAdd.size();
+			if (size > 0) {
+				a:
+				for (int i = 0; i < size; i++) {
+					TravelingItem item = itemDuct.itemsToAdd.get(i);
+					if (item.oldDirection != (side ^ 1))
+						continue;
 
-			a:
-			for (int i = 0; i < size; i++) {
-				TravelingItem item = itemDuct.itemsToAdd.get(i);
-				if (!(item instanceof TravelingItemLogistics)) {
-					for (Recipe<ItemStack> recipe : recipes) {
-						for (Request<ItemStack> request : recipe.requests) {
-							request.claim(this, item);
-							if (item.stack.isEmpty())
-								continue a;
+					if (!(item instanceof TravelingItemLogistics)) {
+						for (Recipe<ItemStack> recipe : recipes) {
+							for (Request<ItemStack> request : recipe.requests) {
+								request.claim(this, item);
+								if (item.stack.isEmpty())
+									continue a;
+							}
 						}
 					}
 				}
-			}
 
-			itemDuct.itemsToAdd.removeIf(item -> item.stack.isEmpty());
+				itemDuct.itemsToAdd.removeIf(item -> item.stack.isEmpty());
+				itemDuct.getGrid().shouldRepoll = true;
+			}
 		}
 		super.tick(pass);
 	}

@@ -32,7 +32,7 @@ import java.util.List;
 
 public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
-	public final Shared.Item[] shared = new Shared.Item[9];
+	public final TileTerminalItem tile;
 
 	public TabCrafting tabCrafting;
 	public TabRequest tabRequest;
@@ -40,6 +40,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	public GuiTerminalItem(TileTerminalItem tile, InventoryPlayer inventory) {
 		super(tile, new ContainerTerminalItem(tile, inventory), new ResourceLocation(ThermalLogistics.MOD_ID, "textures/gui/terminal.png"));
 		((ContainerTerminalItem) inventorySlots).gui = this;
+		this.tile = tile;
 		this.xSize = 194;
 		this.ySize = 250;
 	}
@@ -54,7 +55,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			count = Integer.parseInt(tabCrafting.amount.getText());
 
 		a:
-		for (Shared.Item item : shared) {
+		for (Shared.Item item : tile.shared) {
 			if (item.test(ItemStack.EMPTY))
 				continue;
 
@@ -91,17 +92,17 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	@Override
 	public void initGui() {
 		super.initGui();
-		addTab(tabCrafting = new TabCrafting(this, shared, () -> {
+		addTab(tabCrafting = new TabCrafting(this, tile.shared, () -> {
 			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
 			for (int i = 0; i < 9; i++)
-				inventory.setInventorySlotContents(i, shared[i].get());
+				inventory.setInventorySlotContents(i, tile.shared[i].get());
 			ItemStack stack = CraftingManager.findMatchingResult(inventory, Minecraft.getMinecraft().world);
 
 			PacketTileInfo packet = PacketTileInfo.newPacket(tile);
 			packet.addByte(2);
 			packet.addBool(StringHelper.isShiftKeyDown());
 
-			for (Shared.Item stacks : shared) {
+			for (Shared.Item stacks : tile.shared) {
 				Ingredient ingredient = stacks.asIngredient();
 				packet.addInt(ingredient.getMatchingStacks().length);
 				for (ItemStack item : ingredient.getMatchingStacks())
@@ -114,7 +115,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			for (ItemStack stack : request())
 				request(ItemHelper.cloneStack(stack, 1), stack.getCount());
 		}, () -> !request().isEmpty())).setOffsets(-18, 74);
-		addTab(tabRequest = new TabRequest(this, ((TileTerminalItem) tile).requests.stacks, tile)).setOffsets(-18, 74);
+		addTab(tabRequest = new TabRequest(this, tile.requests.stacks, tile)).setOffsets(-18, 74);
 	}
 
 	@Override

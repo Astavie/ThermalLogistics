@@ -9,6 +9,7 @@ import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.process.RequestItem;
+import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;
 import codechicken.lib.inventory.InventorySimple;
 import cofh.core.network.PacketBase;
@@ -48,8 +49,9 @@ import java.util.Set;
 
 public class TileTerminalItem extends TileTerminal<ItemStack> {
 
-	public final InventorySimple inventory = new InventorySimple(27);
+	public final Shared.Item[] shared = new Shared.Item[9];
 
+	public final InventorySimple inventory = new InventorySimple(27);
 	public final RequestItem requests = new RequestItem(null);
 
 	@Override

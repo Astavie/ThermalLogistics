@@ -48,8 +48,10 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter> 
 
 		for (index = 0; index < crafter.getRecipes().size(); index++) {
 			recipe = crafter.getRecipes().get(index);
-			if (recipe.inputs.stream().allMatch(ItemStack::isEmpty) && recipe.outputs.stream().allMatch(ItemStack::isEmpty))
+			if (recipe.inputs.stream().allMatch(ItemStack::isEmpty) && recipe.outputs.stream().allMatch(ItemStack::isEmpty)) {
+				index++;
 				break;
+			}
 		}
 
 		index--;
@@ -103,8 +105,10 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter> 
 
 		for (index = 0; index < crafter.getRecipes().size(); index++) {
 			recipe = crafter.getRecipes().get(index);
-			if (recipe.inputs.stream().allMatch(Objects::isNull) && recipe.outputs.stream().allMatch(Objects::isNull))
+			if (recipe.inputs.stream().allMatch(Objects::isNull) && recipe.outputs.stream().allMatch(Objects::isNull)) {
+				index++;
 				break;
+			}
 		}
 
 		index--;

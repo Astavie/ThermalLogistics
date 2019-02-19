@@ -71,7 +71,7 @@ public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminal
 			}
 
 			for (int i = 0; i < 9; i++)
-				container.gui.shared[i] = new SharedJEI(stacks[i]);
+				container.gui.tile.shared[i] = new SharedJEI(stacks[i]);
 		}
 		return null;
 	}

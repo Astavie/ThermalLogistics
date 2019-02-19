@@ -62,8 +62,10 @@ public class CompatTE implements ICrafterWrapper<TileCrafter> {
 			}
 		}
 
+		boolean[] extraction = {false, false, true, true, true, false, false, true, true};
+
 		// Output
-		if (SideConfig.allowExtraction(sides.sideTypes[tile.sideCache[side]])) {
+		if (extraction[sides.sideTypes[tile.sideCache[side]]]) {
 			InventoryCrafting matrix = new InventoryCraftingFalse(3, 3);
 			for (int i = 0; i < 9; i++)
 				matrix.setInventorySlotContents(i, tile.inventory[TileCrafter.SLOT_CRAFTING_START + i]);
