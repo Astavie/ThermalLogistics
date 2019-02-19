@@ -423,7 +423,7 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 
 	@Override
 	public Object getGuiClient(InventoryPlayer inventory) {
-		return new GuiCrafter(inventory, this, this);
+		return new GuiCrafter(inventory, this);
 	}
 
 	@Override

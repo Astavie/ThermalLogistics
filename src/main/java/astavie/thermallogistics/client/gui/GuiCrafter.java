@@ -7,6 +7,7 @@ import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.client.gui.tab.TabFluid;
 import astavie.thermallogistics.client.gui.tab.TabLink;
 import astavie.thermallogistics.compat.ICrafterWrapper;
+import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
@@ -19,7 +20,6 @@ import cofh.core.util.helpers.BlockHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.attachments.ConnectionBase;
 import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
-import cofh.thermaldynamics.gui.container.ContainerAttachmentBase;
 import com.google.common.primitives.Ints;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -57,10 +57,10 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 	private TabFluid tab = null;
 	private FluidStack fluid = null;
 
-	public GuiCrafter(InventoryPlayer inventoryPlayer, ConnectionBase attachment, ICrafter<?> crafter) {
-		super(new ContainerAttachmentBase(inventoryPlayer, attachment), TEXTURE);
+	public <C extends ConnectionBase & ICrafter<?>> GuiCrafter(InventoryPlayer inventoryPlayer, C crafter) {
+		super(new ContainerCrafter(inventoryPlayer, crafter), TEXTURE);
 		this.crafter = crafter;
-		this.attachment = attachment;
+		this.attachment = crafter;
 		this.attachment.getFilter();
 		this.name = attachment.getName();
 		this.ySize = 204;
@@ -72,9 +72,8 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 			wrapper = ThermalLogistics.INSTANCE.getWrapper(tile.getClass());
 
 		String info = attachment.getInfo();
-		if (info != null) {
+		if (info != null)
 			generateInfo(info);
-		}
 	}
 
 	@Override

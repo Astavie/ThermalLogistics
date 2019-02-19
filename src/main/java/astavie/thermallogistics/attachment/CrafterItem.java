@@ -435,7 +435,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public Object getGuiClient(InventoryPlayer inventory) {
-		return new GuiCrafter(inventory, this, this);
+		return new GuiCrafter(inventory, this);
 	}
 
 	@Override

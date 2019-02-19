@@ -1,14 +1,10 @@
-package astavie.thermallogistics.compat;
+package astavie.thermallogistics.compat.jei;
 
 import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.util.Shared;
 import cofh.core.util.helpers.ItemHelper;
-import mezz.jei.api.IModPlugin;
-import mezz.jei.api.IModRegistry;
-import mezz.jei.api.JEIPlugin;
 import mezz.jei.api.gui.IGuiIngredient;
 import mezz.jei.api.gui.IRecipeLayout;
-import mezz.jei.api.recipe.VanillaRecipeCategoryUid;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
@@ -23,15 +19,12 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-@JEIPlugin
-public class CompatJEI implements IModPlugin, IRecipeTransferHandler<ContainerTerminalItem> {
+public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminalItem> {
 
-	private IRecipeTransferHandlerHelper helper;
+	private final IRecipeTransferHandlerHelper helper;
 
-	@Override
-	public void register(IModRegistry registry) {
-		helper = registry.getJeiHelpers().recipeTransferHandlerHelper();
-		registry.getRecipeTransferRegistry().addRecipeTransferHandler(this, VanillaRecipeCategoryUid.CRAFTING);
+	public TerminalHandler(IRecipeTransferHandlerHelper helper) {
+		this.helper = helper;
 	}
 
 	@Nonnull
