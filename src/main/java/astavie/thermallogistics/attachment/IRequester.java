@@ -48,17 +48,16 @@ public interface IRequester<I> {
 		return new RequesterReference<>(getTile().getWorld().provider.getDimension(), getTile().getPos(), getSide(), getIndex());
 	}
 
+	int getIndex();
+
 	// Crafter
+
 	void onFinishCrafting(IRequester<I> requester, I stack);
 
 	void onFinishCrafting(int index, int recipes);
 
-	int getIndex();
-
-	// Multiplexer
-	void setIndex(int index);
-
 	// ItemStack
+
 	int getMaxSend();
 
 	byte getSpeed();
@@ -68,6 +67,7 @@ public interface IRequester<I> {
 	boolean hasMultiStack();
 
 	// FluidStack
+
 	float getThrottle();
 
 }

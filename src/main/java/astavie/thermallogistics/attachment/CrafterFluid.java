@@ -73,8 +73,6 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 
 	private final IFilterFluid filter = new Filter(this);
 
-	private int index = 0;
-
 	public CrafterFluid(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
 
@@ -146,9 +144,12 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 
 	@Override
 	public void claim(ICrafter<FluidStack> crafter, FluidStack stack) {
-		for (Request<FluidStack> request : process.requests) {
+		for (Iterator<Request<FluidStack>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
+			Request<FluidStack> request = iterator.next();
 			if (request.attachment.references(crafter)) {
 				request.decreaseStack(stack);
+				if (request.stacks.isEmpty())
+					iterator.remove();
 				return;
 			}
 		}
@@ -595,21 +596,18 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 		for (RequesterReference<?> reference : linked) {
 			RequesterReference.writePacket(packet, reference);
 
-			List<?> outputs = ((ICrafter<?>) reference.getAttachment()).getOutputs();
+			ICrafter<?> crafter = (ICrafter<?>) reference.getAttachment();
+
+			List<?> outputs = crafter.getOutputs();
 			packet.addInt(outputs.size());
 			for (Object object : outputs)
-				StackHandler.writePacket(packet, object, getItemClass(), true);
+				StackHandler.writePacket(packet, object, crafter.getItemClass(), true);
 		}
 	}
 
 	@Override
 	public int getIndex() {
-		return index;
-	}
-
-	@Override
-	public void setIndex(int index) {
-		this.index = index;
+		return 0;
 	}
 
 	@Override
@@ -913,7 +911,7 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 				}
 
 				int recipes = (count - 1) / output.amount + 1;
-				if (recipes > 0) {
+				if (count > 0 && recipes > 0) {
 					int leftover = count % output.amount > 0 ? output.amount - (count % output.amount) : 0;
 
 					// Remove sent

@@ -31,6 +31,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public class RequesterFluid extends RetrieverFluid implements IRequester<FluidStack> {
@@ -38,8 +39,6 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MOD_ID, "requester_fluid");
 
 	private final ProcessFluid process = new ProcessFluid(this);
-
-	private int index = 0;
 
 	public RequesterFluid(TileGrid tile, byte side) {
 		super(tile, side);
@@ -81,9 +80,12 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 
 	@Override
 	public void claim(ICrafter<FluidStack> crafter, FluidStack stack) {
-		for (Request<FluidStack> request : process.requests) {
+		for (Iterator<Request<FluidStack>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
+			Request<FluidStack> request = iterator.next();
 			if (request.attachment.references(crafter)) {
 				request.decreaseStack(stack);
+				if (request.stacks.isEmpty())
+					iterator.remove();
 				return;
 			}
 		}
@@ -162,12 +164,7 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 
 	@Override
 	public int getIndex() {
-		return index;
-	}
-
-	@Override
-	public void setIndex(int index) {
-		this.index = index;
+		return 0;
 	}
 
 	@Override

@@ -69,8 +69,6 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	private final ProcessItem process = new ProcessItem(this);
 	private final RequestItem sent = new RequestItem(null);
 
-	private int index = 0;
-
 	public CrafterItem(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
 
@@ -620,10 +618,12 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		for (RequesterReference<?> reference : linked) {
 			RequesterReference.writePacket(packet, reference);
 
-			List<?> outputs = ((ICrafter<?>) reference.getAttachment()).getOutputs();
+			ICrafter<?> crafter = (ICrafter<?>) reference.getAttachment();
+
+			List<?> outputs = crafter.getOutputs();
 			packet.addInt(outputs.size());
 			for (Object object : outputs)
-				StackHandler.writePacket(packet, object, getItemClass(), true);
+				StackHandler.writePacket(packet, object, crafter.getItemClass(), true);
 		}
 	}
 
@@ -638,12 +638,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public int getIndex() {
-		return index;
-	}
-
-	@Override
-	public void setIndex(int index) {
-		this.index = index;
+		return 0;
 	}
 
 	@Override
@@ -928,7 +923,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		}
 
 		int recipes = (count - 1) / output.getCount() + 1;
-		if (recipes > 0) {
+		if (count > 0 && recipes > 0) {
 			int leftover = count % output.getCount() > 0 ? output.getCount() - (count % output.getCount()) : 0;
 
 			// Remove sent
@@ -996,9 +991,12 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public void claim(ICrafter<ItemStack> crafter, ItemStack stack) {
-		for (Request<ItemStack> request : process.requests) {
+		for (Iterator<Request<ItemStack>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
+			Request<ItemStack> request = iterator.next();
 			if (request.attachment.references(crafter)) {
 				request.decreaseStack(stack);
+				if (request.stacks.isEmpty())
+					iterator.remove();
 				return;
 			}
 		}

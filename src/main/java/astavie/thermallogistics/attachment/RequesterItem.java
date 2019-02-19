@@ -30,6 +30,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.items.IItemHandler;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 public class RequesterItem extends RetrieverItem implements IRequester<ItemStack> {
@@ -37,8 +38,6 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	public static final ResourceLocation ID = new ResourceLocation(ThermalLogistics.MOD_ID, "requester_item");
 
 	private final ProcessItem process = new ProcessItem(this);
-
-	private int index = 0;
 
 	public RequesterItem(TileGrid tile, byte side) {
 		super(tile, side);
@@ -85,9 +84,12 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 
 	@Override
 	public void claim(ICrafter<ItemStack> crafter, ItemStack stack) {
-		for (Request<ItemStack> request : process.requests) {
+		for (Iterator<Request<ItemStack>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
+			Request<ItemStack> request = iterator.next();
 			if (request.attachment.references(crafter)) {
 				request.decreaseStack(stack);
+				if (request.stacks.isEmpty())
+					iterator.remove();
 				return;
 			}
 		}
@@ -175,12 +177,7 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 
 	@Override
 	public int getIndex() {
-		return index;
-	}
-
-	@Override
-	public void setIndex(int index) {
-		this.index = index;
+		return 0;
 	}
 
 	@Override

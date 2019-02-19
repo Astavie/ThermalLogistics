@@ -213,11 +213,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	public abstract Class<I> getItemClass();
 
 	@Override
-	public List<IRequester<?>> getRequesters() {
-		return Arrays.asList((IRequester<?>[]) processes);
-	}
-
-	@Override
 	public IRequester<?> getRequester(int index) {
 		return processes[index];
 	}
@@ -303,9 +298,12 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 		@Override
 		public void claim(ICrafter<I> crafter, I stack) {
-			for (Request<I> request : process.requests) {
+			for (Iterator<Request<I>> iterator = process.requests.iterator(); iterator.hasNext(); ) {
+				Request<I> request = iterator.next();
 				if (request.attachment.references(crafter)) {
 					request.decreaseStack(stack);
+					if (request.stacks.isEmpty())
+						iterator.remove();
 					return;
 				}
 			}
@@ -360,10 +358,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 		@Override
 		public void onFinishCrafting(int index, int recipes) {
-		}
-
-		@Override
-		public void setIndex(int index) {
 		}
 
 	}
