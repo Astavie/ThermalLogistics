@@ -105,6 +105,8 @@ public class RequesterReference<I> {
 		try {
 			if (tile instanceof IRequester) {
 				cache = (IRequester<I>) tile;
+			} else if (tile instanceof IRequesterContainer) {
+				cache = (IRequester<I>) ((IRequesterContainer) tile).getRequester(index);
 			} else if (tile instanceof TileGrid) {
 				Attachment attachment = ((TileGrid) tile).getAttachment(side);
 				if (attachment instanceof IRequester)

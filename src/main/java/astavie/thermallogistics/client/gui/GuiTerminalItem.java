@@ -48,7 +48,14 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	private List<ItemStack> request() {
 		RequestItem request = new RequestItem(null);
 
-		List<Triple<ItemStack, Long, Boolean>> copy = new LinkedList<>(tile.terminal);
+		List<Triple<ItemStack, Long, Boolean>> copy = new LinkedList<>();
+
+		for (ItemStack stack : tile.inventory.items)
+			copy.add(Triple.of(ItemHelper.cloneStack(stack, 1), (long) stack.getCount(), false));
+		for (ItemStack stack : Minecraft.getMinecraft().player.inventory.mainInventory)
+			copy.add(Triple.of(ItemHelper.cloneStack(stack, 1), (long) stack.getCount(), false));
+
+		copy.addAll(tile.terminal);
 
 		int count = 1;
 		if (!tabCrafting.amount.getText().isEmpty())
@@ -85,6 +92,11 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 			return Collections.emptyList();
 		}
+
+		for (ItemStack stack : tile.inventory.items)
+			request.decreaseStack(stack);
+		for (ItemStack stack : Minecraft.getMinecraft().player.inventory.mainInventory)
+			request.decreaseStack(stack);
 
 		return request.stacks;
 	}

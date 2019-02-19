@@ -17,7 +17,7 @@ public interface IRequester<I> {
 
 	List<I> getOutputTo(IRequester<I> requester);
 
-	boolean isDisabled();
+	boolean isEnabled();
 
 	int amountRequired(I stack);
 
@@ -34,6 +34,8 @@ public interface IRequester<I> {
 	void markDirty();
 
 	int tickDelay();
+
+	void claim(ICrafter<I> crafter, I stack);
 
 	default ItemStack getTileIcon() {
 		TileEntity myTile = getCachedTile();

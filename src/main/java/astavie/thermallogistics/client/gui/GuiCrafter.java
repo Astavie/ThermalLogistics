@@ -141,7 +141,7 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 			int x = Math.min(CrafterItem.SIZE[attachment.type] / crafter.getRecipes().size() - 1, 3) * buttonSize;
 			splitButton.setSheetX(x);
 			splitButton.setHoverX(x);
-			splitButton.setToolTip("info.logistics.split." + crafter.getRecipes().size());
+			splitButton.setToolTipLocalized(StringHelper.localizeFormat("info.logistics.split", crafter.getRecipes().size()));
 		}
 		for (int i = 0; i < flagButtons.length; i++) {
 			if (flagButtons[i] != null) {
@@ -204,7 +204,6 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 
 	@Override
 	protected void updateElementInformation() {
-		super.updateElementInformation();
 		setButtons();
 	}
 

@@ -3,12 +3,12 @@ package astavie.thermallogistics.process;
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.IRequester;
 import astavie.thermallogistics.util.RequesterReference;
-import astavie.thermallogistics.util.TravelingItemLogistics;
 import cofh.core.util.helpers.InventoryHelper;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
+import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
@@ -37,7 +37,7 @@ public class ProcessItem extends Process<ItemStack> {
 			Request<ItemStack> request = iterator.next();
 			if (request.attachment.isLoaded()) {
 				IRequester<ItemStack> attachment = request.attachment.getAttachment();
-				if (attachment == null || attachment.isDisabled()) {
+				if (attachment == null || !attachment.isEnabled()) {
 					iterator.remove();
 					requester.markDirty();
 				} else {
@@ -131,7 +131,7 @@ public class ProcessItem extends Process<ItemStack> {
 				}
 			}
 
-			endPoint.insertNewItem(new TravelingItemLogistics(item, endPoint, route1, (byte) (side ^ 1), requester.getSpeed()));
+			endPoint.insertNewItem(new TravelingItem(item, endPoint, route1, (byte) (side ^ 1), requester.getSpeed()));
 			return item;
 		}
 		return ItemStack.EMPTY;
@@ -258,7 +258,7 @@ public class ProcessItem extends Process<ItemStack> {
 
 		// Check crafters
 		for (ICrafter<ItemStack> crafter : crafters) {
-			if (crafter == requester || crafter.isDisabled())
+			if (crafter == requester || !crafter.isEnabled())
 				continue;
 
 			Set<RequesterReference<ItemStack>> blacklist = crafter.getBlacklist();

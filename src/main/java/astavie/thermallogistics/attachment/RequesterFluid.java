@@ -80,6 +80,16 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 	}
 
 	@Override
+	public void claim(ICrafter<FluidStack> crafter, FluidStack stack) {
+		for (Request<FluidStack> request : process.requests) {
+			if (request.attachment.references(crafter)) {
+				request.decreaseStack(stack);
+				return;
+			}
+		}
+	}
+
+	@Override
 	public void tick(int pass) {
 		GridFluid grid = fluidDuct.getGrid();
 		if (pass != 1 || grid == null || !isPowered || !isValidInput)
@@ -133,8 +143,8 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 	}
 
 	@Override
-	public boolean isDisabled() {
-		return !isPowered;
+	public boolean isEnabled() {
+		return isPowered;
 	}
 
 	@Override

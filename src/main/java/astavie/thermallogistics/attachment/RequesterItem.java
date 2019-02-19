@@ -3,6 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.TLTextures;
 import astavie.thermallogistics.process.ProcessItem;
+import astavie.thermallogistics.process.Request;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
@@ -83,6 +84,16 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
+	public void claim(ICrafter<ItemStack> crafter, ItemStack stack) {
+		for (Request<ItemStack> request : process.requests) {
+			if (request.attachment.references(crafter)) {
+				request.decreaseStack(stack);
+				return;
+			}
+		}
+	}
+
+	@Override
 	public void onNeighborChange() {
 		boolean wasPowered = isPowered;
 		super.onNeighborChange();
@@ -127,8 +138,8 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
-	public boolean isDisabled() {
-		return !isPowered;
+	public boolean isEnabled() {
+		return isPowered;
 	}
 
 	@Override

@@ -1,9 +1,12 @@
 package astavie.thermallogistics.tile;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.IRequester;
+import astavie.thermallogistics.attachment.IRequesterContainer;
 import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.process.Process;
+import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.CoFHCore;
 import cofh.core.block.TileNameable;
@@ -42,7 +45,7 @@ import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.stream.Stream;
 
-public abstract class TileTerminal<I> extends TileNameable implements ITickable {
+public abstract class TileTerminal<I> extends TileNameable implements ITickable, IRequesterContainer {
 
 	public final InventorySpecial requester = new InventorySpecial(1, i -> i.getItem() == ThermalLogistics.Items.requester, null);
 	public final List<Triple<I, Long, Boolean>> terminal = NonNullList.create();
@@ -209,6 +212,16 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 
 	public abstract Class<I> getItemClass();
 
+	@Override
+	public List<IRequester<?>> getRequesters() {
+		return Arrays.asList((IRequester<?>[]) processes);
+	}
+
+	@Override
+	public IRequester<?> getRequester(int index) {
+		return processes[index];
+	}
+
 	protected static class Requester<I> implements IRequester<I> {
 
 		private final TileTerminal<I> terminal;
@@ -233,8 +246,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 		}
 
 		@Override
-		public boolean isDisabled() {
-			return false;
+		public boolean isEnabled() {
+			return true;
 		}
 
 		@Override
@@ -289,6 +302,16 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 		}
 
 		@Override
+		public void claim(ICrafter<I> crafter, I stack) {
+			for (Request<I> request : process.requests) {
+				if (request.attachment.references(crafter)) {
+					request.decreaseStack(stack);
+					return;
+				}
+			}
+		}
+
+		@Override
 		public int getMaxSend() {
 			return ServoItem.maxSize[terminal.requester.get().getMetadata()];
 		}
@@ -324,6 +347,11 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 			return ServoFluid.throttle[terminal.requester.get().getMetadata()];
 		}
 
+		@Override
+		public int getIndex() {
+			return side;
+		}
+
 		// Not used
 
 		@Override
@@ -332,11 +360,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable 
 
 		@Override
 		public void onFinishCrafting(int index, int recipes) {
-		}
-
-		@Override
-		public int getIndex() {
-			return 0;
 		}
 
 		@Override

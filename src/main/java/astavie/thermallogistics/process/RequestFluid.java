@@ -1,10 +1,8 @@
 package astavie.thermallogistics.process;
 
-import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.util.RequesterReference;
 import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.FluidHelper;
-import cofh.thermaldynamics.duct.item.TravelingItem;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
@@ -110,10 +108,6 @@ public class RequestFluid extends Request<FluidStack> {
 			if (FluidHelper.isFluidEqual(item, stack))
 				return item.amount;
 		return 0;
-	}
-
-	@Override
-	public void claim(ICrafter<FluidStack> crafter, TravelingItem item) {
 	}
 
 }

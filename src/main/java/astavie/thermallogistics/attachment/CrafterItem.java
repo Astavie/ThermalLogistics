@@ -11,7 +11,6 @@ import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.process.RequestItem;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.StackHandler;
-import astavie.thermallogistics.util.TravelingItemLogistics;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
@@ -31,6 +30,7 @@ import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.gui.GuiHandler;
+import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.render.RenderDuct;
 import cofh.thermaldynamics.util.ListWrapper;
@@ -142,34 +142,52 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public void tick(int pass) {
-		if (pass == 0) {
-			if (itemDuct.tileCache[side] != null && !(itemDuct.tileCache[side] instanceof CacheWrapper))
-				itemDuct.tileCache[side] = new CacheWrapper(itemDuct.tileCache[side].tile, this);
+		if (pass == 0 && itemDuct.tileCache[side] != null && !(itemDuct.tileCache[side] instanceof CacheWrapper))
+			itemDuct.tileCache[side] = new CacheWrapper(itemDuct.tileCache[side].tile, this);
+		super.tick(pass);
+	}
 
-			int size = itemDuct.itemsToAdd.size();
-			if (size > 0) {
-				a:
-				for (int i = 0; i < size; i++) {
-					TravelingItem item = itemDuct.itemsToAdd.get(i);
-					if (item.oldDirection != (side ^ 1))
-						continue;
+	@Override
+	public ItemStack insertItem(ItemStack item, boolean simulate) {
+		int max = Math.min(getMaxSend(), item.getCount());
+		int send = 0;
 
-					if (!(item instanceof TravelingItemLogistics)) {
-						for (Recipe<ItemStack> recipe : recipes) {
-							for (Request<ItemStack> request : recipe.requests) {
-								request.claim(this, item);
-								if (item.stack.isEmpty())
-									continue a;
-							}
-						}
-					}
+		a:
+		for (int i = 0; i < recipes.size(); i++) {
+			Recipe<ItemStack> recipe = recipes.get(i);
+			for (Iterator<Request<ItemStack>> iterator = recipe.requests.iterator(); iterator.hasNext(); ) {
+				Request<ItemStack> request = iterator.next();
+				int count = Math.min(request.getCount(item), max - send);
+				if (count == 0)
+					continue;
+
+				IRequester<ItemStack> attachment = request.attachment.getAttachment();
+				if (attachment == null)
+					continue;
+
+				Route route = itemDuct.getRoute((IGridTileRoute) attachment.getDuct());
+				if (route == null)
+					continue;
+
+				if (!simulate) {
+					ItemStack removed = ItemHelper.cloneStack(item, count);
+
+					route = route.copy();
+					route.pathDirections.add(attachment.getSide());
+
+					itemDuct.insertNewItem(new TravelingItem(removed, itemDuct, route, (byte) (side ^ 1), attachment.getSpeed()));
+
+					onFinishCrafting(recipe, i, iterator, request, removed);
+					attachment.claim(this, removed);
 				}
 
-				itemDuct.itemsToAdd.removeIf(item -> item.stack.isEmpty());
-				itemDuct.getGrid().shouldRepoll = true;
+				send += count;
+				if (send == max)
+					break a;
 			}
 		}
-		super.tick(pass);
+
+		return ItemHelper.cloneStack(item, item.getCount() - send);
 	}
 
 	@Override
@@ -749,8 +767,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	}
 
 	@Override
-	public boolean isDisabled() {
-		return !isPowered;
+	public boolean isEnabled() {
+		return isPowered;
 	}
 
 	private boolean itemsIdentical(ItemStack a, ItemStack b) {
@@ -877,6 +895,62 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		return getPickBlock();
 	}
 
+	private void onFinishCrafting(Recipe<ItemStack> recipe, int i, Iterator<Request<ItemStack>> iterator, Request<ItemStack> request, ItemStack stack) {
+		ItemStack output = ItemStack.EMPTY;
+		for (ItemStack out : recipe.outputs) {
+			if (ItemHelper.itemsIdentical(out, stack)) {
+				if (output.isEmpty())
+					output = out;
+				else
+					output.grow(out.getCount());
+			}
+		}
+
+		request.decreaseStack(stack);
+		if (request.stacks.isEmpty())
+			iterator.remove();
+
+		// Check leftovers
+		int count = stack.getCount();
+
+		for (Iterator<ItemStack> iterator1 = recipe.leftovers.stacks.iterator(); iterator1.hasNext(); ) {
+			ItemStack leftovers = iterator1.next();
+			if (ItemHelper.itemsIdentical(leftovers, stack)) {
+				int amount = Math.min(leftovers.getCount(), stack.getCount());
+				leftovers.shrink(amount);
+				count -= amount;
+
+				if (leftovers.isEmpty())
+					iterator1.remove();
+
+				break;
+			}
+		}
+
+		int recipes = (count - 1) / output.getCount() + 1;
+		if (recipes > 0) {
+			int leftover = count % output.getCount() > 0 ? output.getCount() - (count % output.getCount()) : 0;
+
+			// Remove sent
+			for (ItemStack in : recipe.inputs)
+				if (!in.isEmpty())
+					sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
+
+			// Add leftovers
+			for (ItemStack out : getOutputs(recipe)) {
+				int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
+				if (amount > 0)
+					recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
+			}
+
+			checkLinked();
+			for (RequesterReference<?> reference : linked)
+				reference.getAttachment().onFinishCrafting(i, recipes);
+		}
+
+		markDirty();
+	}
+
 	@Override
 	public void onFinishCrafting(IRequester<ItemStack> requester, ItemStack stack) {
 		for (int i = 0; i < recipes.size(); i++) {
@@ -884,67 +958,12 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			if (recipe.requests.isEmpty())
 				continue;
 
-			ItemStack output = ItemStack.EMPTY;
-			for (ItemStack out : recipe.outputs) {
-				if (ItemHelper.itemsIdentical(out, stack)) {
-					if (output.isEmpty())
-						output = out;
-					else
-						output.grow(out.getCount());
-				}
-			}
-
-			if (output.isEmpty())
-				continue;
-
 			for (Iterator<Request<ItemStack>> iterator = recipe.requests.iterator(); iterator.hasNext(); ) {
 				Request<ItemStack> request = iterator.next();
 				if (!request.attachment.references(requester))
 					continue;
 
-				request.decreaseStack(stack);
-				if (request.stacks.isEmpty())
-					iterator.remove();
-
-				// Check leftovers
-				int count = stack.getCount();
-
-				for (Iterator<ItemStack> iterator1 = recipe.leftovers.stacks.iterator(); iterator1.hasNext(); ) {
-					ItemStack leftovers = iterator1.next();
-					if (ItemHelper.itemsIdentical(leftovers, stack)) {
-						int amount = Math.min(leftovers.getCount(), stack.getCount());
-						leftovers.shrink(amount);
-						count -= amount;
-
-						if (leftovers.isEmpty())
-							iterator1.remove();
-
-						break;
-					}
-				}
-
-				int recipes = (count - 1) / output.getCount() + 1;
-				if (recipes > 0) {
-					int leftover = count % output.getCount() > 0 ? output.getCount() - (count % output.getCount()) : 0;
-
-					// Remove sent
-					for (ItemStack in : recipe.inputs)
-						if (!in.isEmpty())
-							sent.decreaseStack(ItemHelper.cloneStack(in, in.getCount() * recipes));
-
-					// Add leftovers
-					for (ItemStack out : getOutputs(recipe)) {
-						int amount = ItemHelper.itemsIdentical(out, stack) ? leftover : out.getCount() * recipes;
-						if (amount > 0)
-							recipe.leftovers.addStack(ItemHelper.cloneStack(out, amount));
-					}
-
-					checkLinked();
-					for (RequesterReference<?> reference : linked)
-						reference.getAttachment().onFinishCrafting(i, recipes);
-				}
-
-				markDirty();
+				onFinishCrafting(recipe, i, iterator, request, stack);
 				return;
 			}
 		}
@@ -973,6 +992,16 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	@Override
 	public void markDirty() {
 		baseTile.markChunkDirty();
+	}
+
+	@Override
+	public void claim(ICrafter<ItemStack> crafter, ItemStack stack) {
+		for (Request<ItemStack> request : process.requests) {
+			if (request.attachment.references(crafter)) {
+				request.decreaseStack(stack);
+				return;
+			}
+		}
 	}
 
 	private static class CacheWrapper extends DuctUnitItem.Cache {

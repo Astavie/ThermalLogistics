@@ -145,6 +145,16 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 	}
 
 	@Override
+	public void claim(ICrafter<FluidStack> crafter, FluidStack stack) {
+		for (Request<FluidStack> request : process.requests) {
+			if (request.attachment.references(crafter)) {
+				request.decreaseStack(stack);
+				return;
+			}
+		}
+	}
+
+	@Override
 	public void tick(int pass) {
 		if (pass == 0 && fluidDuct.tileCache[side] != null && !(fluidDuct.tileCache[side] instanceof CrafterFluid.CacheWrapper))
 			fluidDuct.tileCache[side] = new CrafterFluid.CacheWrapper(fluidDuct.tileCache[side].tile, this);
@@ -732,8 +742,8 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 	}
 
 	@Override
-	public boolean isDisabled() {
-		return !isPowered;
+	public boolean isEnabled() {
+		return isPowered;
 	}
 
 	@Override

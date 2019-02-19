@@ -366,7 +366,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 					Attachment attachment = start.parent.getAttachment(side);
 					if (attachment != null) {
-						if (attachment instanceof ICrafter) {
+						if (attachment instanceof ICrafter && ((ICrafter) attachment).isEnabled()) {
 							a:
 							//noinspection unchecked
 							for (ItemStack out : ((ICrafter<ItemStack>) attachment).getOutputs()) {
@@ -394,7 +394,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 					if (cache.tile != null) {
 						if (cache.tile == this)
 							continue;
-						if (cache.tile instanceof ICrafter) {
+						if (cache.tile instanceof ICrafter && ((ICrafter) cache.tile).isEnabled()) {
 							a:
 							//noinspection unchecked
 							for (ItemStack out : ((ICrafter<ItemStack>) cache.tile).getOutputs()) {
@@ -464,7 +464,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-			ItemStack insert = ItemHelper.cloneStack(stack, tile.requests.getCount(stack));
+			ItemStack insert = ItemHelper.cloneStack(stack, Math.min(stack.getCount(), tile.requests.getCount(stack)));
 			if (insert.isEmpty())
 				return stack;
 

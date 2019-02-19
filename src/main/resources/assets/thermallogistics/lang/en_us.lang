@@ -31,13 +31,7 @@ info.logistics.fluid.get=Get Fluid
 
 info.logistics.inputs=Inputs: §f%s
 info.logistics.outputs=Outputs: §f%s
-
-info.logistics.split.1=Recipes: 1
-info.logistics.split.2=Recipes: 2
-info.logistics.split.3=Recipes: 3
-info.logistics.split.4=Recipes: 4
-info.logistics.split.5=Recipes: 5
-info.logistics.split.6=Recipes: 6
+info.logistics.split=Recipes: %s
 
 info.logistics.tab.link=Linked Crafters
 info.logistics.tab.fluid=Add Fluid
