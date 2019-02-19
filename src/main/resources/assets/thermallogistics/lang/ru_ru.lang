@@ -17,11 +17,6 @@ item.logistics.manager.name=Сетевой менеджер
 item.logistics.terminal.item.name=Терминал
 tile.logistics.terminal.item.name=Терминал
 
-info.logistics.input=Импорт ввода
-info.logistics.output=Импорт вывода
-
-info.logistics.networks=Подключенные сети: §f%s
-
 info.logistics.tab.link=Связанные создатели
 info.logistics.tab.fluid=Добавить жидкость
 info.logistics.tab.request=Запросы
@@ -59,11 +54,11 @@ item.logistics.distributor.signalum.name=Signalum Distributor
 item.logistics.distributor.resonant.name=Resonant Distributor
 item.logistics.distributor.info=Extracts items/fluids while prioritizing filters.
 
+info.logistics.import=Import
 info.logistics.fluid.get=Get Fluid
 
 info.logistics.inputs=Inputs: §f%s
 info.logistics.outputs=Outputs: §f%s
-info.logistics.servos=Servo Slots: §f%s
 
 info.logistics.split.1=Recipes: 1
 info.logistics.split.2=Recipes: 2

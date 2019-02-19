@@ -1,4 +1,4 @@
-package astavie.thermallogistics.compat.jei;
+package astavie.thermallogistics.compat;
 
 import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.util.Shared;

@@ -26,14 +26,11 @@ item.logistics.manager.name=Network Manager
 item.logistics.terminal.item.name=Terminal
 tile.logistics.terminal.item.name=Terminal
 
-info.logistics.input=Import Input
-info.logistics.output=Import Output
+info.logistics.import=Import
 info.logistics.fluid.get=Get Fluid
 
-info.logistics.networks=Connected Networks: §f%s
 info.logistics.inputs=Inputs: §f%s
 info.logistics.outputs=Outputs: §f%s
-info.logistics.servos=Servo Slots: §f%s
 
 info.logistics.split.1=Recipes: 1
 info.logistics.split.2=Recipes: 2

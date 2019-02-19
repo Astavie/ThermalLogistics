@@ -13,8 +13,8 @@ import javax.annotation.Nonnull;
 
 public abstract class ItemAttachmentLogistics extends ItemAttachment {
 
-	public static final String[] NAMES = {"basic", "hardened", "reinforced", "signalum", "resonant"};
-	public static final EnumRarity[] RARITY = {EnumRarity.COMMON, EnumRarity.COMMON, EnumRarity.UNCOMMON, EnumRarity.UNCOMMON, EnumRarity.RARE};
+	private static final String[] NAMES = {"basic", "hardened", "reinforced", "signalum", "resonant"};
+	private static final EnumRarity[] RARITY = {EnumRarity.COMMON, EnumRarity.COMMON, EnumRarity.UNCOMMON, EnumRarity.UNCOMMON, EnumRarity.RARE};
 
 	private final String name;
 

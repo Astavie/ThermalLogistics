@@ -98,8 +98,8 @@ public class ItemCrafter extends ItemAttachmentLogistics {
 		// Fluids
 		tooltip.add(StringHelper.YELLOW + StringHelper.localize("info.cofh.fluids") + StringHelper.END);
 
-		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterItem.SIZE[type] * 2));
-		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterItem.SIZE[type]));
+		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterFluid.SIZE[type] * 2));
+		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterFluid.SIZE[type]));
 
 		tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.extractRate") + ": " + StringHelper.WHITE + (int) (ServoFluid.throttle[type] * 100) + "%" + StringHelper.END);
 		addFiltering(tooltip, type, Duct.Type.FLUID);

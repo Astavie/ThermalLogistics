@@ -82,6 +82,8 @@ public class RequestItem extends Request<ItemStack> {
 
 	@Override
 	public void addStack(ItemStack stack) {
+		if (stack.isEmpty())
+			return;
 		for (ItemStack s : stacks) {
 			if (ItemHelper.itemsIdentical(stack, s)) {
 				s.grow(stack.getCount());
@@ -93,6 +95,8 @@ public class RequestItem extends Request<ItemStack> {
 
 	@Override
 	public void decreaseStack(ItemStack stack) {
+		if (stack.isEmpty())
+			return;
 		for (Iterator<ItemStack> iterator = stacks.iterator(); iterator.hasNext(); ) {
 			ItemStack s = iterator.next();
 			if (ItemHelper.itemsIdentical(stack, s)) {

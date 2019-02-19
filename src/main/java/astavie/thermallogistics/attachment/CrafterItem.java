@@ -3,6 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.TLTextures;
 import astavie.thermallogistics.client.gui.GuiCrafter;
+import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.ProcessItem;
@@ -18,6 +19,7 @@ import codechicken.lib.vec.uv.IconTransformation;
 import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
+import cofh.core.util.helpers.BlockHelper;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.core.util.helpers.ServerHelper;
 import cofh.thermaldynamics.ThermalDynamics;
@@ -469,6 +471,24 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					int n = payload.getInt();
 					if (n < linked.size())
 						linked.remove(n);
+				} else if (message == 3) {
+					TileEntity tile = BlockHelper.getAdjacentTileEntity(baseTile, side);
+					if (tile != null) {
+						ICrafterWrapper<?> wrapper = ThermalLogistics.INSTANCE.getWrapper(tile.getClass());
+						if (wrapper != null) {
+							recipes.clear();
+							sent.stacks.clear();
+
+							Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+							recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, ItemStack.EMPTY));
+							recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
+
+							wrapper.populateCast(tile, (byte) (side ^ 1), recipe, ItemStack.class);
+
+							recipes.add(recipe);
+							markDirty();
+						}
+					}
 				}
 
 				// Send to clients

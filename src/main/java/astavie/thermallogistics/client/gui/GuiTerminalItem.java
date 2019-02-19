@@ -95,7 +95,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
 			for (int i = 0; i < 9; i++)
 				inventory.setInventorySlotContents(i, shared[i].get());
-			ItemStack stack = CraftingManager.findMatchingRecipe(inventory, Minecraft.getMinecraft().world).getCraftingResult(inventory);
+			ItemStack stack = CraftingManager.findMatchingResult(inventory, Minecraft.getMinecraft().world);
 
 			PacketTileInfo packet = PacketTileInfo.newPacket(tile);
 			packet.addByte(2);

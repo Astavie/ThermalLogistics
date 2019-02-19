@@ -6,6 +6,7 @@ import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.client.gui.tab.TabFluid;
 import astavie.thermallogistics.client.gui.tab.TabLink;
+import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
@@ -14,6 +15,7 @@ import cofh.core.gui.element.tab.TabInfo;
 import cofh.core.gui.element.tab.TabRedstoneControl;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
+import cofh.core.util.helpers.BlockHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.attachments.ConnectionBase;
 import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
@@ -21,6 +23,7 @@ import cofh.thermaldynamics.gui.container.ContainerAttachmentBase;
 import com.google.common.primitives.Ints;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -44,6 +47,8 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 	private final ICrafter<?> crafter;
 	private final List<ElementBase> slots = new LinkedList<>();
 
+	private final ICrafterWrapper<?> wrapper;
+
 	private ElementButton splitButton;
 	private ElementButton[] flagButtons = new ElementButton[0];
 	private ElementButton[] levelButtons = new ElementButton[FilterLogic.defaultLevels.length];
@@ -59,6 +64,12 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 		this.attachment.getFilter();
 		this.name = attachment.getName();
 		this.ySize = 204;
+
+		TileEntity tile = BlockHelper.getAdjacentTileEntity(attachment.baseTile, attachment.side);
+		if (tile == null)
+			wrapper = null;
+		else
+			wrapper = ThermalLogistics.INSTANCE.getWrapper(tile.getClass());
 
 		String info = attachment.getInfo();
 		if (info != null) {
@@ -117,6 +128,12 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 				levelButtons[j] = new ElementButton(this, x0 + button_offset * (i + offset + flagNums.length), y0, FilterLogic.levelNames[j], levelButtonPos[j][0], levelButtonPos[j][1], levelButtonPos[j][0], levelButtonPos[j][1] + buttonSize, buttonSize, buttonSize, TEX_PATH);
 				addElement(levelButtons[j]);
 			}
+		}
+
+		if (wrapper != null) {
+			ElementButton button = new ElementButton(this, 10, 48, "import", 80, 0, 80, 16, 16, 16, ICON_PATH);
+			button.setToolTip("info.logistics.import");
+			addElement(button);
 		}
 	}
 
@@ -288,6 +305,14 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 				return;
 			}
 		}
+		if (buttonName.equals("import")) {
+			playClickSound(0.8F);
+
+			// Send to server
+			PacketTileInfo packet = crafter.getNewPacket(ConnectionBase.NETWORK_ID.GUI);
+			packet.addByte(3);
+			PacketHandler.sendToServer(packet);
+		}
 	}
 
 	@Override
@@ -335,7 +360,7 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 		private final boolean input;
 		private final int recipe, index;
 
-		public Slot(ICrafter<I> crafter, int recipe, boolean input, int index) {
+		private Slot(ICrafter<I> crafter, int recipe, boolean input, int index) {
 			this.crafter = crafter;
 			this.recipe = recipe;
 			this.input = input;

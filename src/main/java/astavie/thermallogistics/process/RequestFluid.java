@@ -78,6 +78,8 @@ public class RequestFluid extends Request<FluidStack> {
 
 	@Override
 	public void addStack(FluidStack stack) {
+		if (stack == null)
+			return;
 		for (FluidStack s : stacks) {
 			if (FluidHelper.isFluidEqual(stack, s)) {
 				s.amount += stack.amount;
@@ -89,6 +91,8 @@ public class RequestFluid extends Request<FluidStack> {
 
 	@Override
 	public void decreaseStack(FluidStack stack) {
+		if (stack == null)
+			return;
 		for (Iterator<FluidStack> iterator = stacks.iterator(); iterator.hasNext(); ) {
 			FluidStack s = iterator.next();
 			if (FluidHelper.isFluidEqual(stack, s)) {

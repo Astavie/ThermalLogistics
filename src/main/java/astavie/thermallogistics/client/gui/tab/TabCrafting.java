@@ -14,7 +14,6 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
-import net.minecraft.item.crafting.IRecipe;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -61,10 +60,7 @@ public class TabCrafting extends TabBase {
 			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
 			for (int i = 0; i < 9; i++)
 				inventory.setInventorySlotContents(i, shared[i].get());
-			IRecipe recipe = CraftingManager.findMatchingRecipe(inventory, Minecraft.getMinecraft().world);
-			if (recipe != null)
-				return recipe.getCraftingResult(inventory);
-			return ItemStack.EMPTY;
+			return CraftingManager.findMatchingResult(inventory, Minecraft.getMinecraft().world);
 		}, null, true) {
 
 			@Override
