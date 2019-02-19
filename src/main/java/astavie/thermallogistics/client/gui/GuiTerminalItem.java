@@ -25,6 +25,7 @@ import net.minecraft.util.ResourceLocation;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -140,6 +141,19 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		}
 
 		super.mouseClicked(mX, mY, mouseButton);
+	}
+
+	@Override
+	protected void mouseClickMove(int mX, int mY, int lastClick, long timeSinceClick) {
+		if (lastClick == 0 && button.isVisible() && Arrays.stream(tabCrafting.grid).anyMatch(slot -> slot.intersectsWith(mX - guiLeft - tabCrafting.posX(), mY - guiTop - tabCrafting.getPosY()))) {
+			try {
+				mouseClicked(mX, mY, lastClick);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			super.mouseClickMove(mX, mY, lastClick, timeSinceClick);
+		}
 	}
 
 	@Override

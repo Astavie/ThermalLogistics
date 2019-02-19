@@ -49,6 +49,7 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 		this.name = name;
 		setTranslationKey("logistics." + name);
 		setRegistryName(name);
+		setCreativeTab(ThermalLogistics.INSTANCE.tab);
 		setMaxStackSize(1);
 	}
 

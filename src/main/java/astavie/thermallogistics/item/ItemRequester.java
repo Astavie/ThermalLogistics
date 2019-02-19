@@ -39,7 +39,7 @@ public class ItemRequester extends ItemAttachmentLogistics {
 
 	@Override
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
-		int type = stack.getItemDamage();
+		int type = stack.getMetadata();
 
 		if (!StringHelper.isShiftKeyDown()) {
 			tooltip.add(StringHelper.getInfoText("item.logistics.requester.info"));

@@ -3,11 +3,11 @@ package astavie.thermallogistics.client.gui.tab;
 import astavie.thermallogistics.client.TLTextures;
 import astavie.thermallogistics.client.gui.IFluidGui;
 import astavie.thermallogistics.client.gui.element.ElementSlotFluid;
+import astavie.thermallogistics.client.gui.element.ElementTextFieldAmount;
 import astavie.thermallogistics.util.Shared;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementButtonManaged;
 import cofh.core.gui.element.ElementTextField;
-import cofh.core.gui.element.ElementTextFieldLimited;
 import cofh.core.gui.element.tab.TabBase;
 import cofh.core.util.helpers.StringHelper;
 import net.minecraft.client.renderer.GlStateManager;
@@ -35,7 +35,7 @@ public class TabFluid extends TabBase {
 		this.maxHeight = 64;
 		this.maxWidth = 72;
 
-		this.text = new ElementTextFieldLimited(gui, sideOffset() + 26, 25, 33, 10, (short) 5).setFilter("0123456789", false);
+		this.text = new ElementTextFieldAmount(gui, sideOffset() + 26, 25, 33, 10);
 		this.slot = new ElementSlotFluid(gui, sideOffset() + 4, 21, shared, shared, false);
 
 		addElement(text);

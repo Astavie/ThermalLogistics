@@ -14,6 +14,7 @@ public class TLTextures {
 
 	public static final TextureAtlasSprite[][] REQUESTER = new TextureAtlasSprite[2][];
 	public static final TextureAtlasSprite[][] CRAFTER = new TextureAtlasSprite[2][];
+	public static final TextureAtlasSprite[][] DISTRIBUTOR = new TextureAtlasSprite[2][];
 
 	public static TextureAtlasSprite ICON_LINK;
 	public static TextureAtlasSprite ICON_ARROW_RIGHT;
@@ -24,6 +25,7 @@ public class TLTextures {
 	public static void onTextureStitch(TextureStitchEvent.Pre event) {
 		registerAttachment(event.getMap(), REQUESTER, "requester");
 		registerAttachment(event.getMap(), CRAFTER, "crafter");
+		registerAttachment(event.getMap(), DISTRIBUTOR, "distributor");
 
 		ICON_LINK = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MOD_ID, "items/manager"));
 		ICON_ARROW_RIGHT = event.getMap().registerSprite(new ResourceLocation(ThermalLogistics.MOD_ID, "gui/icons/arrow_right"));

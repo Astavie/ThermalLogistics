@@ -1,19 +1,20 @@
 package astavie.thermallogistics;
 
-import astavie.thermallogistics.attachment.CrafterFluid;
-import astavie.thermallogistics.attachment.CrafterItem;
-import astavie.thermallogistics.attachment.RequesterFluid;
-import astavie.thermallogistics.attachment.RequesterItem;
+import astavie.thermallogistics.attachment.*;
 import astavie.thermallogistics.block.BlockTerminalItem;
 import astavie.thermallogistics.item.ItemCrafter;
+import astavie.thermallogistics.item.ItemDistributor;
 import astavie.thermallogistics.item.ItemManager;
 import astavie.thermallogistics.item.ItemRequester;
 import astavie.thermallogistics.tile.TileTerminalItem;
+import cofh.core.gui.CreativeTabCore;
 import cofh.core.util.core.IInitializer;
 import cofh.thermaldynamics.duct.AttachmentRegistry;
 import net.minecraft.block.Block;
+import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.client.event.ModelRegistryEvent;
@@ -41,6 +42,13 @@ public class ThermalLogistics {
 	@Mod.Instance(MOD_ID)
 	public static ThermalLogistics INSTANCE;
 
+	public CreativeTabs tab = new CreativeTabCore(MOD_ID) {
+		@Override
+		public ItemStack createIcon() {
+			return new ItemStack(Blocks.terminal_item);
+		}
+	};
+
 	public Configuration config;
 	public int refreshDelay;
 
@@ -51,6 +59,9 @@ public class ThermalLogistics {
 
 		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
 		AttachmentRegistry.registerAttachment(CrafterFluid.ID, CrafterFluid::new);
+
+		AttachmentRegistry.registerAttachment(DistributorItem.ID, DistributorItem::new);
+		AttachmentRegistry.registerAttachment(DistributorFluid.ID, DistributorFluid::new);
 
 		config = new Configuration(event.getSuggestedConfigurationFile());
 		refreshDelay = config.getInt("Refresh Delay", Configuration.CATEGORY_GENERAL, 10, 1, 100, "The amount of ticks delay between sync packets from the server when looking at a GUI.");
@@ -78,6 +89,7 @@ public class ThermalLogistics {
 
 		public static final ItemRequester requester = null;
 		public static final ItemCrafter crafter = null;
+		public static final ItemDistributor distributor = null;
 
 		public static final ItemManager manager = null;
 
@@ -96,6 +108,7 @@ public class ThermalLogistics {
 			// Items
 			register(event.getRegistry(), new ItemRequester("requester"));
 			register(event.getRegistry(), new ItemCrafter("crafter"));
+			register(event.getRegistry(), new ItemDistributor("distributor"));
 
 			register(event.getRegistry(), new ItemManager("manager"));
 
@@ -108,6 +121,7 @@ public class ThermalLogistics {
 			// Items
 			Items.requester.initialize();
 			Items.crafter.initialize();
+			Items.distributor.initialize();
 
 			Items.manager.initialize();
 
@@ -120,6 +134,7 @@ public class ThermalLogistics {
 			// Items
 			Items.requester.registerModels();
 			Items.crafter.registerModels();
+			Items.distributor.registerModels();
 
 			Items.manager.registerModels();
 

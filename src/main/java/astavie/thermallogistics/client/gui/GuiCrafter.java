@@ -201,6 +201,19 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 	}
 
 	@Override
+	protected void mouseClickMove(int mX, int mY, int lastClick, long timeSinceClick) {
+		if (lastClick == 0 && (slots.stream().anyMatch(slot -> slot.intersectsWith(mX - guiLeft, mY - guiTop)) || (tab != null && tab.slot.intersectsWith(mX - guiLeft - tab.posX(), mY - guiTop - tab.getPosY())))) {
+			try {
+				mouseClicked(mX, mY, lastClick);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			super.mouseClickMove(mX, mY, lastClick, timeSinceClick);
+		}
+	}
+
+	@Override
 	protected boolean hasClickedOutside(int x, int y, int left, int top) {
 		if (fluid != null)
 			return false;

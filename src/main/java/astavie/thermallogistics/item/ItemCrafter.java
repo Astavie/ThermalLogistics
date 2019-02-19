@@ -7,6 +7,7 @@ import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.Duct;
 import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
+import cofh.thermaldynamics.duct.attachments.servo.ServoBase;
 import cofh.thermaldynamics.duct.attachments.servo.ServoFluid;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
@@ -62,7 +63,7 @@ public class ItemCrafter extends ItemAttachmentLogistics {
 
 	@Override
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
-		int type = stack.getItemDamage() % 5;
+		int type = stack.getMetadata();
 
 		if (!StringHelper.isShiftKeyDown()) {
 			tooltip.add(StringHelper.getInfoText("item.logistics.crafter.info"));
@@ -71,7 +72,16 @@ public class ItemCrafter extends ItemAttachmentLogistics {
 			return;
 		}
 
+		if (ServoBase.canAlterRS(type))
+			tooltip.add(StringHelper.localize("info.thermaldynamics.servo.redstoneInt"));
+		else
+			tooltip.add(StringHelper.localize("info.thermaldynamics.servo.redstoneExt"));
+
+		// Items
 		tooltip.add(StringHelper.YELLOW + StringHelper.localize("info.cofh.items") + StringHelper.END);
+
+		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterItem.SIZE[type] * 2));
+		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterItem.SIZE[type]));
 
 		tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.extractRate") + ": " + StringHelper.WHITE + ((ServoItem.tickDelays[type] % 20) == 0 ? Integer.toString(ServoItem.tickDelays[type] / 20) : Float.toString(ServoItem.tickDelays[type] / 20F)) + "s" + StringHelper.END);
 		tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.maxStackSize") + ": " + StringHelper.WHITE + ServoItem.maxSize[type] + StringHelper.END);
@@ -85,7 +95,12 @@ public class ItemCrafter extends ItemAttachmentLogistics {
 		if (ServoItem.speedBoost[type] != 1)
 			tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.speedBoost") + ": " + StringHelper.WHITE + ServoItem.speedBoost[type] + "x " + StringHelper.END);
 
+		// Fluids
 		tooltip.add(StringHelper.YELLOW + StringHelper.localize("info.cofh.fluids") + StringHelper.END);
+
+		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterItem.SIZE[type] * 2));
+		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterItem.SIZE[type]));
+
 		tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.extractRate") + ": " + StringHelper.WHITE + (int) (ServoFluid.throttle[type] * 100) + "%" + StringHelper.END);
 		addFiltering(tooltip, type, Duct.Type.FLUID);
 	}

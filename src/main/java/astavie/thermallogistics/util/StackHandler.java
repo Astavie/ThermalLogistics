@@ -8,6 +8,7 @@ import cofh.core.gui.element.ElementBase;
 import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
@@ -44,8 +45,19 @@ public class StackHandler {
 	@SideOnly(Side.CLIENT)
 	public static void render(GuiContainerCore gui, int x, int y, Object item, boolean count) {
 		if (item instanceof ItemStack) {
+			ItemStack stack = (ItemStack) item;
+
+			FontRenderer font = null;
+			if (!stack.isEmpty()) {
+				font = stack.getItem().getFontRenderer(stack);
+			}
+			if (font == null) {
+				font = gui.getFontRenderer();
+			}
+
 			RenderHelper.enableGUIStandardItemLighting();
-			gui.drawItemStack((ItemStack) item, x, y, true, count ? null : "");
+			gui.itemRender.renderItemAndEffectIntoGUI(stack, x, y);
+			gui.itemRender.renderItemOverlayIntoGUI(font, stack, x, y - (gui.draggedStack.isEmpty() ? 0 : 8), count ? null : "");
 		} else if (item instanceof FluidStack) {
 			FluidStack fluid = (FluidStack) item;
 

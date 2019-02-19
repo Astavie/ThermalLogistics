@@ -2,6 +2,7 @@ package astavie.thermallogistics.client.gui.tab;
 
 import astavie.thermallogistics.client.TLTextures;
 import astavie.thermallogistics.client.gui.element.ElementSlotItem;
+import astavie.thermallogistics.client.gui.element.ElementTextFieldAmount;
 import astavie.thermallogistics.util.Shared;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.*;
@@ -82,7 +83,7 @@ public class TabCrafting extends TabBase {
 			}
 		});
 
-		addElement(amount = new ElementTextFieldLimited(gui, x + 1, y + 3 * 18 + 5, 52, 10).setFilter("0123456789", false));
+		addElement(amount = new ElementTextFieldAmount(gui, x + 1, y + 3 * 18 + 5, 52, 10));
 	}
 
 	@Override

@@ -20,7 +20,7 @@ tile.logistics.terminal.item.name=Терминал
 info.logistics.input=Импорт ввода
 info.logistics.output=Импорт вывода
 
-info.logistics.networks=Подключенные сети: %s
+info.logistics.networks=Подключенные сети: §f%s
 
 info.logistics.tab.link=Связанные создатели
 info.logistics.tab.fluid=Добавить жидкость
@@ -52,16 +52,18 @@ item.logistics.requester.info=Pulls or crafts items/fluids to itself.
 
 item.logistics.crafter.info=Crafts items/fluids on request.
 
-item.logistics.multiplexer.basic.name=Servo Multiplexer
-item.logistics.multiplexer.hardened.name=Hardened Servo Multiplexer
-item.logistics.multiplexer.reinforced.name=Reinforced Servo Multiplexer
-item.logistics.multiplexer.signalum.name=Signalum Servo Multiplexer
-item.logistics.multiplexer.resonant.name=Resonant Servo Multiplexer
-item.logistics.multiplexer.info=Contains multiple servos within itself.
+item.logistics.distributor.basic.name=Distributor
+item.logistics.distributor.hardened.name=Hardened Distributor
+item.logistics.distributor.reinforced.name=Reinforced Distributor
+item.logistics.distributor.signalum.name=Signalum Distributor
+item.logistics.distributor.resonant.name=Resonant Distributor
+item.logistics.distributor.info=Extracts items/fluids while prioritizing filters.
 
 info.logistics.fluid.get=Get Fluid
 
-info.logistics.servos=Servo Slots: %s
+info.logistics.inputs=Inputs: §f%s
+info.logistics.outputs=Outputs: §f%s
+info.logistics.servos=Servo Slots: §f%s
 
 info.logistics.split.1=Recipes: 1
 info.logistics.split.2=Recipes: 2

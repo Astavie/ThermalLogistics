@@ -49,6 +49,7 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 		this.name = name + "_" + type;
 
 		setRegistryName(this.name);
+		setCreativeTab(ThermalLogistics.INSTANCE.tab);
 
 		setHardness(15.0F);
 		setResistance(25.0F);

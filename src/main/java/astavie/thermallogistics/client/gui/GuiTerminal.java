@@ -1,12 +1,12 @@
 package astavie.thermallogistics.client.gui;
 
+import astavie.thermallogistics.client.gui.element.ElementTextFieldAmount;
 import astavie.thermallogistics.tile.TileTerminal;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementButtonManaged;
 import cofh.core.gui.element.ElementSlider;
 import cofh.core.gui.element.ElementTextField;
-import cofh.core.gui.element.ElementTextFieldLimited;
 import cofh.core.gui.element.listbox.SliderVertical;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
@@ -27,7 +27,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	protected final ElementTextField search = new ElementTextField(this, 80, 5, 88, 10);
 	protected final ElementSlider slider = new SliderVertical(this, 174, 18, 12, 52, 0);
 
-	protected final ElementTextField amount = new ElementTextFieldLimited(this, 44, 77, 70, 10).setFilter("0123456789", false);
+	protected final ElementTextField amount = new ElementTextFieldAmount(this, 44, 77, 70, 10);
 
 	protected final List<Triple<I, Long, Boolean>> filter = NonNullList.create();
 	protected final TileTerminal<I> tile;

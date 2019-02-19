@@ -22,6 +22,7 @@ public abstract class ItemAttachmentLogistics extends ItemAttachment {
 		this.name = name;
 		setTranslationKey("logistics." + name);
 		setRegistryName(name);
+		setCreativeTab(ThermalLogistics.INSTANCE.tab);
 	}
 
 	@Nonnull
