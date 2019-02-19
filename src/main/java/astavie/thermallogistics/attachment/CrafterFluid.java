@@ -488,6 +488,15 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 							markDirty();
 						}
 					}
+				} else if (message == 4) {
+					int recipe = payload.getInt();
+					if (recipe < recipes.size()) {
+						Recipe<FluidStack> r = recipes.get(recipe);
+						for (int i = 0; i < r.inputs.size(); i++)
+							r.inputs.set(i, payload.getFluidStack());
+						for (int i = 0; i < r.outputs.size(); i++)
+							r.outputs.set(i, payload.getFluidStack());
+					}
 				}
 
 				// Send to clients

@@ -510,6 +510,15 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 							markDirty();
 						}
 					}
+				} else if (message == 4) {
+					int recipe = payload.getInt();
+					if (recipe < recipes.size()) {
+						Recipe<ItemStack> r = recipes.get(recipe);
+						for (int i = 0; i < r.inputs.size(); i++)
+							r.inputs.set(i, payload.getItemStack());
+						for (int i = 0; i < r.outputs.size(); i++)
+							r.outputs.set(i, payload.getItemStack());
+					}
 				}
 
 				// Send to clients

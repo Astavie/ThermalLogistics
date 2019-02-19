@@ -70,33 +70,24 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter> 
 			}
 		}
 
+		PacketTileInfo packet = crafter.getNewPacket(ConnectionBase.NETWORK_ID.GUI);
+		packet.addByte(4);
+		packet.addInt(index);
+
 		for (int i = 0; i < recipe.inputs.size(); i++) {
 			ItemStack stack = i >= inputs.stacks.size() ? ItemStack.EMPTY : inputs.stacks.get(i);
 			recipe.inputs.set(i, stack);
-
-			// Send to server
-			PacketTileInfo packet = crafter.getNewPacket(ConnectionBase.NETWORK_ID.GUI);
-			packet.addByte(0);
-			packet.addInt(index);
-			packet.addBool(true);
-			packet.addInt(i);
 			packet.addItemStack(stack);
-			PacketHandler.sendToServer(packet);
 		}
 
 		for (int i = 0; i < recipe.outputs.size(); i++) {
 			ItemStack stack = i >= outputs.stacks.size() ? ItemStack.EMPTY : outputs.stacks.get(i);
 			recipe.outputs.set(i, stack);
-
-			// Send to server
-			PacketTileInfo packet = crafter.getNewPacket(ConnectionBase.NETWORK_ID.GUI);
-			packet.addByte(0);
-			packet.addInt(index);
-			packet.addBool(false);
-			packet.addInt(i);
 			packet.addItemStack(stack);
-			PacketHandler.sendToServer(packet);
 		}
+
+		// Send to server
+		PacketHandler.sendToServer(packet);
 	}
 
 	private void transferFluids(ICrafter<FluidStack> crafter, IRecipeLayout recipeLayout) {
@@ -127,33 +118,24 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter> 
 			}
 		}
 
+		PacketTileInfo packet = crafter.getNewPacket(ConnectionBase.NETWORK_ID.GUI);
+		packet.addByte(4);
+		packet.addInt(index);
+
 		for (int i = 0; i < recipe.inputs.size(); i++) {
 			FluidStack stack = i >= inputs.stacks.size() ? null : inputs.stacks.get(i);
 			recipe.inputs.set(i, stack);
-
-			// Send to server
-			PacketTileInfo packet = crafter.getNewPacket(ConnectionBase.NETWORK_ID.GUI);
-			packet.addByte(0);
-			packet.addInt(index);
-			packet.addBool(true);
-			packet.addInt(i);
 			packet.addFluidStack(stack);
-			PacketHandler.sendToServer(packet);
 		}
 
 		for (int i = 0; i < recipe.outputs.size(); i++) {
 			FluidStack stack = i >= outputs.stacks.size() ? null : outputs.stacks.get(i);
 			recipe.outputs.set(i, stack);
-
-			// Send to server
-			PacketTileInfo packet = crafter.getNewPacket(ConnectionBase.NETWORK_ID.GUI);
-			packet.addByte(0);
-			packet.addInt(index);
-			packet.addBool(false);
-			packet.addInt(i);
 			packet.addFluidStack(stack);
-			PacketHandler.sendToServer(packet);
 		}
+
+		// Send to server
+		PacketHandler.sendToServer(packet);
 	}
 
 }
