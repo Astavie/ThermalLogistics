@@ -47,7 +47,7 @@ dependencies {
 	deobfCompile "cofh:ThermalDynamics:${mc_version}+:universal@jar"
 
 	// Mod Compatibility
-    deobfCompile "cofh:ThermalExpansion:${mc_version}+:universal@jar"
+    compileOnly "cofh:ThermalExpansion:${mc_version}+:deobf@jar"
 	deobfCompile "mezz.jei:jei_${mc_version}:+@jar"
 
 	// Runtime

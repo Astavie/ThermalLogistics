@@ -64,3 +64,6 @@ info.logistics.split=Recipes: %s
 info.logistics.tab.crafting=Crafting
 
 info.logistics.manager.d.4=Link cancelled.
+
+gui.logistics.terminal.missing=Missing items
+gui.logistics.terminal.enough=No items need to be requested

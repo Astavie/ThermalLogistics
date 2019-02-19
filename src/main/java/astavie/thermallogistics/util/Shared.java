@@ -52,6 +52,10 @@ public class Shared<T> implements Consumer<T>, Supplier<T>, Predicate<T> {
 			return Ingredient.fromStacks(get());
 		}
 
+		public ItemStack getDisplayStack() {
+			return get();
+		}
+
 	}
 
 }

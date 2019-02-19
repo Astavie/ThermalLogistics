@@ -22,6 +22,7 @@ import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
@@ -37,6 +38,8 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	public TabCrafting tabCrafting;
 	public TabRequest tabRequest;
 
+	private Pair<List<ItemStack>, List<String>> cache = Pair.of(null, null);
+
 	public GuiTerminalItem(TileTerminalItem tile, InventoryPlayer inventory) {
 		super(tile, new ContainerTerminalItem(tile, inventory), new ResourceLocation(ThermalLogistics.MOD_ID, "textures/gui/terminal.png"));
 		((ContainerTerminalItem) inventorySlots).gui = this;
@@ -45,8 +48,20 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		this.ySize = 250;
 	}
 
-	private List<ItemStack> request() {
-		RequestItem request = new RequestItem(null);
+	@Override
+	public void addTooltips(List<String> tooltip) {
+		super.addTooltips(tooltip);
+
+		if (tabCrafting.button.intersectsWith(mouseX - tabCrafting.posX(), mouseY - tabCrafting.getPosY())) {
+			List<String> list = cache.getRight();
+			if (list != null)
+				tooltip.addAll(list);
+		}
+	}
+
+	private Pair<List<ItemStack>, List<String>> request() {
+		if (Arrays.stream(tile.shared).allMatch(shared -> shared.test(ItemStack.EMPTY)))
+			return Pair.of(null, null);
 
 		List<Triple<ItemStack, Long, Boolean>> copy = new LinkedList<>();
 
@@ -60,6 +75,9 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		int count = 1;
 		if (!tabCrafting.amount.getText().isEmpty())
 			count = Integer.parseInt(tabCrafting.amount.getText());
+
+		RequestItem request = new RequestItem(null);
+		RequestItem missing = new RequestItem(null);
 
 		a:
 		for (Shared.Item item : tile.shared) {
@@ -90,20 +108,34 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 				}
 			}
 
-			return Collections.emptyList();
+			missing.addStack(ItemHelper.cloneStack(item.getDisplayStack(), amount));
 		}
 
-		for (ItemStack stack : tile.inventory.items)
-			request.decreaseStack(stack);
-		for (ItemStack stack : Minecraft.getMinecraft().player.inventory.mainInventory)
-			request.decreaseStack(stack);
+		if (missing.stacks.isEmpty()) {
+			for (ItemStack stack : tile.inventory.items)
+				request.decreaseStack(stack);
+			for (ItemStack stack : Minecraft.getMinecraft().player.inventory.mainInventory)
+				request.decreaseStack(stack);
 
-		return request.stacks;
+			if (request.stacks.isEmpty())
+				return Pair.of(null, Collections.singletonList(StringHelper.localize("gui.logistics.terminal.enough")));
+
+			return Pair.of(request.stacks, null);
+		} else {
+			List<String> tooltip = new LinkedList<>();
+
+			tooltip.add(StringHelper.localize("gui.logistics.terminal.missing"));
+			for (ItemStack stack : missing.stacks)
+				tooltip.add(StringHelper.localizeFormat("info.logistics.manager.e.1", stack.getCount(), stack.getDisplayName()));
+
+			return Pair.of(null, tooltip);
+		}
 	}
 
 	@Override
 	public void initGui() {
 		super.initGui();
+
 		addTab(tabCrafting = new TabCrafting(this, tile.shared, () -> {
 			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
 			for (int i = 0; i < 9; i++)
@@ -124,15 +156,18 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			packet.addItemStack(stack);
 			PacketHandler.sendToServer(packet);
 		}, () -> {
-			for (ItemStack stack : request())
-				request(ItemHelper.cloneStack(stack, 1), stack.getCount());
-		}, () -> !request().isEmpty())).setOffsets(-18, 74);
+			if (cache.getLeft() != null)
+				for (ItemStack stack : cache.getLeft())
+					request(ItemHelper.cloneStack(stack, 1), stack.getCount());
+		}, () -> cache.getLeft() != null)).setOffsets(-18, 74);
 		addTab(tabRequest = new TabRequest(this, tile.requests.stacks, tile)).setOffsets(-18, 74);
 	}
 
 	@Override
 	public void updateScreen() {
 		super.updateScreen();
+
+		cache = request();
 
 		boolean visible = requester().getHasStack();
 		tabCrafting.setVisible(visible);

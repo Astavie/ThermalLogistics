@@ -111,6 +111,15 @@ public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminal
 			return Ingredient.fromStacks(stacks);
 		}
 
+		@Override
+		public ItemStack getDisplayStack() {
+			if (super.get() != null)
+				return super.getDisplayStack();
+			if (stacks == null)
+				return ItemStack.EMPTY;
+			return stacks[0];
+		}
+
 	}
 
 }

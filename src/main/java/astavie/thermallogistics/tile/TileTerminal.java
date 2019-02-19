@@ -139,14 +139,14 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	}
 
 	public void register(Container container) {
-		if (!world.isRemote) {
+		if (!world.isRemote && !isInvalid()) {
 			registry.add(container);
 			setActive(true);
 		}
 	}
 
 	public void remove(Container container) {
-		if (!world.isRemote) {
+		if (!world.isRemote && !isInvalid()) {
 			registry.remove(container);
 			if (registry.isEmpty())
 				setActive(false);
