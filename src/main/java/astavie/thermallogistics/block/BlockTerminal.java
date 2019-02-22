@@ -270,7 +270,9 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 		}
 
 		public EnumFacing getFace() {
-			return EnumFacing.byIndex(MathHelper.clamp(ordinal() - 3, 0, 5));
+			if (ordinal() > 7)
+				return EnumFacing.DOWN;
+			return EnumFacing.byIndex(MathHelper.clamp(ordinal() - 2, 1, 5));
 		}
 
 	}

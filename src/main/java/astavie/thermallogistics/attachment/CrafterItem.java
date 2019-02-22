@@ -30,7 +30,6 @@ import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.gui.GuiHandler;
-import cofh.thermaldynamics.multiblock.IGridTileRoute;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.render.RenderDuct;
 import cofh.thermaldynamics.util.ListWrapper;
@@ -163,7 +162,17 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				if (attachment == null)
 					continue;
 
-				Route route = itemDuct.getRoute((IGridTileRoute) attachment.getDuct());
+				DuctUnitItem duct = (DuctUnitItem) attachment.getDuct();
+
+				int left = duct.canRouteItem(ItemHelper.cloneStack(item, count), attachment.getSide());
+				if (left == -1)
+					continue;
+
+				count -= left;
+				if (count == 0)
+					continue;
+
+				Route route = itemDuct.getRoute(duct);
 				if (route == null)
 					continue;
 

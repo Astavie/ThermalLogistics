@@ -169,7 +169,7 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 
 	@Override
 	public int getMaxSend() {
-		return 0;
+		return ServoItem.maxSize[type];
 	}
 
 	@Override

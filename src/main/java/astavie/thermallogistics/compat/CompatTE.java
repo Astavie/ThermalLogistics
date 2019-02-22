@@ -7,6 +7,7 @@ import cofh.core.inventory.InventoryCraftingFalse;
 import cofh.core.util.core.SideConfig;
 import cofh.core.util.helpers.FluidHelper;
 import cofh.thermalexpansion.block.machine.TileCrafter;
+import cofh.thermalexpansion.item.ItemFrame;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
@@ -18,6 +19,7 @@ import java.lang.reflect.Field;
 public class CompatTE implements ICrafterWrapper<TileCrafter> {
 
 	public static final Class<TileCrafter> TILE = TileCrafter.class;
+	public static final ItemStack MACHINE_FRAME = ItemFrame.frameMachine;
 
 	private static final Field sideConfig;
 

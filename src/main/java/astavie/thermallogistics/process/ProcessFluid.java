@@ -13,6 +13,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
+import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
@@ -214,6 +215,10 @@ public class ProcessFluid extends Process<FluidStack> {
 
 			for (FluidStack stack : crafter.getOutputs()) {
 				int amount = requester.amountRequired(stack);
+				if (amount == 0)
+					continue;
+
+				amount = Math.min(amount, (requester.getMaxSend() * Fluid.BUCKET_VOLUME) - getCount(stack));
 				if (amount == 0)
 					continue;
 

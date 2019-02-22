@@ -38,6 +38,13 @@ public abstract class Process<I> {
 		return stacks;
 	}
 
+	public int getCount(I stack) {
+		int count = 0;
+		for (Request<I> request : requests)
+			count += request.getCount(stack);
+		return count;
+	}
+
 	public abstract void tick();
 
 }

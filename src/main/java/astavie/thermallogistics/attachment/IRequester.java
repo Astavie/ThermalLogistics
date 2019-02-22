@@ -56,9 +56,9 @@ public interface IRequester<I> {
 
 	void onFinishCrafting(int index, int recipes);
 
-	// ItemStack
-
 	int getMaxSend();
+
+	// ItemStack
 
 	byte getSpeed();
 

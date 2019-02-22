@@ -270,6 +270,10 @@ public class ProcessItem extends Process<ItemStack> {
 				if (amount == 0)
 					continue;
 
+				amount = Math.min(amount, requester.getMaxSend() - getCount(stack));
+				if (amount == 0)
+					continue;
+
 				stack = checkItem(requester, handler, ItemHelper.cloneStack(stack, amount), amount);
 				if (stack.isEmpty())
 					continue;
