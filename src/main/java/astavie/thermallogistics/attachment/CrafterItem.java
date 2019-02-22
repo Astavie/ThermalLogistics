@@ -195,10 +195,9 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		}
 
 		if (send < max) {
-			ItemStack remain = super.insertItem(ItemHelper.cloneStack(item, max - send), simulate);
-			int leftover = max - send - remain.getCount();
-			send += leftover;
+			ItemStack remain = super.insertItem(ItemHelper.cloneStack(item, max - send), true);
 
+			int leftover = max - send - remain.getCount();
 			if (!simulate && leftover > 0) {
 				for (Recipe<ItemStack> recipe : recipes) {
 					int count = Math.min(recipe.leftovers.getCount(item), leftover);
@@ -208,10 +207,15 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					recipe.leftovers.decreaseStack(ItemHelper.cloneStack(item, count));
 
 					leftover -= count;
+					send += count;
+
 					if (leftover == 0)
 						break;
 				}
 			}
+
+			if (!simulate)
+				super.insertItem(ItemHelper.cloneStack(item, max - send - leftover), false);
 		}
 
 		return ItemHelper.cloneStack(item, item.getCount() - send);
