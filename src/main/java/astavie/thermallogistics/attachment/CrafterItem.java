@@ -165,16 +165,22 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 				DuctUnitItem duct = (DuctUnitItem) attachment.getDuct();
 
 				int left = duct.canRouteItem(ItemHelper.cloneStack(item, count), attachment.getSide());
-				if (left == -1)
+				if (left == -1) {
+					max -= count;
 					continue;
+				}
 
 				count -= left;
+				max -= left;
+
 				if (count == 0)
 					continue;
 
 				Route route = itemDuct.getRoute(duct);
-				if (route == null)
+				if (route == null) {
+					max -= count;
 					continue;
+				}
 
 				if (!simulate) {
 					ItemStack removed = ItemHelper.cloneStack(item, count);
@@ -195,9 +201,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		}
 
 		if (send < max) {
-			ItemStack remain = super.insertItem(ItemHelper.cloneStack(item, max - send), true);
+			ItemStack remain = super.insertItem(ItemHelper.cloneStack(item, max - send), simulate);
 
 			int leftover = max - send - remain.getCount();
+			send += leftover;
+
 			if (!simulate && leftover > 0) {
 				for (Recipe<ItemStack> recipe : recipes) {
 					int count = Math.min(recipe.leftovers.getCount(item), leftover);
@@ -207,15 +215,10 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					recipe.leftovers.decreaseStack(ItemHelper.cloneStack(item, count));
 
 					leftover -= count;
-					send += count;
-
 					if (leftover == 0)
 						break;
 				}
 			}
-
-			if (!simulate)
-				super.insertItem(ItemHelper.cloneStack(item, max - send - leftover), false);
 		}
 
 		return ItemHelper.cloneStack(item, item.getCount() - send);
