@@ -967,6 +967,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 			}
 		}
 
+		if (output.getCount() == 0) {
+			markDirty();
+			return;
+		}
+
 		int recipes = (count - 1) / output.getCount() + 1;
 		if (count > 0 && recipes > 0) {
 			int leftover = count % output.getCount() > 0 ? output.getCount() - (count % output.getCount()) : 0;

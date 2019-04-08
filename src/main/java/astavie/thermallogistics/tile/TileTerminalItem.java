@@ -36,9 +36,7 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.wrapper.CombinedInvWrapper;
 import net.minecraftforge.items.wrapper.InvWrapper;
-import net.minecraftforge.items.wrapper.PlayerMainInvWrapper;
 import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
@@ -144,13 +142,6 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			b:
 			//noinspection LoopConditionNotUpdatedInsideLoop
 			do {
-				// Check if there is enough room
-				if (shift) {
-					IItemHandler handler = new CombinedInvWrapper(new InvWrapper(inventory), new PlayerMainInvWrapper(player.inventory));
-					if (!InventoryHelper.insertStackIntoInventory(handler, craft, true).isEmpty())
-						break;
-				}
-
 				// Get available items
 				RequestItem items = new RequestItem(null);
 				for (int slot = 0; slot < inventory.getSizeInventory(); slot++)
@@ -187,6 +178,13 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 						ItemStack stack = inventory.getStackInSlot(slot);
 						if (ingredient.apply(stack)) {
 							inventory.decrStackSize(slot, 1);
+
+							ItemStack container = stack.getItem().getContainerItem(stack);
+							if (!container.isEmpty()) {
+								ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(inventory), container, false);
+								if (!item.isEmpty())
+									player.inventory.placeItemBackInInventory(world, item);
+							}
 							continue a;
 						}
 					}
@@ -194,6 +192,13 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 						ItemStack stack = player.inventory.getStackInSlot(slot);
 						if (ingredient.apply(stack)) {
 							player.inventory.decrStackSize(slot, 1);
+
+							ItemStack container = stack.getItem().getContainerItem(stack);
+							if (!container.isEmpty()) {
+								ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(inventory), container, false);
+								if (!item.isEmpty())
+									player.inventory.placeItemBackInInventory(world, item);
+							}
 							continue a;
 						}
 					}
@@ -201,8 +206,9 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 				// Add item
 				if (shift) {
-					IItemHandler handler = new CombinedInvWrapper(new InvWrapper(inventory), new PlayerMainInvWrapper(player.inventory));
-					InventoryHelper.insertStackIntoInventory(handler, craft, false);
+					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(inventory), craft, false);
+					if (!item.isEmpty())
+						player.inventory.placeItemBackInInventory(world, item);
 				} else {
 					player.inventory.setItemStack(hand.isEmpty() ? craft : ItemHelper.cloneStack(hand, hand.getCount() + craft.getCount()));
 					((EntityPlayerMP) player).updateHeldItem();

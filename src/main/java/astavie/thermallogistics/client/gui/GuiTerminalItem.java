@@ -14,6 +14,7 @@ import cofh.core.network.PacketTileInfo;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.core.util.helpers.StringHelper;
 import net.minecraft.client.Minecraft;
+import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.Item;
@@ -262,13 +263,16 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 				return damage;
 
 			// Then compare sub items
-			NonNullList<ItemStack> list = NonNullList.create();
-			i1.getLeft().getItem().getSubItems(i1.getLeft().getItem().getCreativeTab(), list);
-			for (ItemStack stack : list) {
-				if (ItemHelper.itemsIdentical(i1.getLeft(), stack))
-					return -1;
-				if (ItemHelper.itemsIdentical(i2.getLeft(), stack))
-					return 1;
+			CreativeTabs tab = i1.getLeft().getItem().getCreativeTab();
+			if (tab != null) {
+				NonNullList<ItemStack> list = NonNullList.create();
+				i1.getLeft().getItem().getSubItems(tab, list);
+				for (ItemStack stack : list) {
+					if (ItemHelper.itemsIdentical(i1.getLeft(), stack))
+						return -1;
+					if (ItemHelper.itemsIdentical(i2.getLeft(), stack))
+						return 1;
+				}
 			}
 
 			// Then compare nbt data
