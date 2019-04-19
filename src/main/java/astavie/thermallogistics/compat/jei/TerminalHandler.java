@@ -1,8 +1,12 @@
 package astavie.thermallogistics.compat.jei;
 
+import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.util.Shared;
+import cofh.core.gui.element.tab.TabBase;
 import cofh.core.util.helpers.ItemHelper;
+import mezz.jei.api.gui.IAdvancedGuiHandler;
+import mezz.jei.api.gui.IGhostIngredientHandler;
 import mezz.jei.api.gui.IGuiIngredient;
 import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
@@ -17,9 +21,12 @@ import net.minecraftforge.oredict.OreDictionary;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.awt.*;
+import java.util.List;
 import java.util.*;
+import java.util.stream.Collectors;
 
-public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminalItem> {
+public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminalItem>, IAdvancedGuiHandler<GuiTerminalItem>, IGhostIngredientHandler<GuiTerminalItem> {
 
 	private final IRecipeTransferHandlerHelper helper;
 
@@ -76,6 +83,32 @@ public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminal
 		return null;
 	}
 
+	@Nonnull
+	@Override
+	public Class<GuiTerminalItem> getGuiContainerClass() {
+		return GuiTerminalItem.class;
+	}
+
+	@Nullable
+	@Override
+	public Object getIngredientUnderMouse(GuiTerminalItem gui, int mouseX, int mouseY) {
+		return gui.getStackAt(mouseX - gui.getGuiLeft(), mouseY - gui.getGuiTop());
+	}
+
+	@Nonnull
+	@Override
+	public <I> List<Target<I>> getTargets(@Nonnull GuiTerminalItem gui, @Nonnull I ingredient, boolean doStart) {
+		if (ingredient instanceof ItemStack && gui.tabCrafting.isFullyOpened())
+			//noinspection unchecked
+			return Arrays.stream(gui.tabCrafting.grid).map(slot -> (Target<I>) new TabTarget(gui.tabCrafting, slot)).collect(Collectors.toList());
+
+		return Collections.emptyList();
+	}
+
+	@Override
+	public void onComplete() {
+	}
+
 	private static class SharedJEI extends Shared.Item {
 
 		private final ItemStack[] stacks;
@@ -120,6 +153,30 @@ public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminal
 			return stacks[0];
 		}
 
+	}
+
+	private static class TabTarget implements Target<ItemStack> {
+
+		private final TabBase tab;
+		private final Target<ItemStack> target;
+
+		public TabTarget(TabBase tab, Target<ItemStack> target) {
+			this.tab = tab;
+			this.target = target;
+		}
+
+		@Nonnull
+		@Override
+		public Rectangle getArea() {
+			Rectangle rectangle = target.getArea();
+			rectangle.translate(tab.side == TabBase.LEFT ? tab.getPosX() - tab.currentWidth : tab.getPosX(), tab.getPosY());
+			return rectangle;
+		}
+
+		@Override
+		public void accept(@Nonnull ItemStack ingredient) {
+			target.accept(ingredient);
+		}
 	}
 
 }

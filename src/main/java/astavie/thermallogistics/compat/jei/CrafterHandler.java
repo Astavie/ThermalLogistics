@@ -1,12 +1,19 @@
 package astavie.thermallogistics.compat.jei;
 
+import astavie.thermallogistics.attachment.CrafterFluid;
+import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.client.gui.GuiCrafter;
+import astavie.thermallogistics.client.gui.element.ElementSlot;
+import astavie.thermallogistics.client.gui.tab.TabFluid;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.process.RequestFluid;
 import astavie.thermallogistics.process.RequestItem;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
 import cofh.thermaldynamics.duct.attachments.ConnectionBase;
+import mezz.jei.api.gui.IAdvancedGuiHandler;
+import mezz.jei.api.gui.IGhostIngredientHandler;
 import mezz.jei.api.gui.IGuiIngredient;
 import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
@@ -17,11 +24,13 @@ import net.minecraftforge.fluids.FluidStack;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.awt.*;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter> {
+public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter>, IAdvancedGuiHandler<GuiCrafter>, IGhostIngredientHandler<GuiCrafter> {
 
 	@Nonnull
 	@Override
@@ -136,6 +145,70 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter> 
 
 		// Send to server
 		PacketHandler.sendToServer(packet);
+	}
+
+	@Nonnull
+	@Override
+	public <I> List<Target<I>> getTargets(@Nonnull GuiCrafter gui, @Nonnull I ingredient, boolean doStart) {
+		List<Target<I>> list = new LinkedList<>();
+
+		if ((ingredient instanceof ItemStack && gui.crafter instanceof CrafterItem) || (ingredient instanceof FluidStack && gui.crafter instanceof CrafterFluid))
+			for (ElementSlot slot : gui.slots)
+				//noinspection unchecked
+				list.add((Target<I>) slot);
+
+		if (ingredient instanceof FluidStack && gui.tab != null && gui.tab.isFullyOpened())
+			//noinspection unchecked
+			list.add((Target<I>) new TabFluidTarget(gui.tab));
+
+		return list;
+	}
+
+	@Override
+	public void onComplete() {
+	}
+
+	@Nonnull
+	@Override
+	public Class<GuiCrafter> getGuiContainerClass() {
+		return GuiCrafter.class;
+	}
+
+	@Nullable
+	@Override
+	public Object getIngredientUnderMouse(GuiCrafter gui, int mouseX, int mouseY) {
+		mouseX -= gui.getGuiLeft();
+		mouseY -= gui.getGuiTop();
+
+		for (ElementSlot slot : gui.slots)
+			if (slot.intersectsWith(mouseX, mouseY))
+				return slot.getIngredient();
+
+		if (gui.tab != null && gui.tab.slot.intersectsWith(mouseX - gui.tab.posX(), mouseY - gui.tab.getPosY()))
+			return gui.tab.slot.getIngredient();
+
+		return null;
+	}
+
+	private static class TabFluidTarget implements Target<FluidStack> {
+
+		private final TabFluid tab;
+
+		private TabFluidTarget(TabFluid tab) {
+			this.tab = tab;
+		}
+
+		@Nonnull
+		@Override
+		public Rectangle getArea() {
+			return new Rectangle(tab.getContainerScreen().getGuiLeft() + tab.posX() + tab.slot.getPosX() + 1, tab.getContainerScreen().getGuiTop() + tab.getPosY() + tab.slot.getPosY() + 1, 16, 16);
+		}
+
+		@Override
+		public void accept(@Nonnull FluidStack ingredient) {
+			tab.slot.accept(ingredient);
+		}
+
 	}
 
 }

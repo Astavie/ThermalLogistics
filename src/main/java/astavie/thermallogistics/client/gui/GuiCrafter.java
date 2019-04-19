@@ -4,13 +4,13 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.CrafterFluid;
 import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.client.gui.element.ElementSlot;
 import astavie.thermallogistics.client.gui.tab.TabFluid;
 import astavie.thermallogistics.client.gui.tab.TabLink;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
-import cofh.core.gui.element.ElementBase;
 import cofh.core.gui.element.ElementButton;
 import cofh.core.gui.element.tab.TabInfo;
 import cofh.core.gui.element.tab.TabRedstoneControl;
@@ -44,8 +44,6 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 	private static final int[][] flagButtonsPos = {{176, 0}, {176, 60}, {216, 0}, {216, 60}, {176, 120}, {216, 120}, {176, 180}, {216, 180},};
 
 	private final ConnectionBase attachment;
-	private final ICrafter<?> crafter;
-	private final List<ElementBase> slots = new LinkedList<>();
 
 	private final ICrafterWrapper<?> wrapper;
 
@@ -54,8 +52,12 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 	private ElementButton[] levelButtons = new ElementButton[FilterLogic.defaultLevels.length];
 	private int buttonSize;
 
-	private TabFluid tab = null;
 	private FluidStack fluid = null;
+
+	public final List<ElementSlot> slots = new LinkedList<>();
+	public final ICrafter<?> crafter;
+
+	public TabFluid tab = null;
 
 	public <C extends ConnectionBase & ICrafter<?>> GuiCrafter(InventoryPlayer inventoryPlayer, C crafter) {
 		super(new ContainerCrafter(inventoryPlayer, crafter), TEXTURE);
@@ -178,13 +180,13 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 					int posX = x0 + (x + i * recipeSlots) * 18 + i * 2;
 
 					Slot<?> up = new Slot<>(crafter, i, true, x * 2);
-					this.slots.add(addElement(StackHandler.getSlot(this, posX, y0, up)));
+					this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, posX, y0, up)));
 
 					Slot<?> down = new Slot<>(crafter, i, true, x * 2 + 1);
-					this.slots.add(addElement(StackHandler.getSlot(this, posX, y0 + 18, down)));
+					this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, posX, y0 + 18, down)));
 
 					Slot<?> output = new Slot<>(crafter, i, false, x);
-					this.slots.add(addElement(StackHandler.getSlot(this, posX, y0 + 38, output)));
+					this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, posX, y0 + 38, output)));
 				}
 			}
 		} else {
@@ -192,13 +194,13 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 			int y0 = 38;
 
 			Slot<?> left = new Slot<>(crafter, 0, true, 0);
-			this.slots.add(addElement(StackHandler.getSlot(this, x0 - 18, y0, left)));
+			this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, x0 - 18, y0, left)));
 
 			Slot<?> right = new Slot<>(crafter, 0, true, 1);
-			this.slots.add(addElement(StackHandler.getSlot(this, x0, y0, right)));
+			this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, x0, y0, right)));
 
 			Slot<?> output = new Slot<>(crafter, 0, false, 0);
-			this.slots.add(addElement(StackHandler.getSlot(this, x0 - 9, y0 + 20, output)));
+			this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, x0 - 9, y0 + 20, output)));
 		}
 	}
 

@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 public class TabCrafting extends TabBase {
 
 	public final ElementSlotItem[] grid;
-	public final ElementBase output;
+	public final ElementSlotItem output;
 	public final ElementTextField amount;
 	public final ElementButtonBase button;
 	private final Supplier<Boolean> enabled;
@@ -80,6 +80,20 @@ public class TabCrafting extends TabBase {
 		});
 
 		addElement(amount = new ElementTextFieldAmount(gui, x + 1, y + 3 * 18 + 5, 52, 10));
+	}
+
+	public Object getStackAt(int x, int y) {
+		x -= posX();
+		y -= posY;
+
+		for (ElementSlotItem slot : grid)
+			if (slot.intersectsWith(x, y))
+				return slot.getIngredient();
+
+		if (output.intersectsWith(x, y))
+			return output.getIngredient();
+
+		return null;
 	}
 
 	@Override

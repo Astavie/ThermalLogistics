@@ -49,6 +49,33 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		this.ySize = 250;
 	}
 
+	public Object getStackAt(int mouseX, int mouseY) {
+		if (selected != null && button.isVisible() && mouseX >= 25 && mouseX < 43 && mouseY >= 73 && mouseY < 91)
+			return selected;
+
+		int i = slider.getValue() * 9;
+
+		a:
+		for (int y = 0; y < 3; y++) {
+			for (int x = 0; x < 9; x++) {
+				int slot = i + x + y * 9;
+				if (slot >= filter.size())
+					break a;
+
+				int posX = 8 + x * 18;
+				int posY = 18 + y * 18;
+
+				if (mouseX >= posX - 1 && mouseX < posX + 17 && mouseY >= posY - 1 && mouseY < posY + 17)
+					return filter.get(slot).getLeft();
+			}
+		}
+
+		if (tabCrafting.isFullyOpened())
+			return tabCrafting.getStackAt(mouseX, mouseY);
+
+		return null;
+	}
+
 	@Override
 	public void addTooltips(List<String> tooltip) {
 		super.addTooltips(tooltip);
@@ -138,6 +165,8 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	@Override
 	public void initGui() {
 		super.initGui();
+
+		guiLeft += 9;
 
 		addTab(tabCrafting = new TabCrafting(this, tile.shared, () -> {
 			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);

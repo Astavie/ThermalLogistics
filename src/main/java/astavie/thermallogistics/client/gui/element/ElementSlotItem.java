@@ -6,11 +6,12 @@ import cofh.core.util.helpers.RenderHelper;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class ElementSlotItem extends ElementSlot {
+public class ElementSlotItem extends ElementSlot<ItemStack> {
 
 	private final Supplier<ItemStack> stack;
 	private final Consumer<ItemStack> consumer;
@@ -49,6 +50,11 @@ public class ElementSlotItem extends ElementSlot {
 	}
 
 	@Override
+	public Object getIngredient() {
+		return stack.get();
+	}
+
+	@Override
 	public boolean onMousePressed(int mouseX, int mouseY, int mouseButton) {
 		if (mouseButton < 2 && intersectsWith(mouseX, mouseY)) {
 			ItemStack get = stack.get();
@@ -72,6 +78,11 @@ public class ElementSlotItem extends ElementSlot {
 
 	public ItemStack get() {
 		return stack.get();
+	}
+
+	@Override
+	public void accept(@Nonnull ItemStack ingredient) {
+		consumer.accept(ingredient);
 	}
 
 }

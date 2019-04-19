@@ -7,11 +7,12 @@ import cofh.core.gui.GuiContainerCore;
 import cofh.core.util.helpers.FluidHelper;
 import net.minecraftforge.fluids.FluidStack;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class ElementSlotFluid extends ElementSlot {
+public class ElementSlotFluid extends ElementSlot<FluidStack> {
 
 	private final Supplier<FluidStack> fluid;
 	private final Consumer<FluidStack> consumer;
@@ -39,6 +40,11 @@ public class ElementSlotFluid extends ElementSlot {
 	}
 
 	@Override
+	public Object getIngredient() {
+		return fluid.get();
+	}
+
+	@Override
 	public boolean onMousePressed(int mouseX, int mouseY, int mouseButton) {
 		if (mouseButton < 2 && intersectsWith(mouseX, mouseY)) {
 			FluidStack get = fluid.get();
@@ -63,6 +69,11 @@ public class ElementSlotFluid extends ElementSlot {
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public void accept(@Nonnull FluidStack ingredient) {
+		consumer.accept(ingredient);
 	}
 
 }

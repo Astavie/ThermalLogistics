@@ -4,12 +4,17 @@ import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.init.CoreProps;
 import cofh.core.util.helpers.RenderHelper;
+import mezz.jei.api.gui.IGhostIngredientHandler;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.common.Optional;
 
+import javax.annotation.Nonnull;
+import java.awt.*;
 import java.util.List;
 
-public abstract class ElementSlot extends ElementBase {
+@Optional.Interface(iface = "mezz.jei.api.gui.IGhostIngredientHandler.Target", modid = "jei")
+public abstract class ElementSlot<I> extends ElementBase implements IGhostIngredientHandler.Target<I> {
 
 	private static final ResourceLocation SLOT = new ResourceLocation(CoreProps.PATH_ELEMENTS + "slot.png");
 
@@ -57,5 +62,13 @@ public abstract class ElementSlot extends ElementBase {
 	protected abstract void drawSlot(int mouseX, int mouseY);
 
 	protected abstract void addTooltip(int mouseX, int mouseY, List<String> list);
+
+	@Nonnull
+	@Override
+	public Rectangle getArea() {
+		return new Rectangle(gui.getGuiLeft() + posX + 1, gui.getGuiTop() + posY + 1, 16, 16);
+	}
+
+	public abstract Object getIngredient();
 
 }
