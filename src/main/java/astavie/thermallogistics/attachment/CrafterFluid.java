@@ -50,6 +50,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
+import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -795,7 +796,7 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 
 	@Override
 	public int getMaxSend() {
-		return 0;
+		return ServoItem.maxSize[type];
 	}
 
 	private boolean itemsIdentical(FluidStack a, FluidStack b) {
@@ -861,6 +862,11 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 	@Override
 	public boolean hasMultiStack() {
 		return false;
+	}
+
+	@Override
+	public IItemHandler getCachedInv() {
+		return null;
 	}
 
 	@Override

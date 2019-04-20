@@ -29,6 +29,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.items.IItemHandler;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -205,6 +206,11 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 	@Override
 	public boolean hasMultiStack() {
 		return false;
+	}
+
+	@Override
+	public IItemHandler getCachedInv() {
+		return null;
 	}
 
 	@Override

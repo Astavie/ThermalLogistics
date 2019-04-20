@@ -19,6 +19,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
+import net.minecraftforge.items.IItemHandler;
 
 public class DistributorItem extends ServoItem {
 
@@ -68,9 +69,16 @@ public class DistributorItem extends ServoItem {
 
 		item = item.copy();
 
+		IItemHandler handler = getCachedInv();
+
 		// First check filters
 		for (Route<DuctUnitItem, GridItem> outputRoute : routesWithInsertSideList) {
 			if (outputRoute.pathDirections.size() <= getMaxRange()) {
+				DuctUnitItem.Cache c = outputRoute.endPoint.tileCache[outputRoute.getLastSide()];
+				IItemHandler i = c.getItemHandler(outputRoute.getLastSide() ^ 1);
+				if (i == handler)
+					continue;
+
 				Attachment attachment = outputRoute.endPoint.parent.getAttachment(outputRoute.getLastSide());
 				if (!(attachment instanceof ConnectionBase) || !((ConnectionBase) attachment).isFilter())
 					continue;
@@ -91,6 +99,11 @@ public class DistributorItem extends ServoItem {
 		// Then check everything
 		for (Route<DuctUnitItem, GridItem> outputRoute : routesWithInsertSideList) {
 			if (outputRoute.pathDirections.size() <= getMaxRange()) {
+				DuctUnitItem.Cache c = outputRoute.endPoint.tileCache[outputRoute.getLastSide()];
+				IItemHandler i = c.getItemHandler(outputRoute.getLastSide() ^ 1);
+				if (i == handler)
+					continue;
+
 				int amountRemaining = outputRoute.endPoint.canRouteItem(item, outputRoute.getLastSide());
 				if (amountRemaining != -1) {
 					int stackSize = item.getCount() - amountRemaining;

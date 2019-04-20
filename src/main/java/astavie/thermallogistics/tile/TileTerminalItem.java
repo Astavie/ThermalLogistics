@@ -1,7 +1,6 @@
 package astavie.thermallogistics.tile;
 
 import astavie.thermallogistics.ThermalLogistics;
-import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.container.ContainerTerminalItem;
@@ -16,7 +15,6 @@ import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.InventoryHelper;
 import cofh.core.util.helpers.ItemHelper;
-import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
@@ -37,7 +35,6 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
-import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -365,83 +362,8 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			if (duct == null || grids.contains(duct.getGrid()))
 				continue;
 
-			for (DuctUnitItem start : duct.getGrid().nodeSet) {
-				for (byte side = 0; side < 6; side++) {
-					if ((!start.isInput(side) && !start.isOutput(side)) || !start.parent.getConnectionType(side).allowTransfer)
-						continue;
-
-					Attachment attachment = start.parent.getAttachment(side);
-					if (attachment != null) {
-						if (attachment instanceof ICrafter && ((ICrafter) attachment).isEnabled()) {
-							a:
-							//noinspection unchecked
-							for (ItemStack out : ((ICrafter<ItemStack>) attachment).getOutputs()) {
-								if (out.isEmpty())
-									continue;
-								for (int i = 0; i < terminal.size(); i++) {
-									Triple<ItemStack, Long, Boolean> stack = terminal.get(i);
-									if (!ItemHelper.itemsIdentical(out, stack.getLeft()))
-										continue;
-									if (!stack.getRight())
-										terminal.set(i, Triple.of(stack.getLeft(), stack.getMiddle(), true));
-									continue a;
-								}
-								terminal.add(Triple.of(ItemHelper.cloneStack(out, 1), 0L, true));
-							}
-						}
-						if (!attachment.canSend())
-							continue;
-					}
-
-					DuctUnitItem.Cache cache = start.tileCache[side];
-					if (cache == null)
-						continue;
-
-					if (cache.tile != null) {
-						if (cache.tile == this)
-							continue;
-						if (cache.tile instanceof ICrafter && ((ICrafter) cache.tile).isEnabled()) {
-							a:
-							//noinspection unchecked
-							for (ItemStack out : ((ICrafter<ItemStack>) cache.tile).getOutputs()) {
-								if (out.isEmpty())
-									continue;
-								for (int i = 0; i < terminal.size(); i++) {
-									Triple<ItemStack, Long, Boolean> stack = terminal.get(i);
-									if (!ItemHelper.itemsIdentical(out, stack.getLeft()))
-										continue;
-									if (!stack.getRight())
-										terminal.set(i, Triple.of(stack.getLeft(), stack.getMiddle(), true));
-									continue a;
-								}
-								terminal.add(Triple.of(ItemHelper.cloneStack(out, 1), 0L, true));
-							}
-						}
-					}
-
-					IItemHandler inv = cache.getItemHandler(side ^ 1);
-					if (inv == null || handlers.contains(inv))
-						continue;
-
-					a:
-					for (int slot = 0; slot < inv.getSlots(); slot++) {
-						ItemStack extract = inv.getStackInSlot(slot);
-						if (extract.isEmpty())
-							continue;
-
-						for (int i = 0; i < terminal.size(); i++) {
-							Triple<ItemStack, Long, Boolean> stack = terminal.get(i);
-							if (!ItemHelper.itemsIdentical(extract, stack.getLeft()))
-								continue;
-							terminal.set(i, Triple.of(stack.getLeft(), stack.getMiddle() + extract.getCount(), stack.getRight()));
-							continue a;
-						}
-						terminal.add(Triple.of(ItemHelper.cloneStack(extract, 1), (long) extract.getCount(), false));
-					}
-
-					handlers.add(inv);
-				}
-			}
+			//noinspection unchecked
+			terminal.addAll(StackHandler.getItems((Requester<ItemStack>) requester, handlers));
 
 			grids.add(duct.getGrid());
 		}

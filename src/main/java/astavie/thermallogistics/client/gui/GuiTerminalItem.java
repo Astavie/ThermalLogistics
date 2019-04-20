@@ -293,15 +293,16 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 			// Then compare sub items
 			CreativeTabs tab = i1.getLeft().getItem().getCreativeTab();
-			if (tab != null) {
-				NonNullList<ItemStack> list = NonNullList.create();
-				i1.getLeft().getItem().getSubItems(tab, list);
-				for (ItemStack stack : list) {
-					if (ItemHelper.itemsIdentical(i1.getLeft(), stack))
-						return -1;
-					if (ItemHelper.itemsIdentical(i2.getLeft(), stack))
-						return 1;
-				}
+			if (tab == null)
+				tab = CreativeTabs.SEARCH;
+
+			NonNullList<ItemStack> list = NonNullList.create();
+			i1.getLeft().getItem().getSubItems(tab, list);
+			for (ItemStack stack : list) {
+				if (ItemHelper.itemsIdentical(i1.getLeft(), stack))
+					return -1;
+				if (ItemHelper.itemsIdentical(i2.getLeft(), stack))
+					return 1;
 			}
 
 			// Then compare nbt data

@@ -39,6 +39,8 @@ import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
@@ -321,15 +323,18 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 		@Override
 		public ListWrapper<Route<DuctUnitItem, GridItem>> getRoutes() {
+			ListWrapper<Route<DuctUnitItem, GridItem>> routesWithInsertSideList = new ListWrapper<>();
+
 			IGridTile duct = getDuct();
-			if (!(duct instanceof DuctUnitItem))
-				return null;
+			if (!(duct instanceof DuctUnitItem) || duct.getGrid() == null) {
+				routesWithInsertSideList.setList(new LinkedList<>(), ListWrapper.SortType.NORMAL);
+				return routesWithInsertSideList;
+			}
 
 			Stream<Route<DuctUnitItem, GridItem>> routesWithDestinations = ServoItem.getRoutesWithDestinations(((DuctUnitItem) duct).getCache().outputRoutes);
 			LinkedList<Route<DuctUnitItem, GridItem>> objects = Lists.newLinkedList();
 			routesWithDestinations.forEach(objects::add);
 
-			ListWrapper<Route<DuctUnitItem, GridItem>> routesWithInsertSideList = new ListWrapper<>();
 			routesWithInsertSideList.setList(objects, ListWrapper.SortType.NORMAL);
 
 			return routesWithInsertSideList;
@@ -338,6 +343,11 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		@Override
 		public boolean hasMultiStack() {
 			return ServoItem.multiStack[terminal.requester.get().getMetadata()];
+		}
+
+		@Override
+		public IItemHandler getCachedInv() {
+			return terminal.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, EnumFacing.byIndex(side));
 		}
 
 		@Override

@@ -8,6 +8,7 @@ import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.items.IItemHandler;
 
 import java.util.List;
 
@@ -50,13 +51,13 @@ public interface IRequester<I> {
 
 	int getIndex();
 
-	// Crafter
+	int getMaxSend();
+
+	// Crafter (Honestly these should be moved to ICrafter)
 
 	void onFinishCrafting(IRequester<I> requester, I stack);
 
 	void onFinishCrafting(int index, int recipes);
-
-	int getMaxSend();
 
 	// ItemStack
 
@@ -65,6 +66,8 @@ public interface IRequester<I> {
 	ListWrapper<Route<DuctUnitItem, GridItem>> getRoutes();
 
 	boolean hasMultiStack();
+
+	IItemHandler getCachedInv();
 
 	// FluidStack
 
