@@ -53,6 +53,9 @@ public interface IRequester<I> {
 
 	int getMaxSend();
 
+	default void refreshCache() {
+	}
+
 	// Crafter (Honestly these should be moved to ICrafter)
 
 	void onFinishCrafting(IRequester<I> requester, I stack);

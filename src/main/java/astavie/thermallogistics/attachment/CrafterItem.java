@@ -139,9 +139,39 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 	@Override
 	public void tick(int pass) {
-		if (pass == 0 && itemDuct.tileCache[side] != null && !(itemDuct.tileCache[side] instanceof CacheWrapper))
+		if (pass == 0) {
+			refreshCache();
+			if (isPowered && (isValidInput || isStuffed()) && (itemDuct.world().getTotalWorldTime() - process.offset) % tickDelay() == 0) {
+				GridItem.toTick.add(this);
+			}
+			return;
+		} else if (!isPowered || (itemDuct.world().getTotalWorldTime() - process.offset) % tickDelay() != 0) {
+			return;
+		}
+		if (!verifyCache()) {
+			return;
+		}
+		if (cache.outputRoutes.isEmpty()) {
+			return;
+		}
+		if (pass == 1) {
+			if (isStuffed()) {
+				handleStuffedItems();
+			} else if (stuffed) {
+				onNeighborChange();
+			}
+		} else if (pass == 2 && !stuffed) {
+			if (!isValidInput) {
+				return;
+			}
+			handleItemSending();
+		}
+	}
+
+	@Override
+	public void refreshCache() {
+		if (itemDuct.tileCache[side] != null && !(itemDuct.tileCache[side] instanceof CacheWrapper))
 			itemDuct.tileCache[side] = new CacheWrapper(itemDuct.tileCache[side].tile, this);
-		super.tick(pass);
 	}
 
 	@Override
@@ -188,10 +218,10 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					route = route.copy();
 					route.pathDirections.add(attachment.getSide());
 
-					itemDuct.insertNewItem(new TravelingItem(removed, itemDuct, route, (byte) (side ^ 1), attachment.getSpeed()));
-
 					onFinishCrafting(recipe, i, iterator, request, removed);
 					attachment.claim(this, removed);
+
+					itemDuct.insertNewItem(new TravelingItem(removed, itemDuct, route, (byte) (side ^ 1), attachment.getSpeed()));
 				}
 
 				send += count;
@@ -224,8 +254,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		return ItemHelper.cloneStack(item, item.getCount() - send);
 	}
 
-	@Override
-	public void handleItemSending() {
+	private void check() {
 		// Check linked
 		checkLinked();
 
@@ -280,8 +309,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 					iterator.remove();
 			}
 		}
+	}
 
-		// Handle input
+	@Override
+	public void handleItemSending() {
+		check();
 		process.tick();
 	}
 
@@ -335,7 +367,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 			NBTTagList leftovers = new NBTTagList();
 			for (ItemStack stack : recipe.leftovers.stacks)
-				leftovers.appendTag(stack.writeToNBT(new NBTTagCompound()));
+				leftovers.appendTag(StackHandler.writeLargeItemStack(stack));
 
 			NBTTagCompound nbt = new NBTTagCompound();
 			nbt.setTag("inputs", inputs);
@@ -347,7 +379,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 		NBTTagList sent = new NBTTagList();
 		for (ItemStack stack : this.sent.stacks)
-			sent.appendTag(stack.writeToNBT(new NBTTagCompound()));
+			sent.appendTag(StackHandler.writeLargeItemStack(stack));
 
 		NBTTagList linked = new NBTTagList();
 		for (RequesterReference<?> reference : this.linked)
@@ -412,7 +444,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 				NBTTagList leftovers = nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND);
 				for (int j = 0; j < leftovers.tagCount(); j++)
-					recipe.leftovers.stacks.add(new ItemStack(leftovers.getCompoundTagAt(j)));
+					recipe.leftovers.stacks.add(StackHandler.readLargeItemStack(leftovers.getCompoundTagAt(j)));
 
 				this.recipes.add(recipe);
 			}
@@ -421,7 +453,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 			NBTTagList sent = tag.getTagList("sent", Constants.NBT.TAG_COMPOUND);
 			for (int i = 0; i < sent.tagCount(); i++)
-				this.sent.stacks.add(new ItemStack(sent.getCompoundTagAt(i)));
+				this.sent.stacks.add(StackHandler.readLargeItemStack(sent.getCompoundTagAt(i)));
 
 			NBTTagList linked = tag.getTagList("linked", Constants.NBT.TAG_COMPOUND);
 			for (int i = 0; i < linked.tagCount(); i++)
@@ -751,6 +783,8 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 
 			// Add request
 			markDirty();
+
+			process.offset = baseTile.world().getTotalWorldTime() + 1;
 
 			for (Request<ItemStack> request : recipe.requests) {
 				if (request.attachment.references(requester)) {

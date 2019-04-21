@@ -16,6 +16,7 @@ import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -47,6 +48,16 @@ public class StackHandler {
 		else if (type == 1)
 			return (I) packet.getFluidStack();
 		else throw new IllegalArgumentException("Unknown item type " + type);
+	}
+
+	public static NBTTagCompound writeLargeItemStack(ItemStack stack) {
+		NBTTagCompound compound = ItemHelper.cloneStack(stack, 1).writeToNBT(new NBTTagCompound());
+		compound.setInteger("IntCount", stack.getCount());
+		return compound;
+	}
+
+	public static ItemStack readLargeItemStack(NBTTagCompound compound) {
+		return ItemHelper.cloneStack(new ItemStack(compound), compound.getInteger("IntCount"));
 	}
 
 	@SideOnly(Side.CLIENT)

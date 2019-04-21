@@ -695,6 +695,8 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 			// Add request
 			markDirty();
 
+			process.offset = baseTile.world().getTotalWorldTime() + 1;
+
 			for (Request<FluidStack> request : recipe.requests) {
 				if (request.attachment.references(requester)) {
 					request.addStack(stack);

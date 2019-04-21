@@ -35,11 +35,13 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public class TileTerminalItem extends TileTerminal<ItemStack> {
@@ -363,7 +365,20 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				continue;
 
 			//noinspection unchecked
-			terminal.addAll(StackHandler.getItems((Requester<ItemStack>) requester, handlers));
+			List<Triple<ItemStack, Long, Boolean>> list = StackHandler.getItems((Requester<ItemStack>) requester, handlers);
+
+			a:
+			for (Triple<ItemStack, Long, Boolean> out : list) {
+				for (int i = 0; i < terminal.size(); i++) {
+					Triple<ItemStack, Long, Boolean> stack = terminal.get(i);
+					if (!ItemHelper.itemsIdentical(out.getLeft(), stack.getLeft()))
+						continue;
+					if (!stack.getRight())
+						terminal.set(i, Triple.of(stack.getLeft(), stack.getMiddle() + out.getMiddle(), out.getRight() || stack.getRight()));
+					continue a;
+				}
+				terminal.add(out);
+			}
 
 			grids.add(duct.getGrid());
 		}

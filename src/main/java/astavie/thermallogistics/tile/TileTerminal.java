@@ -93,6 +93,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			byte message = payload.getByte();
 			if (message == 0) {
 				request(payload);
+				for (Requester requester : processes)
+					requester.process.offset = world.getTotalWorldTime() + 1;
 				markChunkDirty();
 				PacketHandler.sendToAllAround(getSyncPacket(), this);
 			} else read(payload, message, player);

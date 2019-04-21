@@ -188,8 +188,8 @@ public class ProcessFluid extends Process<FluidStack> {
 				if (drainFluid == null)
 					continue;
 
-				int input = tank.fill(drainFluid, false);
-				if (requester.amountRequired(drainFluid) == 0)
+				int input = Math.min(tank.fill(drainFluid, false), requester.amountRequired(drainFluid) - tank.getFluidAmount());
+				if (input <= 0)
 					continue;
 
 				maxInput -= tank.fill(handler.drain(input, true), true);
@@ -201,7 +201,7 @@ public class ProcessFluid extends Process<FluidStack> {
 			}
 		}
 
-		if (maxInput != c || (tank.getFluid() != null && tank.getFluid().amount > 0) || requester.getDuct().world().getTotalWorldTime() % requester.tickDelay() != 0)
+		if (maxInput != c || (requester.getDuct().world().getTotalWorldTime()) - offset % requester.tickDelay() != 0)
 			return;
 
 		// Check crafters
@@ -214,8 +214,8 @@ public class ProcessFluid extends Process<FluidStack> {
 				continue;
 
 			for (FluidStack stack : crafter.getOutputs()) {
-				int amount = requester.amountRequired(stack);
-				if (amount == 0)
+				int amount = requester.amountRequired(stack) - tank.getFluidAmount();
+				if (amount <= 0)
 					continue;
 
 				amount = Math.min(amount, (requester.getMaxSend() * Fluid.BUCKET_VOLUME) - getCount(stack));

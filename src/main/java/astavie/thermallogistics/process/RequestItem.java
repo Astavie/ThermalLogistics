@@ -1,6 +1,7 @@
 package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.util.RequesterReference;
+import astavie.thermallogistics.util.StackHandler;
 import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.ItemHelper;
 import net.minecraft.item.ItemStack;
@@ -27,7 +28,7 @@ public class RequestItem extends Request<ItemStack> {
 	public static NBTTagCompound writeNBT(Request<ItemStack> request) {
 		NBTTagList stacks = new NBTTagList();
 		for (ItemStack stack : request.stacks)
-			stacks.appendTag(stack.writeToNBT(new NBTTagCompound()));
+			stacks.appendTag(StackHandler.writeLargeItemStack(stack));
 
 		NBTTagList blacklist = new NBTTagList();
 		for (RequesterReference<ItemStack> reference : request.blacklist)
@@ -46,7 +47,7 @@ public class RequestItem extends Request<ItemStack> {
 
 		NBTTagList stacks = nbt.getTagList("stacks", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < stacks.tagCount(); i++)
-			request.stacks.add(new ItemStack(stacks.getCompoundTagAt(i)));
+			request.stacks.add(StackHandler.readLargeItemStack(stacks.getCompoundTagAt(i)));
 
 		NBTTagList blacklist = nbt.getTagList("blacklist", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < blacklist.tagCount(); i++)

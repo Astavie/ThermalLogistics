@@ -1,16 +1,14 @@
 package astavie.thermallogistics.client.gui.element;
 
 import cofh.core.gui.GuiContainerCore;
-import cofh.core.gui.element.ElementTextFieldLimited;
+import cofh.core.gui.element.ElementTextField;
 
-public class ElementTextFieldAmount extends ElementTextFieldLimited {
+public class ElementTextFieldClear extends ElementTextField {
 
 	private boolean rightClick = false;
 
-	public ElementTextFieldAmount(GuiContainerCore gui, int posX, int posY, int width, int height) {
+	public ElementTextFieldClear(GuiContainerCore gui, int posX, int posY, int width, int height) {
 		super(gui, posX, posY, width, height);
-		setFilter("0123456789", false);
-		setMaxLength((short) 9);
 	}
 
 	@Override

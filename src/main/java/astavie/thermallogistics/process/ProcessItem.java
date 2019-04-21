@@ -18,6 +18,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.items.IItemHandler;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Iterator;
 import java.util.List;
@@ -86,7 +87,7 @@ public class ProcessItem extends Process<ItemStack> {
 			requests.add(RequestItem.readNBT(nbt.getCompoundTagAt(i)));
 	}
 
-	private static ItemStack extract(IRequester<ItemStack> requester, IItemHandler handler, Function<ItemStack, Integer> amountRequired, DuctUnitItem endPoint, byte side, DuctUnitItem.Cache cache, IItemHandler inv) {
+	private static Pair<ItemStack, Route> extract(IRequester<ItemStack> requester, IItemHandler handler, Function<ItemStack, Integer> amountRequired, DuctUnitItem endPoint, DuctUnitItem.Cache cache, IItemHandler inv) {
 		for (int slot = 0; slot < inv.getSlots(); slot++) {
 			ItemStack item = inv.getStackInSlot(slot);
 			if (item.isEmpty())
@@ -131,10 +132,10 @@ public class ProcessItem extends Process<ItemStack> {
 				}
 			}
 
-			endPoint.insertNewItem(new TravelingItem(item, endPoint, route1, (byte) (side ^ 1), requester.getSpeed()));
-			return item;
+			requester.refreshCache();
+			return Pair.of(item, route1);
 		}
-		return ItemStack.EMPTY;
+		return null;
 	}
 
 	private static ItemStack checkItem(IRequester<ItemStack> requester, IItemHandler handler, ItemStack item, int amount) {
@@ -165,7 +166,7 @@ public class ProcessItem extends Process<ItemStack> {
 
 	@Override
 	public void tick() {
-		if (requester.getDuct().world().getTotalWorldTime() % requester.tickDelay() != 0)
+		if ((requester.getDuct().world().getTotalWorldTime() - offset) % requester.tickDelay() != 0)
 			return;
 
 		// Check requests
@@ -204,13 +205,15 @@ public class ProcessItem extends Process<ItemStack> {
 			if (inv == null)
 				continue;
 
-			ItemStack extract = extract(this.requester, handler, request::getCount, endPoint, side, null, inv);
-			if (!extract.isEmpty()) {
-				requester.onFinishCrafting(this.requester, extract);
+			Pair<ItemStack, Route> extract = extract(this.requester, handler, request::getCount, endPoint, null, inv);
+			if (extract != null) {
+				requester.onFinishCrafting(this.requester, extract.getLeft());
 
-				request.decreaseStack(extract);
+				request.decreaseStack(extract.getLeft());
 				if (request.stacks.isEmpty())
 					iterator.remove();
+
+				endPoint.insertNewItem(new TravelingItem(extract.getLeft(), endPoint, extract.getRight(), (byte) (side ^ 1), this.requester.getSpeed()));
 
 				this.requester.markDirty();
 				return;
@@ -249,8 +252,9 @@ public class ProcessItem extends Process<ItemStack> {
 			if (inv == null || inv.equals(handler))
 				continue;
 
-			ItemStack extract = extract(requester, handler, requester::amountRequired, endPoint, side, cache, inv);
-			if (!extract.isEmpty()) {
+			Pair<ItemStack, Route> extract = extract(requester, handler, requester::amountRequired, endPoint, cache, inv);
+			if (extract != null) {
+				endPoint.insertNewItem(new TravelingItem(extract.getLeft(), endPoint, extract.getRight(), (byte) (side ^ 1), requester.getSpeed()));
 				routes.advanceCursor();
 				return;
 			}
@@ -274,9 +278,11 @@ public class ProcessItem extends Process<ItemStack> {
 				if (amount == 0)
 					continue;
 
-				stack = checkItem(requester, handler, ItemHelper.cloneStack(stack, amount), amount);
-				if (stack.isEmpty())
-					continue;
+				stack = ItemHelper.cloneStack(stack, amount);
+
+				// stack = checkItem(requester, handler, stack, amount);
+				// if (stack.isEmpty())
+				//	continue;
 
 				if (!crafter.request(requester, stack))
 					continue;

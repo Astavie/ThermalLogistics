@@ -9,6 +9,8 @@ import java.util.List;
 
 public abstract class Process<I> {
 
+	public long offset = 0;
+
 	public final IRequester<I> requester;
 	public final List<Request<I>> requests = NonNullList.create();
 
