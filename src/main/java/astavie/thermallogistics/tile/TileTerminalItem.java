@@ -35,6 +35,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
+import net.minecraftforge.items.wrapper.PlayerMainInvWrapper;
 import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
@@ -238,6 +239,15 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				((EntityPlayerMP) player).updateHeldItem();
 				break;
 			}
+		} else if (message == 4) {
+			for (int i = 0; i < inventory.getSizeInventory(); i++) {
+				ItemStack item = inventory.getStackInSlot(i);
+				if (item.isEmpty())
+					continue;
+
+				item.setCount(InventoryHelper.insertStackIntoInventory(new PlayerMainInvWrapper(player.inventory), item.copy(), false).getCount());
+			}
+			player.openContainer.detectAndSendChanges();
 		}
 	}
 
@@ -396,12 +406,6 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		private Inventory(TileTerminalItem tile, IInventory inv) {
 			super(inv);
 			this.tile = tile;
-		}
-
-		@Nonnull
-		@Override
-		public ItemStack extractItem(int slot, int amount, boolean simulate) {
-			return ItemStack.EMPTY;
 		}
 
 		@Nonnull

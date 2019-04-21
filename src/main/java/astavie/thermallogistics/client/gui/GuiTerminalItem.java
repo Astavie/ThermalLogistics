@@ -8,6 +8,7 @@ import astavie.thermallogistics.process.RequestItem;
 import astavie.thermallogistics.tile.TileTerminalItem;
 import astavie.thermallogistics.util.Shared;
 import cofh.core.gui.element.ElementBase;
+import cofh.core.gui.element.ElementButton;
 import cofh.core.inventory.InventoryCraftingFalse;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
@@ -193,6 +194,19 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 					request(ItemHelper.cloneStack(stack, 1), stack.getCount());
 		}, () -> cache.getLeft() != null)).setOffsets(-18, 74);
 		addTab(tabRequest = new TabRequest(this, tile.requests.stacks, tile)).setOffsets(-18, 74);
+
+		addElement(new ElementButton(this, 153, 153, "dump", 194, 0, 194, 14, 14, 14, texture.toString()));
+	}
+
+	@Override
+	public void handleElementButtonClick(String buttonName, int mouseButton) {
+		if (mouseButton == 0 && buttonName.equals("dump")) {
+			playClickSound(1F);
+
+			PacketTileInfo packet = PacketTileInfo.newPacket(tile);
+			packet.addByte(4);
+			PacketHandler.sendToServer(packet);
+		}
 	}
 
 	@Override
