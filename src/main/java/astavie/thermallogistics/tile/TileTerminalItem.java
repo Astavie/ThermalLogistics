@@ -8,6 +8,7 @@ import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.process.RequestItem;
+import astavie.thermallogistics.util.ItemPrint;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;
 import codechicken.lib.inventory.InventorySimple;
@@ -45,14 +46,12 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
 import net.minecraftforge.items.wrapper.PlayerMainInvWrapper;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class TileTerminalItem extends TileTerminal<ItemStack> {
 
@@ -391,29 +390,31 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		Set<GridItem> grids = new HashSet<>();
 		Set<IItemHandler> handlers = new HashSet<>();
 
+		Map<ItemPrint, MutablePair<Long, Boolean>> total = new HashMap<>();
+
 		for (Requester requester : processes) {
 			DuctUnitItem duct = (DuctUnitItem) requester.getDuct();
 			if (duct == null || grids.contains(duct.getGrid()))
 				continue;
 
 			//noinspection unchecked
-			List<Triple<ItemStack, Long, Boolean>> list = StackHandler.getItems((Requester<ItemStack>) requester, handlers);
-
-			a:
-			for (Triple<ItemStack, Long, Boolean> out : list) {
-				for (int i = 0; i < terminal.size(); i++) {
-					Triple<ItemStack, Long, Boolean> stack = terminal.get(i);
-					if (!ItemHelper.itemsIdentical(out.getLeft(), stack.getLeft()))
-						continue;
-					if (!stack.getRight())
-						terminal.set(i, Triple.of(stack.getLeft(), stack.getMiddle() + out.getMiddle(), out.getRight() || stack.getRight()));
-					continue a;
+			Map<ItemPrint, MutablePair<Long, Boolean>> list = StackHandler.getItems((Requester<ItemStack>) requester, handlers);
+			for (Map.Entry<ItemPrint, MutablePair<Long, Boolean>> entry : list.entrySet()) {
+				MutablePair<Long, Boolean> pair = total.get(entry.getKey());
+				if (pair != null) {
+					pair.left += entry.getValue().left;
+					pair.right = pair.right || entry.getValue().right;
+				} else {
+					total.put(entry.getKey(), entry.getValue());
 				}
-				terminal.add(out);
 			}
 
 			grids.add(duct.getGrid());
 		}
+
+		terminal.clear();
+		for (Map.Entry<ItemPrint, MutablePair<Long, Boolean>> entry : total.entrySet())
+			terminal.add(Triple.of(entry.getKey().compare, entry.getValue().left, entry.getValue().right));
 	}
 
 	@Override

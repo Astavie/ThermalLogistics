@@ -21,7 +21,7 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.IItemHandler;
-import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.lang3.tuple.MutablePair;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -147,8 +147,8 @@ public class StackHandler {
 		else throw new IllegalArgumentException("Unknown item type " + c.getName());
 	}
 
-	public static List<Triple<ItemStack, Long, Boolean>> getItems(IRequester<ItemStack> requester, @Nullable Set<IItemHandler> handlers) {
-		List<Triple<ItemStack, Long, Boolean>> items = new LinkedList<>();
+	public static Map<ItemPrint, MutablePair<Long, Boolean>> getItems(IRequester<ItemStack> requester, @Nullable Set<IItemHandler> handlers) {
+		Map<ItemPrint, MutablePair<Long, Boolean>> items = new HashMap<>();
 
 		DuctUnitItem duct = (DuctUnitItem) requester.getDuct();
 		if (duct == null)
@@ -177,20 +177,18 @@ public class StackHandler {
 				Attachment attachment = start.parent.getAttachment(side);
 				if (attachment != null) {
 					if (attachment instanceof ICrafter && ((ICrafter) attachment).isEnabled()) {
-						a:
 						//noinspection unchecked
 						for (ItemStack out : ((ICrafter<ItemStack>) attachment).getOutputs()) {
 							if (out.isEmpty())
 								continue;
-							for (int i = 0; i < items.size(); i++) {
-								Triple<ItemStack, Long, Boolean> stack = items.get(i);
-								if (!ItemHelper.itemsIdentical(out, stack.getLeft()))
-									continue;
-								if (!stack.getRight())
-									items.set(i, Triple.of(stack.getLeft(), stack.getMiddle(), true));
-								continue a;
+
+							ItemPrint print = new ItemPrint(out);
+							MutablePair<Long, Boolean> pair = items.get(print);
+							if (pair != null) {
+								pair.right = true;
+							} else {
+								items.put(print, MutablePair.of(0L, true));
 							}
-							items.add(Triple.of(ItemHelper.cloneStack(out, 1), 0L, true));
 						}
 					}
 					if (!attachment.canSend())
@@ -199,38 +197,34 @@ public class StackHandler {
 
 				if (cache.tile != null) {
 					if (cache.tile instanceof ICrafter && ((ICrafter) cache.tile).isEnabled()) {
-						a:
 						//noinspection unchecked
 						for (ItemStack out : ((ICrafter<ItemStack>) cache.tile).getOutputs()) {
 							if (out.isEmpty())
 								continue;
-							for (int i = 0; i < items.size(); i++) {
-								Triple<ItemStack, Long, Boolean> stack = items.get(i);
-								if (!ItemHelper.itemsIdentical(out, stack.getLeft()))
-									continue;
-								if (!stack.getRight())
-									items.set(i, Triple.of(stack.getLeft(), stack.getMiddle(), true));
-								continue a;
+
+							ItemPrint print = new ItemPrint(out);
+							MutablePair<Long, Boolean> pair = items.get(print);
+							if (pair != null) {
+								pair.right = true;
+							} else {
+								items.put(print, MutablePair.of(0L, true));
 							}
-							items.add(Triple.of(ItemHelper.cloneStack(out, 1), 0L, true));
 						}
 					}
 				}
 
-				a:
 				for (int slot = 0; slot < inv.getSlots(); slot++) {
 					ItemStack extract = inv.getStackInSlot(slot);
 					if (extract.isEmpty())
 						continue;
 
-					for (int i = 0; i < items.size(); i++) {
-						Triple<ItemStack, Long, Boolean> stack = items.get(i);
-						if (!ItemHelper.itemsIdentical(extract, stack.getLeft()))
-							continue;
-						items.set(i, Triple.of(stack.getLeft(), stack.getMiddle() + extract.getCount(), stack.getRight()));
-						continue a;
+					ItemPrint print = new ItemPrint(extract);
+					MutablePair<Long, Boolean> pair = items.get(print);
+					if (pair != null) {
+						pair.left += extract.getCount();
+					} else {
+						items.put(print, MutablePair.of((long) extract.getCount(), false));
 					}
-					items.add(Triple.of(ItemHelper.cloneStack(extract, 1), (long) extract.getCount(), false));
 				}
 
 				handlers.add(inv);
