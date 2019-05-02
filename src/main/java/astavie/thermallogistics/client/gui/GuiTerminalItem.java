@@ -21,6 +21,7 @@ import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
+import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
@@ -173,7 +174,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
 			for (int i = 0; i < 9; i++)
 				inventory.setInventorySlotContents(i, tile.shared[i].get());
-			ItemStack stack = CraftingManager.findMatchingResult(inventory, Minecraft.getMinecraft().world);
+			IRecipe recipe = CraftingManager.findMatchingRecipe(inventory, Minecraft.getMinecraft().world);
 
 			PacketTileInfo packet = PacketTileInfo.newPacket(tile);
 			packet.addByte(2);
@@ -186,7 +187,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 					packet.addItemStack(item);
 			}
 
-			packet.addItemStack(stack);
+			packet.addString(recipe.getRegistryName().toString());
 			PacketHandler.sendToServer(packet);
 		}, () -> {
 			if (cache.getLeft() != null)

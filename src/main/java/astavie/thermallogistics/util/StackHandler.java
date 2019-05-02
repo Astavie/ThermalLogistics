@@ -57,7 +57,10 @@ public class StackHandler {
 	}
 
 	public static ItemStack readLargeItemStack(NBTTagCompound compound) {
-		return ItemHelper.cloneStack(new ItemStack(compound), compound.getInteger("IntCount"));
+		ItemStack stack = new ItemStack(compound);
+		if (compound.hasKey("IntCount"))
+			return ItemHelper.cloneStack(stack, compound.getInteger("IntCount"));
+		return stack;
 	}
 
 	@SideOnly(Side.CLIENT)

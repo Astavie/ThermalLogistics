@@ -11,6 +11,7 @@ import astavie.thermallogistics.process.RequestItem;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;
 import codechicken.lib.inventory.InventorySimple;
+import cofh.core.inventory.InventoryCraftingFalse;
 import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.util.helpers.InventoryHelper;
@@ -21,17 +22,25 @@ import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
+import com.google.common.collect.Lists;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.CraftingManager;
+import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.NonNullList;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
@@ -134,7 +143,11 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				ingredients[i] = Ingredient.fromStacks(stacks);
 			}
 
-			ItemStack craft = packet.getItemStack();
+			IRecipe recipe = CraftingManager.getRecipe(new ResourceLocation(packet.getString()));
+			if (recipe == null)
+				return;
+
+			ItemStack craft = recipe.getRecipeOutput();
 			ItemStack hand = player.inventory.getItemStack();
 			if (!shift && !hand.isEmpty() && (!ItemHelper.itemsIdentical(craft, hand) || craft.getCount() + hand.getCount() > hand.getMaxStackSize()))
 				return;
@@ -168,45 +181,54 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 					break b;
 				}
 
+				InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
+
 				// Craft item
 				a:
-				for (Ingredient ingredient : ingredients) {
+				for (int i = 0, ingredientsLength = ingredients.length; i < ingredientsLength; i++) {
+					Ingredient ingredient = ingredients[i];
 					if (ingredient == Ingredient.EMPTY)
 						continue;
 
-					for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
-						ItemStack stack = inventory.getStackInSlot(slot);
+					for (int slot = 0; slot < this.inventory.getSizeInventory(); slot++) {
+						ItemStack stack = this.inventory.getStackInSlot(slot);
 						if (ingredient.apply(stack)) {
-							inventory.decrStackSize(slot, 1);
-
-							ItemStack container = stack.getItem().getContainerItem(stack);
-							if (!container.isEmpty()) {
-								ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(inventory), container, false);
-								if (!item.isEmpty())
-									player.inventory.placeItemBackInInventory(world, item);
-							}
+							ItemStack decreased = this.inventory.decrStackSize(slot, 1);
+							inventory.setInventorySlotContents(i, decreased);
 							continue a;
 						}
 					}
 					for (int slot = 0; slot < player.inventory.mainInventory.size(); slot++) {
 						ItemStack stack = player.inventory.getStackInSlot(slot);
 						if (ingredient.apply(stack)) {
-							player.inventory.decrStackSize(slot, 1);
-
-							ItemStack container = stack.getItem().getContainerItem(stack);
-							if (!container.isEmpty()) {
-								ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(inventory), container, false);
-								if (!item.isEmpty())
-									player.inventory.placeItemBackInInventory(world, item);
-							}
+							ItemStack decreased = player.inventory.decrStackSize(slot, 1);
+							inventory.setInventorySlotContents(i, decreased);
 							continue a;
 						}
 					}
 				}
 
+				craft.onCrafting(world, player, 1);
+				FMLCommonHandler.instance().firePlayerCraftingEvent(player, craft, inventory);
+
+				if (!recipe.isDynamic()) {
+					player.unlockRecipes(Lists.newArrayList(recipe));
+				}
+
+				// Add containers
+				ForgeHooks.setCraftingPlayer(player);
+				NonNullList<ItemStack> ret = recipe.getRemainingItems(inventory);
+				ForgeHooks.setCraftingPlayer(null);
+
+				for (ItemStack stack : ret) {
+					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory), stack, false);
+					if (!item.isEmpty())
+						player.inventory.placeItemBackInInventory(world, item);
+				}
+
 				// Add item
 				if (shift) {
-					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(inventory), craft, false);
+					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory), craft, false);
 					if (!item.isEmpty())
 						player.inventory.placeItemBackInInventory(world, item);
 				} else {
@@ -406,6 +428,12 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		private Inventory(TileTerminalItem tile, IInventory inv) {
 			super(inv);
 			this.tile = tile;
+		}
+
+		@Nonnull
+		@Override
+		public ItemStack extractItem(int slot, int amount, boolean simulate) {
+			return ItemStack.EMPTY;
 		}
 
 		@Nonnull
