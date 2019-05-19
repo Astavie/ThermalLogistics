@@ -155,7 +155,7 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter>,
 		if ((ingredient instanceof ItemStack && gui.crafter instanceof CrafterItem) || (ingredient instanceof FluidStack && gui.crafter instanceof CrafterFluid))
 			for (ElementSlot slot : gui.slots)
 				//noinspection unchecked
-				list.add((Target<I>) slot);
+				list.add(new ElementSlotTarget<I>(slot));
 
 		if (ingredient instanceof FluidStack && gui.tab != null && gui.tab.isFullyOpened())
 			//noinspection unchecked
@@ -207,6 +207,27 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter>,
 		@Override
 		public void accept(@Nonnull FluidStack ingredient) {
 			tab.slot.accept(ingredient);
+		}
+
+	}
+
+	private static class ElementSlotTarget<I> implements Target<I> {
+
+		private final ElementSlot<I> slot;
+
+		private ElementSlotTarget(ElementSlot<I> slot) {
+			this.slot = slot;
+		}
+
+		@Nonnull
+		@Override
+		public Rectangle getArea() {
+			return slot.getArea();
+		}
+
+		@Override
+		public void accept(@Nonnull I ingredient) {
+			slot.accept(ingredient);
 		}
 
 	}

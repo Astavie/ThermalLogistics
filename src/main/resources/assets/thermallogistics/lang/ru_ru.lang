@@ -54,6 +54,9 @@ item.logistics.distributor.signalum.name=Signalum Distributor
 item.logistics.distributor.resonant.name=Resonant Distributor
 item.logistics.distributor.info=Extracts items/fluids while prioritizing filters.
 
+info.logistics.terminal.dump.inventory=Dump to inventory
+info.logistics.terminal.dump.network=Dump to network
+
 info.logistics.import=Import
 info.logistics.fluid.get=Get Fluid
 

@@ -201,7 +201,7 @@ public class ProcessFluid extends Process<FluidStack> {
 			}
 		}
 
-		if (maxInput != c || (requester.getDuct().world().getTotalWorldTime()) - offset % requester.tickDelay() != 0)
+		if (maxInput != c || ((requester.getDuct().world().getTotalWorldTime()) - offset) % requester.tickDelay() != 0)
 			return;
 
 		// Check crafters

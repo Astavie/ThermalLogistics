@@ -1,6 +1,7 @@
 package astavie.thermallogistics.tile;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.attachment.DistributorItem;
 import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.container.ContainerTerminalItem;
@@ -146,7 +147,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			if (recipe == null)
 				return;
 
-			ItemStack craft = recipe.getRecipeOutput();
+			ItemStack craft = recipe.getRecipeOutput().copy();
 			ItemStack hand = player.inventory.getItemStack();
 			if (!shift && !hand.isEmpty() && (!ItemHelper.itemsIdentical(craft, hand) || craft.getCount() + hand.getCount() > hand.getMaxStackSize()))
 				return;
@@ -241,24 +242,11 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			if (requester.get().isEmpty())
 				return;
 
-			int type = requester.get().getMetadata();
 			ItemStack hand = player.inventory.getItemStack();
 
-			for (Requester requester : processes) {
-				DuctUnitItem duct = (DuctUnitItem) requester.getDuct();
-				if (duct == null)
-					continue;
-
-				//noinspection unchecked
-				TravelingItem item = ServoItem.findRouteForItem(hand, requester.getRoutes().iterator(), duct, requester.getSide(), ServoItem.range[type], ServoItem.speedBoost[type]);
-				if (item == null)
-					continue;
-
-				duct.insertNewItem(item);
-
+			if (dump(hand)) {
 				player.inventory.setItemStack(ItemStack.EMPTY);
 				((EntityPlayerMP) player).updateHeldItem();
-				break;
 			}
 		} else if (message == 4) {
 			for (int i = 0; i < inventory.getSizeInventory(); i++) {
@@ -269,7 +257,36 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				item.setCount(InventoryHelper.insertStackIntoInventory(new PlayerMainInvWrapper(player.inventory), item.copy(), false).getCount());
 			}
 			player.openContainer.detectAndSendChanges();
+		} else if (message == 5) {
+			if (requester.get().isEmpty())
+				return;
+
+			for (int i = 0; i < inventory.getSizeInventory(); i++) {
+				ItemStack stack = inventory.getStackInSlot(i);
+				if (!stack.isEmpty() && dump(stack))
+					inventory.setInventorySlotContents(i, ItemStack.EMPTY);
+			}
 		}
+	}
+
+	private boolean dump(ItemStack stack) {
+		int type = requester.get().getMetadata();
+
+		for (Requester requester : processes) {
+			DuctUnitItem duct = (DuctUnitItem) requester.getDuct();
+			if (duct == null)
+				continue;
+
+			//noinspection unchecked
+			TravelingItem item = DistributorItem.findRouteForItem(stack, requester.getRoutes(), duct, requester.getSide(), ServoItem.range[type], ServoItem.speedBoost[type]);
+			if (item == null)
+				continue;
+
+			duct.insertNewItem(item);
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override

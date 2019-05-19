@@ -44,7 +44,7 @@ dependencies {
 	deobfCompile "cofh:CoFHCore:${mc_version}+:universal@jar"
 	deobfCompile "codechicken:CodeChickenLib:${mc_version}+:universal@jar"
 	deobfCompile "cofh:ThermalFoundation:${mc_version}+:universal@jar"
-	compileOnly "cofh:ThermalDynamics:${mc_version}+:deobf@jar"
+	deobfCompile "cofh:ThermalDynamics:${mc_version}+:universal@jar"
 
 	// Mod Compatibility
 	deobfCompile "cofh:ThermalExpansion:${mc_version}+:universal@jar"

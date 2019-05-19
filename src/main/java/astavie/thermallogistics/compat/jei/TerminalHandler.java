@@ -1,6 +1,7 @@
 package astavie.thermallogistics.compat.jei;
 
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
+import astavie.thermallogistics.client.gui.element.ElementSlot;
 import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.util.Shared;
 import cofh.core.gui.element.tab.TabBase;
@@ -158,9 +159,9 @@ public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminal
 	private static class TabTarget implements Target<ItemStack> {
 
 		private final TabBase tab;
-		private final Target<ItemStack> target;
+		private final ElementSlot<ItemStack> target;
 
-		public TabTarget(TabBase tab, Target<ItemStack> target) {
+		public TabTarget(TabBase tab, ElementSlot<ItemStack> target) {
 			this.tab = tab;
 			this.target = target;
 		}

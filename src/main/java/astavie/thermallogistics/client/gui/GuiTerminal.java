@@ -28,14 +28,14 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	protected final ElementTextField search = new ElementTextFieldClear(this, 80, 5, 88, 10);
 	protected final ElementSlider slider = new SliderVertical(this, 174, 18, 12, 52, 0);
 
-	protected final ElementTextField amount = new ElementTextFieldAmount(this, 44, 77, 70, 10);
+	protected final ElementTextField amount = new ElementTextFieldAmount(this, 44, 77, 53, 10);
 
 	protected final List<Triple<I, Long, Boolean>> filter = NonNullList.create();
 	protected final TileTerminal<I> tile;
 
 	protected I selected;
 
-	protected final ElementButtonManaged button = new ElementButtonManaged(this, 117, 74, 50, 16, "") {
+	protected final ElementButtonManaged button = new ElementButtonManaged(this, 100, 74, 50, 16, "") {
 		@Override
 		public void onClick() {
 			request(selected, amount.getText().isEmpty() ? 1 : Integer.parseInt(amount.getText()));

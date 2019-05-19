@@ -15,6 +15,7 @@ import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.render.RenderDuct;
+import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.ResourceLocation;
@@ -60,6 +61,57 @@ public class DistributorItem extends ServoItem {
 		Translation trans = Vector3.fromTileCenter(baseTile).translation();
 		RenderDuct.modelConnection[isPowered ? 1 : 2][side].render(ccRenderState, trans, new IconTransformation(TLTextures.DISTRIBUTOR[stuffed ? 1 : 0][type]));
 		return true;
+	}
+
+	public static TravelingItem findRouteForItem(ItemStack item, ListWrapper<Route<DuctUnitItem, GridItem>> routes, DuctUnitItem duct, int side, int maxRange, byte speed) {
+		if (item.isEmpty() || item.getCount() == 0)
+			return null;
+
+		item = item.copy();
+
+		// First check filters
+		for (Route<DuctUnitItem, GridItem> outputRoute : routes) {
+			if (outputRoute.pathDirections.size() <= maxRange) {
+				DuctUnitItem.Cache c = outputRoute.endPoint.tileCache[outputRoute.getLastSide()];
+				IItemHandler i = c.getItemHandler(outputRoute.getLastSide() ^ 1);
+
+				Attachment attachment = outputRoute.endPoint.parent.getAttachment(outputRoute.getLastSide());
+				if (!(attachment instanceof ConnectionBase) || !((ConnectionBase) attachment).isFilter())
+					continue;
+
+				int amountRemaining = outputRoute.endPoint.canRouteItem(item, outputRoute.getLastSide());
+				if (amountRemaining != -1) {
+					int stackSize = item.getCount() - amountRemaining;
+					if (stackSize <= 0)
+						continue;
+
+					Route itemRoute = outputRoute.copy();
+					item.setCount(stackSize);
+					return new TravelingItem(item, duct, itemRoute, (byte) (side ^ 1), speed);
+				}
+			}
+		}
+
+		// Then check everything
+		for (Route<DuctUnitItem, GridItem> outputRoute : routes) {
+			if (outputRoute.pathDirections.size() <= maxRange) {
+				DuctUnitItem.Cache c = outputRoute.endPoint.tileCache[outputRoute.getLastSide()];
+				IItemHandler i = c.getItemHandler(outputRoute.getLastSide() ^ 1);
+
+				int amountRemaining = outputRoute.endPoint.canRouteItem(item, outputRoute.getLastSide());
+				if (amountRemaining != -1) {
+					int stackSize = item.getCount() - amountRemaining;
+					if (stackSize <= 0)
+						continue;
+
+					Route itemRoute = outputRoute.copy();
+					item.setCount(stackSize);
+					return new TravelingItem(item, duct, itemRoute, (byte) (side ^ 1), speed);
+				}
+			}
+		}
+
+		return null;
 	}
 
 	@Override

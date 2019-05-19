@@ -42,6 +42,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	public TabRequest tabRequest;
 
 	private Pair<List<ItemStack>, List<String>> cache = Pair.of(null, null);
+	private ElementButton dump2;
 
 	public GuiTerminalItem(TileTerminalItem tile, InventoryPlayer inventory) {
 		super(tile, new ContainerTerminalItem(tile, inventory), new ResourceLocation(ThermalLogistics.MOD_ID, "textures/gui/terminal.png"));
@@ -196,23 +197,40 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		}, () -> cache.getLeft() != null)).setOffsets(-18, 74);
 		addTab(tabRequest = new TabRequest(this, tile.requests.stacks, tile)).setOffsets(-18, 74);
 
-		addElement(new ElementButton(this, 153, 153, "dump", 194, 0, 194, 14, 14, 14, texture.toString()));
+		ElementButton dump = new ElementButton(this, 153, 153, "dump", 194, 0, 194, 14, 14, 14, texture.toString());
+		dump.setToolTip("info.logistics.terminal.dump.inventory");
+
+		dump2 = new ElementButton(this, 153, 75, "dump2", 208, 0, 208, 14, 14, 14, texture.toString());
+		dump2.setToolTip("info.logistics.terminal.dump.network");
+
+		addElement(dump);
+		addElement(dump2);
 	}
 
 	@Override
 	public void handleElementButtonClick(String buttonName, int mouseButton) {
-		if (mouseButton == 0 && buttonName.equals("dump")) {
-			playClickSound(1F);
+		if (mouseButton == 0) {
+			if (buttonName.equals("dump")) {
+				playClickSound(1F);
 
-			PacketTileInfo packet = PacketTileInfo.newPacket(tile);
-			packet.addByte(4);
-			PacketHandler.sendToServer(packet);
+				PacketTileInfo packet = PacketTileInfo.newPacket(tile);
+				packet.addByte(4);
+				PacketHandler.sendToServer(packet);
+			} else if (buttonName.equals("dump2")) {
+				playClickSound(1F);
+
+				PacketTileInfo packet = PacketTileInfo.newPacket(tile);
+				packet.addByte(5);
+				PacketHandler.sendToServer(packet);
+			}
 		}
 	}
 
 	@Override
 	public void updateScreen() {
 		super.updateScreen();
+
+		dump2.setVisible(requester().getHasStack());
 
 		cache = request();
 
