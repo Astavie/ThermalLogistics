@@ -132,7 +132,7 @@ public class TabLink extends TabBase {
 
 				for (int j = 0; j < num; j++)
 					if (mouseX >= x + (j + 3) * 18 - 1 && mouseX < x + (j + 3) * 18 + 17 && mouseY >= y - 1 && mouseY < y + 17)
-						list.addAll(StackHandler.getTooltip(gui, link.outputs.get(i)));
+						list.addAll(StackHandler.getTooltip(gui, link.outputs.get(j)));
 			}
 		}
 	}

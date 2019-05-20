@@ -9,7 +9,7 @@ public class ItemPrint {
 	public final ItemStack compare;
 
 	public ItemPrint(ItemStack compare) {
-		this.compare = compare;
+		this.compare = compare.getCount() > 1 ? ItemHelper.cloneStack(compare, 1) : compare;
 	}
 
 	@Override

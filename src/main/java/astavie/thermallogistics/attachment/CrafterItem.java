@@ -802,17 +802,13 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 	@Override
 	public void link(ICrafter<?> crafter, boolean recursion) {
 		if (!linked.contains(crafter.getReference())) {
-			for (Iterator<RequesterReference<?>> iterator = linked.iterator(); iterator.hasNext(); ) {
-				IRequester<?> requester = iterator.next().getAttachment();
-				if (!(requester instanceof ICrafter)) {
-					iterator.remove();
-				} else {
-					ICrafter<?> other = (ICrafter<?>) requester;
-					if (!other.hasLinked(this))
-						iterator.remove();
-					else if (recursion)
-						other.link(crafter, false);
-				}
+			if (recursion) {
+				for (RequesterReference<?> reference : linked)
+					if ((reference.getAttachment() instanceof ICrafter))
+						((ICrafter<?>) reference.getAttachment()).link(crafter, false);
+				for (RequesterReference<?> reference : crafter.getLinked())
+					if ((reference.getAttachment() instanceof ICrafter))
+						((ICrafter<?>) reference.getAttachment()).link(this, false);
 			}
 
 			linked.add(crafter.getReference());
