@@ -157,6 +157,11 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 	}
 
 	@Override
+	public boolean hasRequests() {
+		return recipes.stream().anyMatch(recipe -> !recipe.requests.isEmpty()) || linked.stream().anyMatch(reference -> ((ICrafter<?>) reference.getAttachment()).getRecipes().stream().anyMatch(recipe -> !recipe.requests.isEmpty()));
+	}
+
+	@Override
 	public void tick(int pass) {
 		if (pass == 0 && fluidDuct.tileCache[side] != null && !(fluidDuct.tileCache[side] instanceof CrafterFluid.CacheWrapper))
 			fluidDuct.tileCache[side] = new CrafterFluid.CacheWrapper(fluidDuct.tileCache[side].tile, this);

@@ -86,6 +86,9 @@ public class ProcessFluid extends Process<FluidStack> {
 
 	@Override
 	public void tick() {
+		if (!requester.hasRequests())
+			return;
+
 		// Check requests
 		checkRequests(requester, requests, IRequester::getOutputTo);
 

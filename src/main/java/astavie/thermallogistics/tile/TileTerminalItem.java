@@ -435,6 +435,11 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	}
 
 	@Override
+	protected boolean hasRequests() {
+		return !requests.stacks.isEmpty();
+	}
+
+	@Override
 	public Class<ItemStack> getItemClass() {
 		return ItemStack.class;
 	}

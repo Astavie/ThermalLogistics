@@ -841,6 +841,11 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		return isPowered;
 	}
 
+	@Override
+	public boolean hasRequests() {
+		return recipes.stream().anyMatch(recipe -> !recipe.requests.isEmpty()) || linked.stream().anyMatch(reference -> ((ICrafter<?>) reference.getAttachment()).getRecipes().stream().anyMatch(recipe -> !recipe.requests.isEmpty()));
+	}
+
 	private boolean itemsIdentical(ItemStack a, ItemStack b) {
 		if (!filter.getFlag(4) && a.getItem().getRegistryName().getNamespace().equals(b.getItem().getRegistryName().getNamespace()))
 			return true; // Same mod

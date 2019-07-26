@@ -145,6 +145,11 @@ public class RequesterItem extends RetrieverItem implements IRequester<ItemStack
 	}
 
 	@Override
+	public boolean hasRequests() {
+		return true;
+	}
+
+	@Override
 	public int amountRequired(ItemStack stack) {
 		if (!filter.matchesFilter(stack))
 			return 0;

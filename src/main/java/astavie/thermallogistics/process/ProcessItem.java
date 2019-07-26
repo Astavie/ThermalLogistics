@@ -93,15 +93,15 @@ public class ProcessItem extends Process<ItemStack> {
 			if (item.isEmpty())
 				continue;
 
-			item = ItemHelper.cloneStack(item, requester.hasMultiStack() ? Integer.MAX_VALUE : item.getCount());
-			if (item.isEmpty())
-				continue;
-
 			if (cache != null && !cache.filter.matchesFilter(item))
 				continue;
 
 			int amount = Math.min(amountRequired.apply(item), requester.getMaxSend());
 			if (amount == 0)
+				continue;
+
+			item = ItemHelper.cloneStack(item, requester.hasMultiStack() ? Integer.MAX_VALUE : item.getCount());
+			if (item.isEmpty())
 				continue;
 
 			item = checkItem(requester, handler, item, amount);
@@ -166,7 +166,7 @@ public class ProcessItem extends Process<ItemStack> {
 
 	@Override
 	public void tick() {
-		if ((requester.getDuct().world().getTotalWorldTime() - offset) % requester.tickDelay() != 0)
+		if (!requester.hasRequests() || (requester.getDuct().world().getTotalWorldTime() - offset) % requester.tickDelay() != 0)
 			return;
 
 		// Check requests

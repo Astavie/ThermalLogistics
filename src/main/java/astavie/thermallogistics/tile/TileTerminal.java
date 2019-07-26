@@ -214,6 +214,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 	protected abstract void updateTerminal();
 
+	protected abstract boolean hasRequests();
+
 	public abstract Class<I> getItemClass();
 
 	@Override
@@ -247,6 +249,11 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		@Override
 		public boolean isEnabled() {
 			return true;
+		}
+
+		@Override
+		public boolean hasRequests() {
+			return terminal.hasRequests();
 		}
 
 		@Override

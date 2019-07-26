@@ -20,6 +20,8 @@ public interface IRequester<I> {
 
 	boolean isEnabled();
 
+	boolean hasRequests();
+
 	int amountRequired(I stack);
 
 	DuctUnit getDuct();

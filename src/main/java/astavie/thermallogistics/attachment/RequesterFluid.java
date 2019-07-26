@@ -151,6 +151,11 @@ public class RequesterFluid extends RetrieverFluid implements IRequester<FluidSt
 	}
 
 	@Override
+	public boolean hasRequests() {
+		return true;
+	}
+
+	@Override
 	public int amountRequired(FluidStack stack) {
 		DuctUnitFluid.Cache cache = fluidDuct.tileCache[side];
 		if (cache == null)
