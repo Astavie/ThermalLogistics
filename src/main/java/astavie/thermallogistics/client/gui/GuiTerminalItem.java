@@ -175,7 +175,10 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
 			for (int i = 0; i < 9; i++)
 				inventory.setInventorySlotContents(i, tile.shared[i].get());
+
 			IRecipe recipe = CraftingManager.findMatchingRecipe(inventory, Minecraft.getMinecraft().world);
+			if (recipe == null) // Shouldn't happen but apparently it does :|
+				return;
 
 			PacketTileInfo packet = PacketTileInfo.newPacket(tile);
 			packet.addByte(2);
