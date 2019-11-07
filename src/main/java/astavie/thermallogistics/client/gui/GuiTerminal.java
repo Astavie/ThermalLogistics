@@ -2,8 +2,10 @@ package astavie.thermallogistics.client.gui;
 
 import astavie.thermallogistics.client.gui.element.ElementTextFieldAmount;
 import astavie.thermallogistics.client.gui.element.ElementTextFieldClear;
+import astavie.thermallogistics.client.gui.tab.TabRequest;
 import astavie.thermallogistics.tile.TileTerminal;
 import astavie.thermallogistics.util.StackHandler;
+import astavie.thermallogistics.util.type.Type;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementButtonManaged;
 import cofh.core.gui.element.ElementSlider;
@@ -30,15 +32,17 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 	protected final ElementTextField amount = new ElementTextFieldAmount(this, 44, 77, 53, 10);
 
-	protected final List<Triple<I, Long, Boolean>> filter = NonNullList.create();
+	protected final List<Triple<Type<I>, Long, Boolean>> filter = NonNullList.create();
 	protected final TileTerminal<I> tile;
 
-	protected I selected;
+	protected TabRequest tabRequest;
+
+	protected Type<I> selected;
 
 	protected final ElementButtonManaged button = new ElementButtonManaged(this, 100, 74, 50, 16, "") {
 		@Override
 		public void onClick() {
-			request(selected, amount.getText().isEmpty() ? 1 : Integer.parseInt(amount.getText()));
+			request(selected.getAsStack(), amount.getText().isEmpty() ? 1 : Integer.parseInt(amount.getText()));
 		}
 	};
 
@@ -98,9 +102,9 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 			count = Long.parseLong(amount.getText());
 
 		if (amount.isEnabled()) {
-			for (Triple<I, Long, Boolean> stack : tile.terminal) {
-				if (isSelected(stack.getLeft())) {
-					button.setEnabled(count <= Integer.MAX_VALUE && (stack.getRight() || stack.getMiddle() >= count));
+			for (Type<I> item : tile.terminal.types()) {
+				if (isSelected(item)) {
+					button.setEnabled(count <= Integer.MAX_VALUE && (tile.terminal.craftable(item) || tile.terminal.amount(item) >= count));
 					break;
 				}
 			}
@@ -109,6 +113,8 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 		if (tile.refresh || !search.getText().equals(cache)) {
 			tile.refresh = false;
 			cache = search.getText();
+
+			tabRequest.setList(tile.requests.stacks());
 
 			updateFilter();
 
@@ -122,7 +128,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 		super.addTooltips(tooltip);
 
 		if (selected != null && button.isVisible() && mouseX >= 25 && mouseX < 43 && mouseY >= 73 && mouseY < 91)
-			tooltip.addAll(StackHandler.getTooltip(this, selected));
+			tooltip.addAll(StackHandler.getTooltip(this, selected.getAsStack()));
 
 		int i = slider.getValue() * 9;
 
@@ -136,7 +142,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 				int posY = 18 + y * 18;
 
 				if (mouseX >= posX - 1 && mouseX < posX + 17 && mouseY >= posY - 1 && mouseY < posY + 17)
-					tooltip.addAll(StackHandler.getTooltip(this, filter.get(slot).getLeft()));
+					tooltip.addAll(StackHandler.getTooltip(this, filter.get(slot).getLeft().getAsStack()));
 			}
 		}
 	}
@@ -147,7 +153,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 		RenderHelper.enableGUIStandardItemLighting();
 		if (selected != null && button.isVisible())
-			StackHandler.render(this, 26, 74, selected, false);
+			StackHandler.render(this, 26, 74, selected.getAsStack(), false);
 
 		int i = slider.getValue() * 9;
 
@@ -160,7 +166,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 				int posX = 8 + x * 18;
 				int posY = 18 + y * 18;
 
-				Triple<I, Long, Boolean> triple = filter.get(slot);
+				Triple<Type<I>, Long, Boolean> triple = filter.get(slot);
 
 				if (isSelected(triple.getLeft())) {
 					GlStateManager.disableLighting();
@@ -171,7 +177,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 				}
 
 				GlStateManager.enableDepth();
-				StackHandler.render(this, posX, posY, triple.getLeft(), triple.getMiddle() == 0L ? "Craft" : StringHelper.getScaledNumber(triple.getMiddle()));
+				StackHandler.render(this, posX, posY, triple.getLeft().getAsStack(), triple.getMiddle() == 0L ? "Craft" : StringHelper.getScaledNumber(triple.getMiddle()));
 			}
 		}
 	}
@@ -206,11 +212,11 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 		else super.keyTyped(characterTyped, keyPressed);
 	}
 
-	protected abstract boolean isSelected(I stack);
+	protected abstract boolean isSelected(Type<I> stack);
 
 	protected abstract void updateFilter();
 
-	protected abstract void updateAmount(Triple<I, Long, Boolean> stack);
+	protected abstract void updateAmount(Triple<Type<I>, Long, Boolean> stack);
 
 	@Override
 	protected boolean onMouseWheel(int mouseX, int mouseY, int wheelMovement) {

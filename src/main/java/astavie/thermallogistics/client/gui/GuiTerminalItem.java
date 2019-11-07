@@ -4,9 +4,10 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.gui.tab.TabCrafting;
 import astavie.thermallogistics.client.gui.tab.TabRequest;
 import astavie.thermallogistics.container.ContainerTerminalItem;
-import astavie.thermallogistics.process.RequestItem;
 import astavie.thermallogistics.tile.TileTerminalItem;
 import astavie.thermallogistics.util.Shared;
+import astavie.thermallogistics.util.collection.ItemList;
+import astavie.thermallogistics.util.type.Type;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.gui.element.ElementButton;
 import cofh.core.inventory.InventoryCraftingFalse;
@@ -39,7 +40,6 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	public final TileTerminalItem tile;
 
 	public TabCrafting tabCrafting;
-	public TabRequest tabRequest;
 
 	private Pair<List<ItemStack>, List<String>> cache = Pair.of(null, null);
 	private ElementButton dump2;
@@ -54,7 +54,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 	public Object getStackAt(int mouseX, int mouseY) {
 		if (selected != null && button.isVisible() && mouseX >= 25 && mouseX < 43 && mouseY >= 73 && mouseY < 91)
-			return selected;
+			return selected.getAsStack();
 
 		int i = slider.getValue() * 9;
 
@@ -94,14 +94,14 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		if (Arrays.stream(tile.shared).allMatch(shared -> shared.test(ItemStack.EMPTY)))
 			return Pair.of(null, null);
 
-		List<Triple<ItemStack, Long, Boolean>> copy = new LinkedList<>();
+		ItemList copy = new ItemList();
 
 		for (ItemStack stack : tile.inventory.items)
 			if (!stack.isEmpty())
-				copy.add(Triple.of(ItemHelper.cloneStack(stack, 1), (long) stack.getCount(), false));
+				copy.add(stack);
 		for (ItemStack stack : Minecraft.getMinecraft().player.inventory.mainInventory)
 			if (!stack.isEmpty())
-				copy.add(Triple.of(ItemHelper.cloneStack(stack, 1), (long) stack.getCount(), false));
+				copy.add(stack);
 
 		copy.addAll(tile.terminal);
 
@@ -109,8 +109,8 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		if (!tabCrafting.amount.getText().isEmpty())
 			count = Integer.parseInt(tabCrafting.amount.getText());
 
-		RequestItem request = new RequestItem(null);
-		RequestItem missing = new RequestItem(null);
+		ItemList request = new ItemList();
+		ItemList missing = new ItemList();
 
 		a:
 		for (Shared.Item item : tile.shared) {
@@ -119,47 +119,51 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 			int amount = count;
 
-			for (int i = 0; i < copy.size(); i++) {
-				Triple<ItemStack, Long, Boolean> triple = copy.get(i);
-				if (!triple.getRight() && triple.getMiddle() == 0L)
+			for (Type<ItemStack> type : copy.types()) {
+				boolean craftable = copy.craftable(type);
+				long size = copy.amount(type);
+
+				if (!craftable && size == 0L)
 					continue;
 
-				if (!item.test(triple.getLeft()))
+				if (!item.test(type))
 					continue;
 
-				if (triple.getRight()) {
-					request.addStack(ItemHelper.cloneStack(triple.getLeft(), count));
+				if (craftable) {
+					request.add(type.withAmount(count));
 					continue a;
 				} else {
-					int shrink = (int) Math.min(triple.getMiddle(), amount);
-					request.addStack(ItemHelper.cloneStack(triple.getLeft(), shrink));
+					int shrink = (int) Math.min(size, amount);
 
-					copy.set(i, Triple.of(triple.getLeft(), triple.getMiddle() - shrink, triple.getRight()));
+					ItemStack stack = type.withAmount(shrink);
+					request.add(stack);
+					copy.remove(stack);
+
 					amount -= shrink;
 					if (amount == 0)
 						continue a;
 				}
 			}
 
-			missing.addStack(ItemHelper.cloneStack(item.getDisplayStack(), amount));
+			missing.add(ItemHelper.cloneStack(item.getDisplayStack(), amount));
 		}
 
-		if (missing.stacks.isEmpty()) {
+		if (missing.isEmpty()) {
 			for (ItemStack stack : tile.inventory.items)
-				request.decreaseStack(stack);
+				request.remove(stack);
 			for (ItemStack stack : Minecraft.getMinecraft().player.inventory.mainInventory)
-				request.decreaseStack(stack);
+				request.remove(stack);
 
-			if (request.stacks.isEmpty())
+			if (request.isEmpty())
 				return Pair.of(null, Collections.singletonList(StringHelper.localize("gui.logistics.terminal.enough")));
 
-			return Pair.of(request.stacks, null);
+			return Pair.of(request.stacks(), null);
 		} else {
 			List<String> tooltip = new LinkedList<>();
 
 			tooltip.add(StringHelper.localize("gui.logistics.terminal.missing"));
-			for (ItemStack stack : missing.stacks)
-				tooltip.add(StringHelper.localizeFormat("info.logistics.manager.e.1", stack.getCount(), stack.getDisplayName()));
+			for (Type<ItemStack> type : missing.types())
+				tooltip.add(StringHelper.localizeFormat("info.logistics.manager.e.1", missing.amount(type), type.getDisplayName()));
 
 			return Pair.of(null, tooltip);
 		}
@@ -198,7 +202,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 				for (ItemStack stack : cache.getLeft())
 					request(ItemHelper.cloneStack(stack, 1), stack.getCount());
 		}, () -> cache.getLeft() != null)).setOffsets(-18, 74);
-		addTab(tabRequest = new TabRequest(this, tile.requests.stacks, tile)).setOffsets(-18, 74);
+		addTab(tabRequest = new TabRequest(this, tile.requests.stacks(), tile)).setOffsets(-18, 74);
 
 		ElementButton dump = new ElementButton(this, 153, 153, "dump", 194, 0, 194, 14, 14, 14, texture.toString());
 		dump.setToolTip("info.logistics.terminal.dump.inventory");
@@ -293,19 +297,19 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	}
 
 	@Override
-	protected boolean isSelected(ItemStack stack) {
-		return ItemHelper.itemsIdentical(selected, stack);
+	protected boolean isSelected(Type<ItemStack> type) {
+		return type.equals(selected);
 	}
 
 	@Override
 	protected void updateFilter() {
 		filter.clear();
-		for (Triple<ItemStack, Long, Boolean> stack : tile.terminal) {
-			if (search.getText().isEmpty() || stack.getLeft().getDisplayName().toLowerCase().contains(search.getText().toLowerCase())) {
-				filter.add(stack);
-			} else for (String string : getItemToolTip(stack.getLeft())) {
+		for (Type<ItemStack> type : tile.terminal.types()) {
+			if (search.getText().isEmpty() || type.getDisplayName().toLowerCase().contains(search.getText().toLowerCase())) {
+				filter.add(Triple.of(type, tile.terminal.amount(type), tile.terminal.craftable(type)));
+			} else for (String string : getItemToolTip(type.getAsStack())) {
 				if (string.toLowerCase().contains(search.getText().toLowerCase())) {
-					filter.add(stack);
+					filter.add(Triple.of(type, tile.terminal.amount(type), tile.terminal.craftable(type)));
 					break;
 				}
 			}
@@ -318,33 +322,33 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 				return count;
 
 			// Then compare item id
-			int id = Integer.compare(Item.getIdFromItem(i1.getLeft().getItem()), Item.getIdFromItem(i2.getLeft().getItem()));
+			int id = Integer.compare(Item.getIdFromItem(i1.getLeft().getAsStack().getItem()), Item.getIdFromItem(i2.getLeft().getAsStack().getItem()));
 			if (id != 0)
 				return id;
 
 			// Then compare item damage
-			int damage = Integer.compare(i1.getLeft().getItemDamage(), i2.getLeft().getItemDamage());
+			int damage = Integer.compare(i1.getLeft().getAsStack().getItemDamage(), i2.getLeft().getAsStack().getItemDamage());
 			if (damage != 0)
 				return damage;
 
 			// Then compare sub items
-			CreativeTabs tab = i1.getLeft().getItem().getCreativeTab();
+			CreativeTabs tab = i1.getLeft().getAsStack().getItem().getCreativeTab();
 			if (tab == null)
 				tab = CreativeTabs.SEARCH;
 
 			NonNullList<ItemStack> list = NonNullList.create();
-			i1.getLeft().getItem().getSubItems(tab, list);
+			i1.getLeft().getAsStack().getItem().getSubItems(tab, list);
 			for (ItemStack stack : list) {
-				if (ItemHelper.itemsIdentical(i1.getLeft(), stack))
+				if (ItemHelper.itemsIdentical(i1.getLeft().getAsStack(), stack))
 					return -1;
-				if (ItemHelper.itemsIdentical(i2.getLeft(), stack))
+				if (ItemHelper.itemsIdentical(i2.getLeft().getAsStack(), stack))
 					return 1;
 			}
 
 			// Then compare nbt data
-			if (i1.getLeft().getTagCompound() == null && i2.getLeft().getTagCompound() != null)
+			if (i1.getLeft().getAsStack().getTagCompound() == null && i2.getLeft().getAsStack().getTagCompound() != null)
 				return -1;
-			if (i1.getLeft().getTagCompound() != null && i2.getLeft().getTagCompound() == null)
+			if (i1.getLeft().getAsStack().getTagCompound() != null && i2.getLeft().getAsStack().getTagCompound() == null)
 				return 1;
 
 			// Then we give up
@@ -353,8 +357,8 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	}
 
 	@Override
-	protected void updateAmount(Triple<ItemStack, Long, Boolean> stack) {
-		amount.setText(Long.toString(stack.getRight() ? selected.getMaxStackSize() : Math.min(stack.getMiddle(), selected.getMaxStackSize())));
+	protected void updateAmount(Triple<Type<ItemStack>, Long, Boolean> stack) {
+		amount.setText(Long.toString(stack.getRight() ? selected.getAsStack().getMaxStackSize() : Math.min(stack.getMiddle(), selected.getAsStack().getMaxStackSize())));
 	}
 
 }

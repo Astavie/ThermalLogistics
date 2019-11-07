@@ -1,18 +1,14 @@
 package astavie.thermallogistics.util;
 
 import astavie.thermallogistics.attachment.ICrafter;
-import astavie.thermallogistics.attachment.IRequester;
-import astavie.thermallogistics.client.gui.GuiCrafter;
-import astavie.thermallogistics.client.gui.element.ElementSlotFluid;
-import astavie.thermallogistics.client.gui.element.ElementSlotItem;
+import astavie.thermallogistics.util.collection.ItemList;
+import astavie.thermallogistics.util.type.ItemType;
 import cofh.core.gui.GuiContainerCore;
-import cofh.core.gui.element.ElementBase;
 import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.ItemHelper;
 import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
-import cofh.thermaldynamics.duct.Attachment;
-import cofh.thermaldynamics.duct.item.DuctUnitItem;
+import cofh.thermaldynamics.duct.item.GridItem;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
@@ -21,10 +17,10 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.IItemHandler;
-import org.apache.commons.lang3.tuple.MutablePair;
 
-import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 public class StackHandler {
 
@@ -136,102 +132,25 @@ public class StackHandler {
 		else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
 	}
 
-	@SuppressWarnings("unchecked")
-	@SideOnly(Side.CLIENT)
-	public static ElementBase getSlot(GuiContainerCore gui, int x, int y, GuiCrafter.Slot<?> slot) {
-		Class<?> c = slot.getCrafter().getItemClass();
-		if (c == ItemStack.class)
-			return new ElementSlotItem(gui, x, y, (GuiCrafter.Slot<ItemStack>) slot, (GuiCrafter.Slot<ItemStack>) slot, true);
-		else if (c == FluidStack.class)
-			return new ElementSlotFluid(gui, x, y, (GuiCrafter.Slot<FluidStack>) slot, (GuiCrafter.Slot<FluidStack>) slot, true);
-		else throw new IllegalArgumentException("Unknown item type " + c.getName());
-	}
+	public static void addItems(ItemList list, GridItem grid, Collection<IItemHandler> blacklist) {
+		for (IItemHandler inv : Snapshot.INSTANCE.getInventories(grid)) {
+			if (blacklist.contains(inv))
+				continue;
+			blacklist.add(inv);
 
-	public static Map<ItemPrint, MutablePair<Long, Boolean>> getItems(IRequester<ItemStack> requester, @Nullable Set<IItemHandler> handlers) {
-		Map<ItemPrint, MutablePair<Long, Boolean>> items = new HashMap<>();
-
-		DuctUnitItem duct = (DuctUnitItem) requester.getDuct();
-		if (duct == null)
-			return items;
-
-		if (handlers == null)
-			handlers = new HashSet<>();
-
-		IItemHandler handler = requester.getCachedInv();
-		if (handler != null)
-			handlers.add(handler);
-
-		for (DuctUnitItem start : duct.getGrid().nodeSet) {
-			for (byte side = 0; side < 6; side++) {
-				if ((!start.isInput(side) && !start.isOutput(side)) || !start.parent.getConnectionType(side).allowTransfer)
+			for (int slot = 0; slot < inv.getSlots(); slot++) {
+				ItemStack extract = inv.getStackInSlot(slot);
+				if (extract.isEmpty())
 					continue;
-
-				DuctUnitItem.Cache cache = start.tileCache[side];
-				if (cache == null)
-					continue;
-
-				IItemHandler inv = cache.getItemHandler(side ^ 1);
-				if (inv == null || handlers.contains(inv))
-					continue;
-
-				Attachment attachment = start.parent.getAttachment(side);
-				if (attachment != null) {
-					if (attachment instanceof ICrafter && ((ICrafter) attachment).isEnabled()) {
-						//noinspection unchecked
-						for (ItemStack out : ((ICrafter<ItemStack>) attachment).getOutputs()) {
-							if (out.isEmpty())
-								continue;
-
-							ItemPrint print = new ItemPrint(out);
-							MutablePair<Long, Boolean> pair = items.get(print);
-							if (pair != null) {
-								pair.right = true;
-							} else {
-								items.put(print, MutablePair.of(0L, true));
-							}
-						}
-					}
-					if (!attachment.canSend())
-						continue;
-				}
-
-				if (cache.tile != null) {
-					if (cache.tile instanceof ICrafter && ((ICrafter) cache.tile).isEnabled()) {
-						//noinspection unchecked
-						for (ItemStack out : ((ICrafter<ItemStack>) cache.tile).getOutputs()) {
-							if (out.isEmpty())
-								continue;
-
-							ItemPrint print = new ItemPrint(out);
-							MutablePair<Long, Boolean> pair = items.get(print);
-							if (pair != null) {
-								pair.right = true;
-							} else {
-								items.put(print, MutablePair.of(0L, true));
-							}
-						}
-					}
-				}
-
-				for (int slot = 0; slot < inv.getSlots(); slot++) {
-					ItemStack extract = inv.getStackInSlot(slot);
-					if (extract.isEmpty())
-						continue;
-
-					ItemPrint print = new ItemPrint(extract);
-					MutablePair<Long, Boolean> pair = items.get(print);
-					if (pair != null) {
-						pair.left += extract.getCount();
-					} else {
-						items.put(print, MutablePair.of((long) extract.getCount(), false));
-					}
-				}
-
-				handlers.add(inv);
+				list.add(extract);
 			}
 		}
 
-		return items;
+		for (ICrafter<ItemStack> crafter : Snapshot.INSTANCE.getCrafters(grid)) {
+			for (ItemStack output : crafter.getOutputs()) {
+				list.addCraftable(new ItemType(output));
+			}
+		}
 	}
 
 }

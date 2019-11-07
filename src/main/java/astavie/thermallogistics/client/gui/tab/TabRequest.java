@@ -19,8 +19,9 @@ public class TabRequest extends TabBase {
 
 	private static final int HEIGHT = 18;
 
-	private final List<?> list;
 	private final TileEntity tile;
+
+	private List<?> list;
 
 	private int num;
 	private int max;
@@ -43,6 +44,10 @@ public class TabRequest extends TabBase {
 
 		this.num = Math.min((maxHeight - 24) / HEIGHT, list.size());
 		this.max = list.size() - num;
+	}
+
+	public void setList(List<?> list) {
+		this.list = list;
 	}
 
 	@Override

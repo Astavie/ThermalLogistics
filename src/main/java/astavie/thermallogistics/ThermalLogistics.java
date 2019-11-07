@@ -1,9 +1,8 @@
 package astavie.thermallogistics;
 
-import astavie.thermallogistics.attachment.*;
+import astavie.thermallogistics.attachment.DistributorFluid;
+import astavie.thermallogistics.attachment.DistributorItem;
 import astavie.thermallogistics.block.BlockTerminalItem;
-import astavie.thermallogistics.compat.CompatTE;
-import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.item.ItemDistributor;
 import astavie.thermallogistics.item.ItemManager;
@@ -32,8 +31,6 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 @Mod(modid = ThermalLogistics.MOD_ID, name = ThermalLogistics.MOD_NAME, dependencies = "required-after:thermaldynamics;")
@@ -46,8 +43,6 @@ public class ThermalLogistics {
 	@Mod.Instance(MOD_ID)
 	public static ThermalLogistics INSTANCE;
 
-	private final Map<Class<?>, ICrafterWrapper<?>> registry = new HashMap<>();
-
 	public CreativeTabs tab = new CreativeTabCore(MOD_ID) {
 		@Override
 		public ItemStack createIcon() {
@@ -58,30 +53,10 @@ public class ThermalLogistics {
 	public Configuration config;
 	public int refreshDelay;
 
-	public <T extends TileEntity> boolean registerWrapper(Class<T> c, ICrafterWrapper<T> w) {
-		if (registry.containsKey(c))
-			return false;
-		registry.put(c, w);
-		return true;
-	}
-
-	public ICrafterWrapper<?> getWrapper(Class<?> c) {
-		return registry.get(c);
-	}
-
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
-		AttachmentRegistry.registerAttachment(RequesterItem.ID, RequesterItem::new);
-		AttachmentRegistry.registerAttachment(RequesterFluid.ID, RequesterFluid::new);
-
-		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
-		AttachmentRegistry.registerAttachment(CrafterFluid.ID, CrafterFluid::new);
-
 		AttachmentRegistry.registerAttachment(DistributorItem.ID, DistributorItem::new);
 		AttachmentRegistry.registerAttachment(DistributorFluid.ID, DistributorFluid::new);
-
-		if (Loader.isModLoaded("thermalexpansion"))
-			registerWrapper(CompatTE.TILE, new CompatTE());
 
 		config = new Configuration(event.getSuggestedConfigurationFile());
 		refreshDelay = config.getInt("Refresh Delay", Configuration.CATEGORY_GENERAL, 10, 1, 100, "The amount of ticks delay between sync packets from the server when looking at a GUI.");

@@ -5,13 +5,9 @@ import astavie.thermallogistics.attachment.DistributorItem;
 import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.container.ContainerTerminalItem;
-import astavie.thermallogistics.process.Process;
-import astavie.thermallogistics.process.ProcessItem;
-import astavie.thermallogistics.process.Request;
-import astavie.thermallogistics.process.RequestItem;
-import astavie.thermallogistics.util.ItemPrint;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;
+import astavie.thermallogistics.util.collection.ItemList;
 import codechicken.lib.inventory.InventorySimple;
 import cofh.core.inventory.InventoryCraftingFalse;
 import cofh.core.network.PacketBase;
@@ -21,9 +17,11 @@ import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
-import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
+import cofh.thermaldynamics.duct.tiles.TileGrid;
+import cofh.thermaldynamics.multiblock.Route;
+import cofh.thermaldynamics.util.ListWrapper;
 import com.google.common.collect.Lists;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -36,6 +34,7 @@ import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
@@ -47,92 +46,40 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
 import net.minecraftforge.items.wrapper.PlayerMainInvWrapper;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+import java.util.stream.Stream;
 
 public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 	public final Shared.Item[] shared = new Shared.Item[9];
 
 	public final InventorySimple inventory = new InventorySimple(27);
-	public final RequestItem requests = new RequestItem(null);
+
+	public TileTerminalItem() {
+		super(new ItemList(), new ItemList());
+	}
 
 	@Override
 	protected void sync(PacketBase packet) {
-		packet.addInt(requests.stacks.size());
-		for (ItemStack stack : requests.stacks) {
-			packet.addItemStack(ItemHelper.cloneStack(stack, 1));
-			packet.addInt(stack.getCount());
-		}
+		terminal.writePacket(packet);
+		requests.writePacket(packet);
 	}
 
 	@Override
 	protected void read(PacketBase packet) {
-		requests.stacks.clear();
-		int size = packet.getInt();
-		for (int i = 0; i < size; i++)
-			requests.stacks.add(ItemHelper.cloneStack(packet.getItemStack(), packet.getInt()));
+		terminal.readPacket(packet);
+		requests.readPacket(packet);
 	}
 
 	@Override
 	protected void read(PacketBase packet, byte message, EntityPlayer player) {
-		if (message == 1) {
-			int index = packet.getInt();
-			if (index < requests.stacks.size()) {
-				ItemStack remove = requests.stacks.remove(index);
-				markChunkDirty();
-
-				PacketHandler.sendToAllAround(getSyncPacket(), this);
-
-				int shrink = 0;
-
-				a:
-				for (Requester requester : processes) {
-					for (Object object : requester.process.getStacks()) {
-						ItemStack stack = (ItemStack) object;
-						if (ItemHelper.itemsIdentical(stack, remove)) {
-							shrink += stack.getCount();
-							continue a;
-						}
-					}
-				}
-
-				shrink -= requests.getCount(remove);
-				if (shrink <= 0)
-					return;
-
-				for (Requester requester : processes) {
-					for (Iterator iterator = requester.process.requests.iterator(); iterator.hasNext(); ) {
-						//noinspection unchecked
-						Request<ItemStack> request = (Request<ItemStack>) iterator.next();
-
-						for (Iterator<ItemStack> iterator1 = request.stacks.iterator(); iterator1.hasNext(); ) {
-							ItemStack stack = iterator1.next();
-							if (!ItemHelper.itemsIdentical(remove, stack))
-								continue;
-
-							int count = Math.min(stack.getCount(), shrink);
-							stack.shrink(count);
-							shrink -= count;
-
-							if (stack.isEmpty())
-								iterator1.remove();
-
-							break;
-						}
-
-						if (request.stacks.isEmpty())
-							iterator.remove();
-						if (shrink == 0)
-							return;
-					}
-				}
-			}
-		} else if (message == 2) {
+		if (message == 2) {
+			// CRAFT
 			boolean shift = packet.getBool();
 
 			Ingredient[] ingredients = new Ingredient[9];
@@ -156,28 +103,21 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			//noinspection LoopConditionNotUpdatedInsideLoop
 			do {
 				// Get available items
-				RequestItem items = new RequestItem(null);
+				ItemList items = new ItemList();
 				for (int slot = 0; slot < inventory.getSizeInventory(); slot++)
 					if (!inventory.getStackInSlot(slot).isEmpty())
-						items.addStack(inventory.getStackInSlot(slot));
+						items.add(inventory.getStackInSlot(slot));
 				for (ItemStack stack : player.inventory.mainInventory)
 					if (!stack.isEmpty())
-						items.addStack(stack);
+						items.add(stack);
 
 				// Check if those items are enough
-				a:
 				for (Ingredient ingredient : ingredients) {
 					if (ingredient == Ingredient.EMPTY)
 						continue;
-					for (Iterator<ItemStack> iterator = items.stacks.iterator(); iterator.hasNext(); ) {
-						ItemStack stack = iterator.next();
-						if (ingredient.apply(stack)) {
-							stack.shrink(1);
-							if (stack.isEmpty())
-								iterator.remove();
-							continue a;
-						}
-					}
+					if (items.remove(ingredient))
+						continue;
+
 					break b;
 				}
 
@@ -239,6 +179,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 			player.openContainer.detectAndSendChanges();
 		} else if (message == 3) {
+			// MANUAL DUMP
 			if (requester.get().isEmpty())
 				return;
 
@@ -249,6 +190,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				((EntityPlayerMP) player).updateHeldItem();
 			}
 		} else if (message == 4) {
+			// DUMP ALL TO INVENTORY
 			for (int i = 0; i < inventory.getSizeInventory(); i++) {
 				ItemStack item = inventory.getStackInSlot(i);
 				if (item.isEmpty())
@@ -258,6 +200,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			}
 			player.openContainer.detectAndSendChanges();
 		} else if (message == 5) {
+			// DUMP ALL TO NETWORK
 			if (requester.get().isEmpty())
 				return;
 
@@ -269,16 +212,43 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		}
 	}
 
+	private DuctUnitItem getDuct(byte side) {
+		TileEntity tile = world.getTileEntity(pos.offset(EnumFacing.byIndex(side)));
+		if (tile instanceof TileGrid) {
+			DuctUnitItem duct = ((TileGrid) tile).getDuct(DuctToken.ITEMS);
+			if (duct != null && duct.isOutput(side ^ 1))
+				return duct;
+		}
+
+		return null;
+	}
+
+	private ListWrapper<Route<DuctUnitItem, GridItem>> getRoutes(DuctUnitItem duct) {
+		ListWrapper<Route<DuctUnitItem, GridItem>> routesWithInsertSideList = new ListWrapper<>();
+
+		if (duct.getGrid() == null) {
+			routesWithInsertSideList.setList(new LinkedList<>(), ListWrapper.SortType.NORMAL);
+			return routesWithInsertSideList;
+		}
+
+		Stream<Route<DuctUnitItem, GridItem>> routesWithDestinations = ServoItem.getRoutesWithDestinations(duct.getCache().outputRoutes);
+		LinkedList<Route<DuctUnitItem, GridItem>> objects = Lists.newLinkedList();
+		routesWithDestinations.forEach(objects::add);
+
+		routesWithInsertSideList.setList(objects, ListWrapper.SortType.NORMAL);
+
+		return routesWithInsertSideList;
+	}
+
 	private boolean dump(ItemStack stack) {
 		int type = requester.get().getMetadata();
 
-		for (Requester requester : processes) {
-			DuctUnitItem duct = (DuctUnitItem) requester.getDuct();
+		for (byte side = 0; side < 6; side++) {
+			DuctUnitItem duct = getDuct(side);
 			if (duct == null)
 				continue;
 
-			//noinspection unchecked
-			TravelingItem item = DistributorItem.findRouteForItem(stack, requester.getRoutes(), duct, requester.getSide(), ServoItem.range[type], ServoItem.speedBoost[type]);
+			TravelingItem item = DistributorItem.findRouteForItem(stack, getRoutes(duct), duct, side, ServoItem.range[type], ServoItem.speedBoost[type]);
 			if (item == null)
 				continue;
 
@@ -303,12 +273,8 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			}
 		}
 
-		NBTTagList requests = new NBTTagList();
-		for (ItemStack stack : this.requests.stacks)
-			requests.appendTag(stack.writeToNBT(new NBTTagCompound()));
-
 		nbt.setTag("inventory", slots);
-		nbt.setTag("requests", requests);
+		nbt.setTag("requests", requests.writeNbt());
 		return nbt;
 	}
 
@@ -322,9 +288,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			inventory.setInventorySlotContents(item.getInteger("slot"), new ItemStack(item));
 		}
 
-		NBTTagList requests = nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND);
-		for (int i = 0; i < requests.tagCount(); i++)
-			this.requests.stacks.add(new ItemStack(requests.getCompoundTagAt(i)));
+		requests.readNbt(nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND));
 	}
 
 	@Override
@@ -356,92 +320,39 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	}
 
 	@Override
-	protected DuctToken<?, ?, ?> getDuctToken() {
-		return DuctToken.ITEMS;
-	}
-
-	@Override
-	protected Process<ItemStack> createProcess(Requester<ItemStack> requester) {
-		return new ProcessItem(requester);
-	}
-
-	@Override
-	protected int amountRequired(ItemStack stack) {
-		int required = requests.getCount(stack);
-		if (required == 0)
-			return 0;
-
-		for (Requester request : processes) {
-			DuctUnitItem duct = (DuctUnitItem) request.getDuct();
-			if (duct == null)
-				continue;
-
-			//noinspection unchecked
-			Process<ItemStack> process = request.process;
-
-			// Items in requests
-			for (ItemStack item : process.getStacks())
-				if (ItemHelper.itemsIdentical(item, stack))
-					required -= item.getCount();
-
-			// Items traveling
-			StackMap map = duct.getGrid().travelingItems.get(pos);
-			if (map != null)
-				for (ItemStack item : map.getItems())
-					if (ItemHelper.itemsIdentical(item, stack))
-						required -= item.getCount();
-		}
-
-		return required;
-	}
-
-	@Override
 	protected void request(PacketBase payload) {
-		requests.addStack(ItemHelper.cloneStack((ItemStack) StackHandler.readPacket(payload), payload.getInt()));
+		requests.add(ItemHelper.cloneStack((ItemStack) StackHandler.readPacket(payload), payload.getInt()));
 	}
 
 	@Override
 	protected void updateTerminal() {
-		terminal.clear();
-
 		Set<GridItem> grids = new HashSet<>();
 		Set<IItemHandler> handlers = new HashSet<>();
 
-		Map<ItemPrint, MutablePair<Long, Boolean>> total = new HashMap<>();
-
-		for (Requester requester : processes) {
-			DuctUnitItem duct = (DuctUnitItem) requester.getDuct();
+		terminal.clear();
+		for (byte side = 0; side < 6; side++) {
+			DuctUnitItem duct = getDuct(side);
 			if (duct == null || grids.contains(duct.getGrid()))
 				continue;
 
-			//noinspection unchecked
-			Map<ItemPrint, MutablePair<Long, Boolean>> list = StackHandler.getItems((Requester<ItemStack>) requester, handlers);
-			for (Map.Entry<ItemPrint, MutablePair<Long, Boolean>> entry : list.entrySet()) {
-				MutablePair<Long, Boolean> pair = total.get(entry.getKey());
-				if (pair != null) {
-					pair.left += entry.getValue().left;
-					pair.right = pair.right || entry.getValue().right;
-				} else {
-					total.put(entry.getKey(), entry.getValue());
-				}
-			}
-
+			StackHandler.addItems((ItemList) terminal, duct.getGrid(), handlers);
 			grids.add(duct.getGrid());
 		}
-
-		terminal.clear();
-		for (Map.Entry<ItemPrint, MutablePair<Long, Boolean>> entry : total.entrySet())
-			terminal.add(Triple.of(entry.getKey().compare, entry.getValue().left, entry.getValue().right));
-	}
-
-	@Override
-	protected boolean hasRequests() {
-		return !requests.stacks.isEmpty();
 	}
 
 	@Override
 	public Class<ItemStack> getItemClass() {
 		return ItemStack.class;
+	}
+
+	@Override
+	public void cancel(ItemStack item) {
+
+	}
+
+	@Override
+	public ItemStack getTileIcon() {
+		return new ItemStack(ThermalLogistics.Blocks.terminal_item);
 	}
 
 	private static class Inventory extends InvWrapper {
@@ -462,13 +373,13 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-			ItemStack insert = ItemHelper.cloneStack(stack, Math.min(stack.getCount(), tile.requests.getCount(stack)));
+			ItemStack insert = ItemHelper.cloneStack(stack, (int) Math.min(stack.getCount(), tile.requests.amount(stack)));
 			if (insert.isEmpty())
 				return stack;
 
 			ItemStack remainder = super.insertItem(slot, insert, simulate);
 			if (!simulate) {
-				tile.requests.decreaseStack(ItemHelper.cloneStack(insert, insert.getCount() - remainder.getCount()));
+				tile.requests.remove(ItemHelper.cloneStack(insert, insert.getCount() - remainder.getCount()));
 				PacketHandler.sendToAllAround(tile.getSyncPacket(), tile);
 			}
 

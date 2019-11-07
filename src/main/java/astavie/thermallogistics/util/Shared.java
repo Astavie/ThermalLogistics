@@ -1,5 +1,7 @@
 package astavie.thermallogistics.util;
 
+import astavie.thermallogistics.util.type.ItemType;
+import astavie.thermallogistics.util.type.Type;
 import cofh.core.util.helpers.ItemHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.Ingredient;
@@ -46,6 +48,10 @@ public class Shared<T> implements Consumer<T>, Supplier<T>, Predicate<T> {
 		@Override
 		public boolean test(ItemStack stack) {
 			return (get().isEmpty() && stack.isEmpty()) || ItemHelper.itemsIdentical(get(), stack);
+		}
+
+		public boolean test(Type<ItemStack> type) {
+			return type.equals(new ItemType(get()));
 		}
 
 		public Ingredient asIngredient() {

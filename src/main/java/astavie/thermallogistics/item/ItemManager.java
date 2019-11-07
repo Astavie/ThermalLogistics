@@ -2,7 +2,6 @@ package astavie.thermallogistics.item;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.ICrafter;
-import astavie.thermallogistics.attachment.IRequester;
 import astavie.thermallogistics.util.RequesterReference;
 import cofh.api.item.IMultiModeItem;
 import cofh.core.item.ItemCore;
@@ -144,23 +143,23 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 				item.setTagCompound(new NBTTagCompound());
 
 			if (item.getSubCompound("Link") != null) {
-				IRequester<?> other = RequesterReference.readNBT(item.getSubCompound("Link")).getAttachment();
-				if (other instanceof ICrafter && other != crafter) {
-					if (crafter.hasLinked((ICrafter<?>) other)) {
+				RequesterReference<?> other = RequesterReference.readNBT(item.getSubCompound("Link"));
+				if (other instanceof ICrafter && !other.references(crafter)) {
+					if (crafter.isLinked(other)) {
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.2"));
 					} else {
-						crafter.link((ICrafter<?>) other, true);
+						crafter.link(other);
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.3"));
 					}
 				} else {
-					if (other == crafter)
+					if (other.references(crafter))
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.4"));
 					else
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.1"));
 				}
 				item.getTagCompound().removeTag("Link");
 			} else {
-				item.getTagCompound().setTag("Link", RequesterReference.writeNBT(crafter.getReference()));
+				item.getTagCompound().setTag("Link", RequesterReference.writeNBT(crafter.createReference()));
 				ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.0"));
 			}
 

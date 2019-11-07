@@ -8,13 +8,10 @@ import cofh.thermaldynamics.duct.tiles.TileGrid;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-
-import java.util.List;
 
 public class RequesterReference<I> {
 
@@ -23,13 +20,15 @@ public class RequesterReference<I> {
 	public final byte side;
 	public final int index;
 
-	public final List<I> outputs = NonNullList.create();
-
 	private long tick;
 	private IRequester<I> cache;
 
 	private ItemStack icon = ItemStack.EMPTY;
 	private ItemStack tile = ItemStack.EMPTY;
+
+	public RequesterReference(int dim, BlockPos pos) {
+		this(dim, pos, (byte) 0, 0);
+	}
 
 	public RequesterReference(int dim, BlockPos pos, byte side) {
 		this(dim, pos, side, 0);
@@ -63,7 +62,7 @@ public class RequesterReference<I> {
 		packet.addByte(reference.side);
 		packet.addInt(reference.index);
 
-		IRequester<?> requester = reference.getAttachment();
+		IRequester<?> requester = reference.get();
 		packet.addItemStack(requester.getIcon());
 		packet.addItemStack(requester.getTileIcon());
 	}
@@ -85,12 +84,12 @@ public class RequesterReference<I> {
 		return world.provider.getDimension() == dim && world.isBlockLoaded(pos);
 	}
 
-	public IRequester<I> getAttachment() {
-		return getAttachment(FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(dim));
+	public IRequester<I> get() {
+		return get(FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(dim));
 	}
 
 	@SuppressWarnings("unchecked")
-	public IRequester<I> getAttachment(World world) {
+	public IRequester<I> get(World world) {
 		if (world.provider.getDimension() != dim)
 			return null;
 
@@ -122,20 +121,20 @@ public class RequesterReference<I> {
 	}
 
 	public boolean references(IRequester<?> requester) {
-		return dim == requester.getTile().getWorld().provider.getDimension() && pos.equals(requester.getTile().getPos()) && side == requester.getSide();
+		return requester.referencedBy(this);
 	}
 
 	public boolean equals(Object object) {
 		if (object instanceof RequesterReference) {
 			RequesterReference<?> reference = (RequesterReference<?>) object;
-			return reference.dim == dim && reference.pos.equals(pos) && reference.side == side;
+			return reference.dim == dim && reference.pos.equals(pos) && reference.side == side && reference.index == index;
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return (Integer.hashCode(dim) * 31 + pos.hashCode()) * 31 + Integer.hashCode(side);
+		return ((Integer.hashCode(dim) * 31 + pos.hashCode()) * 31 + Integer.hashCode(side)) * 31 + Integer.hashCode(index);
 	}
 
 	public ItemStack getIcon() {

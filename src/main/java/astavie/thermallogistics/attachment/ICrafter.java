@@ -1,53 +1,36 @@
 package astavie.thermallogistics.attachment;
 
-import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.util.RequesterReference;
-import cofh.core.network.PacketTileInfo;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.NonNullList;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.Collection;
 
 public interface ICrafter<I> extends IRequester<I> {
 
-	List<I> getOutputs();
+	Collection<RequesterReference<?>> getLinked();
 
-	Set<RequesterReference<I>> getBlacklist();
+	boolean isLinked(RequesterReference<?> reference);
 
-	boolean request(IRequester<I> requester, I stack);
+	void link(RequesterReference<?> reference);
 
-	void link(ICrafter<?> crafter, boolean recursion);
+	void unlink(RequesterReference<?> reference);
 
-	boolean hasLinked(ICrafter<?> crafter);
+	boolean isEnabled();
 
-	int getRequiredRecipes(int index);
+	Collection<I> getInputs();
 
-	void sync(EntityPlayer player);
+	Collection<I> getOutputs();
 
-	List<RequesterReference<?>> getLinked();
+	boolean canCraft(I item);
 
-	PacketTileInfo getNewPacket(byte type);
+	/**
+	 * Requests an item. Linked crafters will also be notified.
+	 */
+	boolean request(I item);
 
-	List<Recipe<I>> getRecipes();
-
-	void split(int split);
-
-	Class<I> getItemClass();
-
-	class Recipe<I> {
-
-		public final List<I> inputs = new LinkedList<>();
-		public final List<I> outputs = new LinkedList<>();
-
-		public final List<Request<I>> requests = NonNullList.create();
-		public final Request<I> leftovers;
-
-		public Recipe(Request<I> leftovers) {
-			this.leftovers = leftovers;
-		}
-
-	}
+	/**
+	 * Requests this recipe x times. Will <strong>not</strong> notify linked crafters.
+	 * Recommended to only use this within {@link #request(I)}.
+	 */
+	boolean request(int amount);
 
 }

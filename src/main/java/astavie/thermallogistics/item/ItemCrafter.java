@@ -1,7 +1,5 @@
 package astavie.thermallogistics.item;
 
-import astavie.thermallogistics.attachment.CrafterFluid;
-import astavie.thermallogistics.attachment.CrafterItem;
 import cofh.core.util.helpers.RecipeHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.Attachment;
@@ -10,7 +8,6 @@ import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
 import cofh.thermaldynamics.duct.attachments.servo.ServoBase;
 import cofh.thermaldynamics.duct.attachments.servo.ServoFluid;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
-import cofh.thermaldynamics.duct.tiles.DuctToken;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.item.ItemRetriever;
 import net.minecraft.client.Minecraft;
@@ -53,11 +50,16 @@ public class ItemCrafter extends ItemAttachmentLogistics {
 
 	@Override
 	public Attachment getAttachment(EnumFacing side, ItemStack stack, TileGrid tile) {
+		/*
+
 		int type = stack.getItemDamage();
 		if (tile.getDuct(DuctToken.FLUID) != null)
 			return new CrafterFluid(tile, (byte) (side.ordinal() ^ 1), type);
 		if (tile.getDuct(DuctToken.ITEMS) != null)
 			return new CrafterItem(tile, (byte) (side.ordinal() ^ 1), type);
+
+		 */
+
 		return null;
 	}
 
@@ -80,8 +82,9 @@ public class ItemCrafter extends ItemAttachmentLogistics {
 		// Items
 		tooltip.add(StringHelper.YELLOW + StringHelper.localize("info.cofh.items") + StringHelper.END);
 
-		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterItem.SIZE[type] * 2));
-		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterItem.SIZE[type]));
+		// TODO
+		// tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterItem.SIZE[type] * 2));
+		// tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterItem.SIZE[type]));
 
 		tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.extractRate") + ": " + StringHelper.WHITE + ((ServoItem.tickDelays[type] % 20) == 0 ? Integer.toString(ServoItem.tickDelays[type] / 20) : Float.toString(ServoItem.tickDelays[type] / 20F)) + "s" + StringHelper.END);
 		tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.maxStackSize") + ": " + StringHelper.WHITE + ServoItem.maxSize[type] + StringHelper.END);
@@ -98,8 +101,9 @@ public class ItemCrafter extends ItemAttachmentLogistics {
 		// Fluids
 		tooltip.add(StringHelper.YELLOW + StringHelper.localize("info.cofh.fluids") + StringHelper.END);
 
-		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterFluid.SIZE[type] * 2));
-		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterFluid.SIZE[type]));
+		// TODO
+		// tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterFluid.SIZE[type] * 2));
+		// tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterFluid.SIZE[type]));
 
 		tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.extractRate") + ": " + StringHelper.WHITE + (int) (ServoFluid.throttle[type] * 100) + "%" + StringHelper.END);
 		addFiltering(tooltip, type, Duct.Type.FLUID);
