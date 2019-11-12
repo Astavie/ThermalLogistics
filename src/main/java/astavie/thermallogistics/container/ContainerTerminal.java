@@ -15,7 +15,7 @@ public abstract class ContainerTerminal extends ContainerCore {
 	public ContainerTerminal(TileTerminal tile, InventoryPlayer inventory) {
 		this.tile = tile;
 
-		addSlotToContainer(new SlotSpecial(tile.requester, 0, 8, 74));
+		addSlotToContainer(new SlotSpecial(tile.requester, 0, 8, 56));
 		addSlots();
 
 		bindPlayerInventory(inventory);

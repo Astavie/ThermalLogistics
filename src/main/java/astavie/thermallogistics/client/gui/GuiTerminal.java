@@ -7,6 +7,7 @@ import astavie.thermallogistics.tile.TileTerminal;
 import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.type.Type;
 import cofh.core.gui.GuiContainerCore;
+import cofh.core.gui.element.ElementBase;
 import cofh.core.gui.element.ElementButtonManaged;
 import cofh.core.gui.element.ElementSlider;
 import cofh.core.gui.element.ElementTextField;
@@ -28,9 +29,9 @@ import java.util.List;
 public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 	protected final ElementTextField search = new ElementTextFieldClear(this, 80, 5, 88, 10);
-	protected final ElementSlider slider = new SliderVertical(this, 174, 18, 12, 52, 0);
+	protected final ElementSlider slider = new SliderVertical(this, 174, 18, 12, 34, 0);
 
-	protected final ElementTextField amount = new ElementTextFieldAmount(this, 44, 77, 53, 10);
+	protected final ElementTextField amount = new ElementTextFieldAmount(this, 44, 59, 53, 10);
 
 	protected final List<Triple<Type<I>, Long, Boolean>> filter = NonNullList.create();
 	protected final TileTerminal<I> tile;
@@ -38,13 +39,15 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	protected TabRequest tabRequest;
 
 	protected Type<I> selected;
-
-	protected final ElementButtonManaged button = new ElementButtonManaged(this, 100, 74, 50, 16, "") {
+	protected final ElementButtonManaged button = new ElementButtonManaged(this, 100, 56, 50, 16, "") {
 		@Override
 		public void onClick() {
 			request(selected.getAsStack(), amount.getText().isEmpty() ? 1 : Integer.parseInt(amount.getText()));
 		}
 	};
+	protected int rows = 2;
+	protected int split = 27;
+	protected int size;
 
 	private String cache = "";
 
@@ -68,6 +71,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	@Override
 	public void initGui() {
 		super.initGui();
+
 		name = tile.customName;
 		if (name.isEmpty())
 			name = StringHelper.localize(tile.getTileName());
@@ -82,6 +86,53 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 		button.setText(StringHelper.localize("gui.logistics.terminal.request"));
 		elements.add(amount);
 		elements.add(button);
+	}
+
+	@Override
+	protected void drawGuiContainerBackgroundLayer(float partialTick, int x, int y) {
+		GlStateManager.color(1, 1, 1, 1);
+		bindTexture(texture);
+
+		drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, split);
+		for (int i = 0; i < rows - 1; i++) {
+			drawTexturedModalRect(guiLeft, guiTop + split + 18 * i, 0, split, xSize, 18);
+		}
+		drawTexturedModalRect(guiLeft, guiTop + split + 18 * (rows - 1), 0, split + 18, xSize, size - split - 18);
+
+		mouseX = x - guiLeft;
+		mouseY = y - guiTop;
+
+		GlStateManager.pushMatrix();
+		GlStateManager.translate(guiLeft, guiTop, 0.0F);
+		drawElements(partialTick, false);
+		drawTabs(partialTick, false);
+		GlStateManager.popMatrix();
+	}
+
+	protected void recalculateSize() {
+		int prev = rows;
+		rows = Math.max((height - size) / 18 + 2, 1);
+
+		ySize -= prev * 18;
+		ySize += rows * 18;
+		guiTop = (height - ySize) / 2;
+
+		for (Slot slot : inventorySlots.inventorySlots) {
+			if (slot.yPos > split) {
+				slot.yPos -= prev * 18;
+				slot.yPos += rows * 18;
+			}
+		}
+
+		for (ElementBase element : elements) {
+			if (element.getPosY() > split) {
+				int y = element.getPosY() - prev * 18 + rows * 18;
+				element.setPosition(element.getPosX(), y);
+			} else if (element.getPosY() + element.getHeight() > split) {
+				int height = element.getHeight() - prev * 18 + rows * 18;
+				element.setSize(element.getWidth(), height);
+			}
+		}
 	}
 
 	@Override
@@ -118,8 +169,8 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 			updateFilter();
 
-			slider.setLimits(0, Math.max((filter.size() - 1) / 9 - 2, 0));
-			slider.setEnabled(filter.size() > 27);
+			slider.setLimits(0, Math.max((filter.size() - 1) / 9 - rows + 1, 0));
+			slider.setEnabled(filter.size() > rows * 9);
 		}
 	}
 
@@ -127,12 +178,12 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	public void addTooltips(List<String> tooltip) {
 		super.addTooltips(tooltip);
 
-		if (selected != null && button.isVisible() && mouseX >= 25 && mouseX < 43 && mouseY >= 73 && mouseY < 91)
+		if (selected != null && button.isVisible() && mouseX >= 25 && mouseX < 43 && mouseY >= 37 + rows * 18 && mouseY < 37 + (rows + 1) * 18)
 			tooltip.addAll(StackHandler.getTooltip(this, selected.getAsStack()));
 
 		int i = slider.getValue() * 9;
 
-		for (int y = 0; y < 3; y++) {
+		for (int y = 0; y < rows; y++) {
 			for (int x = 0; x < 9; x++) {
 				int slot = i + x + y * 9;
 				if (slot >= filter.size())
@@ -153,11 +204,11 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 		RenderHelper.enableGUIStandardItemLighting();
 		if (selected != null && button.isVisible())
-			StackHandler.render(this, 26, 74, selected.getAsStack(), false);
+			StackHandler.render(this, 26, 37 + rows * 18, selected.getAsStack(), false);
 
 		int i = slider.getValue() * 9;
 
-		for (int y = 0; y < 3; y++) {
+		for (int y = 0; y < rows; y++) {
 			for (int x = 0; x < 9; x++) {
 				int slot = i + x + y * 9;
 				if (slot >= filter.size())
@@ -188,7 +239,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 			int mouseX = mX - guiLeft - 7;
 			int mouseY = mY - guiTop - 17;
 
-			if (mouseX >= 0 && mouseX < 9 * 18 && mouseY >= 0 && mouseY < 3 * 18) {
+			if (mouseX >= 0 && mouseX < 9 * 18 && mouseY >= 0 && mouseY < rows * 18) {
 				int posX = mouseX / 18;
 				int posY = mouseY / 18;
 

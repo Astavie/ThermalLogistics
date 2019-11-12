@@ -49,7 +49,8 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		((ContainerTerminalItem) inventorySlots).gui = this;
 		this.tile = tile;
 		this.xSize = 194;
-		this.ySize = 250;
+		this.ySize = 238;
+		this.size = 238;
 	}
 
 	public Object getStackAt(int mouseX, int mouseY) {
@@ -59,7 +60,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		int i = slider.getValue() * 9;
 
 		a:
-		for (int y = 0; y < 3; y++) {
+		for (int y = 0; y < rows; y++) {
 			for (int x = 0; x < 9; x++) {
 				int slot = i + x + y * 9;
 				if (slot >= filter.size())
@@ -175,6 +176,17 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 		guiLeft += 9;
 
+		ElementButton dump = new ElementButton(this, 153, 105 + rows * 18, "dump", 194, 0, 194, 14, 14, 14, texture.toString());
+		dump.setToolTip("info.logistics.terminal.dump.inventory");
+
+		dump2 = new ElementButton(this, 153, 37 + rows * 18, "dump2", 208, 0, 208, 14, 14, 14, texture.toString());
+		dump2.setToolTip("info.logistics.terminal.dump.network");
+
+		addElement(dump);
+		addElement(dump2);
+
+		recalculateSize();
+
 		addTab(tabCrafting = new TabCrafting(this, tile.shared, () -> {
 			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
 			for (int i = 0; i < 9; i++)
@@ -201,17 +213,8 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			if (cache.getLeft() != null)
 				for (ItemStack stack : cache.getLeft())
 					request(ItemHelper.cloneStack(stack, 1), stack.getCount());
-		}, () -> cache.getLeft() != null)).setOffsets(-18, 74);
-		addTab(tabRequest = new TabRequest(this, tile.requests.stacks(), tile)).setOffsets(-18, 74);
-
-		ElementButton dump = new ElementButton(this, 153, 153, "dump", 194, 0, 194, 14, 14, 14, texture.toString());
-		dump.setToolTip("info.logistics.terminal.dump.inventory");
-
-		dump2 = new ElementButton(this, 153, 75, "dump2", 208, 0, 208, 14, 14, 14, texture.toString());
-		dump2.setToolTip("info.logistics.terminal.dump.network");
-
-		addElement(dump);
-		addElement(dump2);
+		}, () -> cache.getLeft() != null)).setOffsets(-18, 20 + rows * 18);
+		addTab(tabRequest = new TabRequest(this, tile.requests.stacks(), tile)).setOffsets(-18, 20 + rows * 18);
 	}
 
 	@Override
@@ -252,7 +255,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			int mouseX = mX - guiLeft - 7;
 			int mouseY = mY - guiTop - 17;
 
-			if (mouseX >= 0 && mouseX < 9 * 18 && mouseY >= 0 && mouseY < 3 * 18) {
+			if (mouseX >= 0 && mouseX < 9 * 18 && mouseY >= 0 && mouseY < rows * 18) {
 				PacketTileInfo packet = PacketTileInfo.newPacket(tile);
 				packet.addByte(3);
 				PacketHandler.sendToServer(packet);
