@@ -41,32 +41,3 @@ info.logistics.manager.e.1=%s x %s
 info.logistics.manager.e.2=Нет предметов, перемещающихся в эту трубу
 
 gui.logistics.terminal.request=Запрос
-
-# Untranslated
-item.logistics.requester.info=Pulls or crafts items/fluids to itself.
-
-item.logistics.crafter.info=Crafts items/fluids on request.
-
-item.logistics.distributor.basic.name=Distributor
-item.logistics.distributor.hardened.name=Hardened Distributor
-item.logistics.distributor.reinforced.name=Reinforced Distributor
-item.logistics.distributor.signalum.name=Signalum Distributor
-item.logistics.distributor.resonant.name=Resonant Distributor
-item.logistics.distributor.info=Extracts items/fluids while prioritizing filters.
-
-info.logistics.terminal.dump.inventory=Dump to inventory
-info.logistics.terminal.dump.network=Dump to network
-
-info.logistics.import=Import
-info.logistics.fluid.get=Get Fluid
-
-info.logistics.inputs=Inputs: §f%s
-info.logistics.outputs=Outputs: §f%s
-info.logistics.split=Recipes: %s
-
-info.logistics.tab.crafting=Crafting
-
-info.logistics.manager.d.4=Link cancelled.
-
-gui.logistics.terminal.missing=Missing items
-gui.logistics.terminal.enough=No items need to be requested

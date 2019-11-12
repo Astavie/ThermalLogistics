@@ -329,6 +329,9 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		Set<GridItem> grids = new HashSet<>();
 		Set<IItemHandler> handlers = new HashSet<>();
 
+		// Ignore itself
+		handlers.add(new Inventory(this, inventory));
+
 		terminal.clear();
 		for (byte side = 0; side < 6; side++) {
 			DuctUnitItem duct = getDuct(side);

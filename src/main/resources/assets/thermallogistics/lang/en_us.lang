@@ -64,3 +64,4 @@ info.logistics.manager.e.2=No items are travelling to this duct
 gui.logistics.terminal.request=Request
 gui.logistics.terminal.missing=Missing items
 gui.logistics.terminal.enough=No items need to be requested
+gui.logistics.terminal.buffer=Buffer

@@ -12,8 +12,10 @@ import cofh.core.gui.element.ElementButtonManaged;
 import cofh.core.gui.element.ElementSlider;
 import cofh.core.gui.element.ElementTextField;
 import cofh.core.gui.element.listbox.SliderVertical;
+import cofh.core.gui.element.tab.TabBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
+import cofh.core.util.helpers.MathHelper;
 import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
 import net.minecraft.client.renderer.GlStateManager;
@@ -28,10 +30,11 @@ import java.util.List;
 
 public abstract class GuiTerminal<I> extends GuiContainerCore {
 
-	protected final ElementTextField search = new ElementTextFieldClear(this, 80, 5, 88, 10);
-	protected final ElementSlider slider = new SliderVertical(this, 174, 18, 12, 34, 0);
+	protected ElementTextField search;
+	protected ElementSlider slider;
 
-	protected final ElementTextField amount = new ElementTextFieldAmount(this, 44, 59, 53, 10);
+	protected ElementTextField amount;
+	protected ElementButtonManaged button;
 
 	protected final List<Triple<Type<I>, Long, Boolean>> filter = NonNullList.create();
 	protected final TileTerminal<I> tile;
@@ -39,12 +42,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	protected TabRequest tabRequest;
 
 	protected Type<I> selected;
-	protected final ElementButtonManaged button = new ElementButtonManaged(this, 100, 56, 50, 16, "") {
-		@Override
-		public void onClick() {
-			request(selected.getAsStack(), amount.getText().isEmpty() ? 1 : Integer.parseInt(amount.getText()));
-		}
-	};
+
 	protected int rows = 2;
 	protected int split = 27;
 	protected int size;
@@ -72,20 +70,36 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	public void initGui() {
 		super.initGui();
 
+		recalculateSize();
+
 		name = tile.customName;
 		if (name.isEmpty())
 			name = StringHelper.localize(tile.getTileName());
 
-		elements.add(search);
-		elements.add(slider);
+		search = new ElementTextFieldClear(this, 80, 5, 88, 10);
+		slider = new SliderVertical(this, 174, 18, 12, 34, 0);
+
+		addElement(search);
+		addElement(slider);
+
+		slider.setLimits(0, Math.max((filter.size() - 1) / 9 - rows + 1, 0));
+		slider.setEnabled(filter.size() > rows * 9);
+
+		amount = new ElementTextFieldAmount(this, 44, 59, 71, 10);
+		button = new ElementButtonManaged(this, 118, 56, 50, 16, "") {
+			@Override
+			public void onClick() {
+				request(selected.getAsStack(), amount.getText().isEmpty() ? 1 : Integer.parseInt(amount.getText()));
+			}
+		};
 
 		boolean visible = requester().getHasStack();
 		amount.setVisible(visible);
 		button.setVisible(visible);
 
 		button.setText(StringHelper.localize("gui.logistics.terminal.request"));
-		elements.add(amount);
-		elements.add(button);
+		addElement(amount);
+		addElement(button);
 	}
 
 	@Override
@@ -111,7 +125,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 	protected void recalculateSize() {
 		int prev = rows;
-		rows = Math.max((height - size) / 18 + 2, 1);
+		rows = MathHelper.clamp((height - size) / 18 + 2, 1, 9);
 
 		ySize -= prev * 18;
 		ySize += rows * 18;
@@ -121,16 +135,6 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 			if (slot.yPos > split) {
 				slot.yPos -= prev * 18;
 				slot.yPos += rows * 18;
-			}
-		}
-
-		for (ElementBase element : elements) {
-			if (element.getPosY() > split) {
-				int y = element.getPosY() - prev * 18 + rows * 18;
-				element.setPosition(element.getPosX(), y);
-			} else if (element.getPosY() + element.getHeight() > split) {
-				int height = element.getHeight() - prev * 18 + rows * 18;
-				element.setSize(element.getWidth(), height);
 			}
 		}
 	}
@@ -169,16 +173,38 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 			updateFilter();
 
+
 			slider.setLimits(0, Math.max((filter.size() - 1) / 9 - rows + 1, 0));
 			slider.setEnabled(filter.size() > rows * 9);
 		}
 	}
 
 	@Override
+	public ElementBase addElement(ElementBase element) {
+		if (element.getPosY() > split) {
+			element.setPosition(element.getPosX(), element.getPosY() + (rows - 2) * 18);
+		} else if (element.getPosY() + element.getHeight() > split) {
+			element.setSize(element.getWidth(), element.getHeight() + (rows - 2) * 18);
+		}
+		return super.addElement(element);
+	}
+
+	@Override
+	public TabBase addTab(TabBase tab) {
+		tab.setOffsets(getTabOffsetX(), getTabOffsetY() + (rows - 2) * 18);
+		tab.setCurrentShift(0, 0);
+		return super.addTab(tab);
+	}
+
+	protected abstract int getTabOffsetX();
+
+	protected abstract int getTabOffsetY();
+
+	@Override
 	public void addTooltips(List<String> tooltip) {
 		super.addTooltips(tooltip);
 
-		if (selected != null && button.isVisible() && mouseX >= 25 && mouseX < 43 && mouseY >= 37 + rows * 18 && mouseY < 37 + (rows + 1) * 18)
+		if (selected != null && button.isVisible() && mouseX >= 25 && mouseX < 43 && mouseY >= 38 + (rows - 1) * 18 && mouseY < 38 + rows * 18)
 			tooltip.addAll(StackHandler.getTooltip(this, selected.getAsStack()));
 
 		int i = slider.getValue() * 9;
@@ -204,7 +230,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 		RenderHelper.enableGUIStandardItemLighting();
 		if (selected != null && button.isVisible())
-			StackHandler.render(this, 26, 37 + rows * 18, selected.getAsStack(), false);
+			StackHandler.render(this, 26, 38 + (rows - 1) * 18, selected.getAsStack(), false);
 
 		int i = slider.getValue() * 9;
 

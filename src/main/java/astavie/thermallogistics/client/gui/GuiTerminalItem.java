@@ -176,16 +176,14 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 		guiLeft += 9;
 
-		ElementButton dump = new ElementButton(this, 153, 105 + rows * 18, "dump", 194, 0, 194, 14, 14, 14, texture.toString());
+		ElementButton dump = new ElementButton(this, 153, 141, "dump", 194, 0, 194, 14, 14, 14, texture.toString());
 		dump.setToolTip("info.logistics.terminal.dump.inventory");
 
-		dump2 = new ElementButton(this, 153, 37 + rows * 18, "dump2", 208, 0, 208, 14, 14, 14, texture.toString());
+		dump2 = new ElementButton(this, 153, 73, "dump2", 208, 0, 208, 14, 14, 14, texture.toString());
 		dump2.setToolTip("info.logistics.terminal.dump.network");
 
 		addElement(dump);
 		addElement(dump2);
-
-		recalculateSize();
 
 		addTab(tabCrafting = new TabCrafting(this, tile.shared, () -> {
 			InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
@@ -213,8 +211,14 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			if (cache.getLeft() != null)
 				for (ItemStack stack : cache.getLeft())
 					request(ItemHelper.cloneStack(stack, 1), stack.getCount());
-		}, () -> cache.getLeft() != null)).setOffsets(-18, 20 + rows * 18);
-		addTab(tabRequest = new TabRequest(this, tile.requests.stacks(), tile)).setOffsets(-18, 20 + rows * 18);
+		}, () -> cache.getLeft() != null));
+		addTab(tabRequest = new TabRequest(this, tile.requests.stacks(), tile));
+	}
+
+	@Override
+	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
+		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
+		fontRenderer.drawString(StringHelper.localize("gui.logistics.terminal.buffer"), 8, ySize - 96 - 68 + 3, 0x404040);
 	}
 
 	@Override
@@ -247,6 +251,16 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		boolean visible = requester().getHasStack();
 		tabCrafting.setVisible(visible);
 		tabRequest.setVisible(visible);
+	}
+
+	@Override
+	protected int getTabOffsetX() {
+		return -18;
+	}
+
+	@Override
+	protected int getTabOffsetY() {
+		return 56;
 	}
 
 	@Override
