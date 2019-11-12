@@ -41,7 +41,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 	public TabCrafting tabCrafting;
 
-	private Pair<List<ItemStack>, List<String>> cache = Pair.of(null, null);
+	private Pair<ItemList, List<String>> cache = Pair.of(null, null);
 	private ElementButton dump2;
 
 	public GuiTerminalItem(TileTerminalItem tile, InventoryPlayer inventory) {
@@ -91,7 +91,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		}
 	}
 
-	private Pair<List<ItemStack>, List<String>> request() {
+	private Pair<ItemList, List<String>> request() {
 		if (Arrays.stream(tile.shared).allMatch(shared -> shared.test(ItemStack.EMPTY)))
 			return Pair.of(null, null);
 
@@ -158,7 +158,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			if (request.isEmpty())
 				return Pair.of(null, Collections.singletonList(StringHelper.localize("gui.logistics.terminal.enough")));
 
-			return Pair.of(request.stacks(), null);
+			return Pair.of(request, null);
 		} else {
 			List<String> tooltip = new LinkedList<>();
 
@@ -209,8 +209,8 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			PacketHandler.sendToServer(packet);
 		}, () -> {
 			if (cache.getLeft() != null)
-				for (ItemStack stack : cache.getLeft())
-					request(ItemHelper.cloneStack(stack, 1), stack.getCount());
+				for (Type<ItemStack> type : cache.getLeft().types())
+					request(type, cache.getLeft().amount(type));
 		}, () -> cache.getLeft() != null));
 		addTab(tabRequest = new TabRequest(this, tile.requests.stacks(), tile));
 	}

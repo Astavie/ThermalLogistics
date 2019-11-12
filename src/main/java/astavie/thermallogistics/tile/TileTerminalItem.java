@@ -8,6 +8,7 @@ import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.collection.ItemList;
+import astavie.thermallogistics.util.type.ItemType;
 import codechicken.lib.inventory.InventorySimple;
 import cofh.core.inventory.InventoryCraftingFalse;
 import cofh.core.network.PacketBase;
@@ -321,16 +322,13 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 	@Override
 	protected void request(PacketBase payload) {
-		requests.add(ItemHelper.cloneStack((ItemStack) StackHandler.readPacket(payload), payload.getInt()));
+		requests.add(ItemType.readPacket(payload), payload.getLong());
 	}
 
 	@Override
 	protected void updateTerminal() {
 		Set<GridItem> grids = new HashSet<>();
 		Set<IItemHandler> handlers = new HashSet<>();
-
-		// Ignore itself
-		handlers.add(new Inventory(this, inventory));
 
 		terminal.clear();
 		for (byte side = 0; side < 6; side++) {
@@ -370,6 +368,12 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack extractItem(int slot, int amount, boolean simulate) {
+			return ItemStack.EMPTY;
+		}
+
+		@Nonnull
+		@Override
+		public ItemStack getStackInSlot(int slot) {
 			return ItemStack.EMPTY;
 		}
 

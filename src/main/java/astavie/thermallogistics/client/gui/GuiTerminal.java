@@ -49,11 +49,11 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 	private String cache = "";
 
-	protected void request(I stack, int amount) {
+	protected void request(Type<I> stack, long amount) {
 		PacketTileInfo packet = PacketTileInfo.newPacket(tile);
 		packet.addByte(0);
-		StackHandler.writePacket(packet, stack, tile.getItemClass(), true);
-		packet.addInt(amount);
+		stack.writePacket(packet);
+		packet.addLong(amount);
 		PacketHandler.sendToServer(packet);
 	}
 
@@ -89,7 +89,7 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 		button = new ElementButtonManaged(this, 118, 56, 50, 16, "") {
 			@Override
 			public void onClick() {
-				request(selected.getAsStack(), amount.getText().isEmpty() ? 1 : Integer.parseInt(amount.getText()));
+				request(selected, amount.getText().isEmpty() ? 1 : Long.parseLong(amount.getText()));
 			}
 		};
 

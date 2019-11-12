@@ -30,11 +30,6 @@ public class ItemList extends StackList<ItemStack> {
 	}
 
 	@Override
-	protected void writeType(Type<ItemStack> type, PacketBase packet) {
-		ItemType.writePacket((ItemType) type, packet);
-	}
-
-	@Override
 	protected Type<ItemStack> readType(PacketBase packet) {
 		return ItemType.readPacket(packet);
 	}

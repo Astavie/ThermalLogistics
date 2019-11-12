@@ -4,15 +4,12 @@ import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.type.ItemType;
 import cofh.core.gui.GuiContainerCore;
-import cofh.core.network.PacketBase;
-import cofh.core.util.helpers.ItemHelper;
 import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.item.GridItem;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -23,41 +20,6 @@ import java.util.Collections;
 import java.util.List;
 
 public class StackHandler {
-
-	public static void writePacket(PacketBase packet, Object item, Class<?> c, boolean identifier) {
-		if (c == ItemStack.class) {
-			if (identifier)
-				packet.addByte(0);
-			packet.addItemStack((ItemStack) item);
-		} else if (c == FluidStack.class) {
-			if (identifier)
-				packet.addByte(1);
-			packet.addFluidStack((FluidStack) item);
-		} else throw new IllegalArgumentException("Unknown item type " + c.getName());
-	}
-
-	@SuppressWarnings("unchecked")
-	public static <I> I readPacket(PacketBase packet) {
-		byte type = packet.getByte();
-		if (type == 0)
-			return (I) packet.getItemStack();
-		else if (type == 1)
-			return (I) packet.getFluidStack();
-		else throw new IllegalArgumentException("Unknown item type " + type);
-	}
-
-	public static NBTTagCompound writeLargeItemStack(ItemStack stack) {
-		NBTTagCompound compound = ItemHelper.cloneStack(stack, 1).writeToNBT(new NBTTagCompound());
-		compound.setInteger("IntCount", stack.getCount());
-		return compound;
-	}
-
-	public static ItemStack readLargeItemStack(NBTTagCompound compound) {
-		ItemStack stack = new ItemStack(compound);
-		if (compound.hasKey("IntCount"))
-			return ItemHelper.cloneStack(stack, compound.getInteger("IntCount"));
-		return stack;
-	}
 
 	@SideOnly(Side.CLIENT)
 	public static void render(GuiContainerCore gui, int x, int y, Object item, boolean count) {
@@ -78,35 +40,24 @@ public class StackHandler {
 		} else if (item instanceof FluidStack) {
 			FluidStack fluid = (FluidStack) item;
 
-			GlStateManager.disableLighting();
-			gui.drawFluid(x, y, fluid, 16, 16);
-
 			if (count) {
-				GlStateManager.disableLighting();
-				GlStateManager.disableDepth();
-				GlStateManager.disableBlend();
-
-				GlStateManager.pushMatrix();
-
-				GlStateManager.scale(0.5, 0.5, 0.5);
 				String amount = StringHelper.formatNumber(fluid.amount);
-				gui.getFontRenderer().drawStringWithShadow(amount, (x + 16) * 2 - gui.getFontRenderer().getStringWidth(amount), (y + 12) * 2, 0xFFFFFF);
-
-				GlStateManager.popMatrix();
-
-				GlStateManager.enableLighting();
-				GlStateManager.enableDepth();
+				render(gui, x, y, item, amount);
+			} else {
+				GlStateManager.disableLighting();
+				gui.drawFluid(x, y, fluid, 16, 16);
 			}
 		} else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
 	}
 
 	@SideOnly(Side.CLIENT)
 	public static void render(GuiContainerCore gui, int x, int y, Object item, String text) {
-		if (item instanceof ItemStack)
+		if (item instanceof ItemStack) {
 			gui.drawItemStack((ItemStack) item, x, y, true, "");
-		else if (item instanceof FluidStack)
+		} else if (item instanceof FluidStack) {
+			GlStateManager.disableLighting();
 			gui.drawFluid(x, y, (FluidStack) item, 16, 16);
-		else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
+		} else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
 
 		GlStateManager.disableLighting();
 		GlStateManager.disableDepth();

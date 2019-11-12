@@ -2,12 +2,9 @@ package astavie.thermallogistics.util.type;
 
 import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.ItemHelper;
-import net.minecraft.init.Items;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class ItemType implements Type<ItemStack> {
@@ -27,29 +24,11 @@ public class ItemType implements Type<ItemStack> {
 	}
 
 	public static ItemType readNbt(NBTTagCompound tag) {
-		Item item = tag.hasKey("id", 8) ? Item.getByNameOrId(tag.getString("id")) : Items.AIR;
-		int damage = Math.max(0, tag.getShort("Damage"));
-
-		NBTTagCompound nbt = null;
-		if (tag.hasKey("tag", 10)) {
-			nbt = tag.getCompoundTag("tag");
-			if (item != null)
-				item.updateItemStackNBT(tag);
-		}
-
-		return new ItemType(new ItemStack(item, 1, damage, nbt));
+		return new ItemType(new ItemStack(tag));
 	}
 
 	public static NBTTagCompound writeNbt(ItemType type) {
-		NBTTagCompound tag = new NBTTagCompound();
-
-		ResourceLocation resourcelocation = Item.REGISTRY.getNameForObject(type.compare.getItem());
-		tag.setString("id", resourcelocation == null ? "minecraft:air" : resourcelocation.toString());
-		tag.setShort("Damage", (short) type.compare.getItemDamage());
-		if (type.compare.hasTagCompound())
-			tag.setTag("tag", type.compare.getTagCompound());
-
-		return tag;
+		return type.compare.writeToNBT(new NBTTagCompound());
 	}
 
 	public boolean fits(Ingredient ingredient) {
@@ -69,6 +48,11 @@ public class ItemType implements Type<ItemStack> {
 	@Override
 	public String getDisplayName() {
 		return compare.getDisplayName();
+	}
+
+	@Override
+	public void writePacket(PacketBase packet) {
+		writePacket(this, packet);
 	}
 
 	@Override

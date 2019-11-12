@@ -18,8 +18,12 @@ public abstract class StackList<S> {
 	protected abstract int getAmount(S stack);
 
 	public void add(S stack) {
-		map.compute(getType(stack), (t, p) -> Pair.of(
-				(p == null ? 0L : p.getLeft()) + getAmount(stack),
+		add(getType(stack), getAmount(stack));
+	}
+
+	public void add(Type<S> type, long amount) {
+		map.compute(type, (t, p) -> Pair.of(
+				(p == null ? 0L : p.getLeft()) + amount,
 				p == null ? false : p.getRight()
 		));
 	}
@@ -106,7 +110,9 @@ public abstract class StackList<S> {
 		return map.entrySet().stream().map(e -> e.getKey().withAmount(Math.toIntExact(e.getValue().getLeft()))).collect(Collectors.toList());
 	}
 
-	protected abstract void writeType(Type<S> type, PacketBase packet);
+	protected void writeType(Type<S> type, PacketBase packet) {
+		type.writePacket(packet);
+	}
 
 	protected abstract Type<S> readType(PacketBase packet);
 
