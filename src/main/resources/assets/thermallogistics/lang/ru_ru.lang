@@ -5,21 +5,41 @@ item.logistics.requester.hardened.name=Усиленный запросчик
 item.logistics.requester.reinforced.name=Укреплённый запросчик
 item.logistics.requester.signalum.name=Синаловый запросчик
 item.logistics.requester.resonant.name=Резонирующий запросчик
+item.logistics.requester.info=Притягивает (или создаёт) предметы/жидкости к себе. 
 
 item.logistics.crafter.basic.name=Создатель
 item.logistics.crafter.hardened.name=Усиленный создатель
 item.logistics.crafter.reinforced.name=Укреплённый создатель
 item.logistics.crafter.signalum.name=Синаловый создатель
 item.logistics.crafter.resonant.name=Резонирующий создатель
+item.logistics.crafter.info=Создаёт предметы/жидкости по запросу.
+
+item.logistics.distributor.basic.name=Распределитель
+item.logistics.distributor.hardened.name=Усиленный распределитель
+item.logistics.distributor.reinforced.name=Укреплённый распределитель
+item.logistics.distributor.signalum.name=Синаловый распределитель
+item.logistics.distributor.resonant.name=Резонирующий распределитель
+item.logistics.distributor.info=Извлекает элементы/жидкости, устанавливая приоритет фильтрам.
 
 item.logistics.manager.name=Сетевой менеджер
 
 item.logistics.terminal.item.name=Терминал
 tile.logistics.terminal.item.name=Терминал
 
+info.logistics.terminal.dump.inventory=Сбрасывать в инвентарь
+info.logistics.terminal.dump.network=Сбрасывать в сеть
+
+info.logistics.import=Импортировать
+info.logistics.fluid.get=Получить жидкость
+
+info.logistics.inputs=Вводимые: §f%s
+info.logistics.outputs=Выводимые: §f%s
+info.logistics.split=Рецепты: %s
+
 info.logistics.tab.link=Связанные создатели
 info.logistics.tab.fluid=Добавить жидкость
 info.logistics.tab.request=Запросы
+info.logistics.tab.crafting=Создание
 
 info.logistics.manager.a.0=Используйте на сервоприводе для мониторинга системы.
 info.logistics.manager.a.1=Используйте на двух создателях, чтобы связать их.
@@ -32,12 +52,16 @@ info.logistics.manager.c.0=Мониторинг включен
 info.logistics.manager.c.1=Связывание включено
 
 info.logistics.manager.d.0=Начало связи...
-info.logistics.manager.d.1=Невозможно связать. Пожалуйста, попробуйте еще раз.
+info.logistics.manager.d.1=Невозможно связать. Пожалуйста, попробуйте ещё раз.
 info.logistics.manager.d.2=Эти создатели уже связаны.
 info.logistics.manager.d.3=Успешно связано!
+info.logistics.manager.d.4=Связывание отменено.
 
-info.logistics.manager.e.0=Предметы, перемещающиеся в эту трубу
+info.logistics.manager.e.0=Предметы, перемещающиеся в этой трубе
 info.logistics.manager.e.1=%s x %s
-info.logistics.manager.e.2=Нет предметов, перемещающихся в эту трубу
+info.logistics.manager.e.2=Нет предметов, перемещающихся в этой трубе
 
 gui.logistics.terminal.request=Запрос
+gui.logistics.terminal.missing=Отсутствующие предметы
+gui.logistics.terminal.enough=Нет необходимости запрашивать предметы
+gui.logistics.terminal.buffer=Буфер
