@@ -5,7 +5,7 @@ item.logistics.requester.hardened.name=Усиленный запросчик
 item.logistics.requester.reinforced.name=Укреплённый запросчик
 item.logistics.requester.signalum.name=Синаловый запросчик
 item.logistics.requester.resonant.name=Резонирующий запросчик
-item.logistics.requester.info=Притягивает (или создаёт) предметы/жиктости к себе. 
+item.logistics.requester.info=Притягивает (или создаёт) предметы/жидкости к себе. 
 
 item.logistics.crafter.basic.name=Создатель
 item.logistics.crafter.hardened.name=Усиленный создатель
@@ -52,7 +52,7 @@ info.logistics.manager.c.0=Мониторинг включен
 info.logistics.manager.c.1=Связывание включено
 
 info.logistics.manager.d.0=Начало связи...
-info.logistics.manager.d.1=Невозможно связать. Пожалуйста, попробуйте еще раз.
+info.logistics.manager.d.1=Невозможно связать. Пожалуйста, попробуйте ещё раз.
 info.logistics.manager.d.2=Эти создатели уже связаны.
 info.logistics.manager.d.3=Успешно связано!
 info.logistics.manager.d.4=Связывание отменено.
