@@ -1132,6 +1132,7 @@ public class CrafterItem extends ServoItem implements ICrafter<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
+			crafter.checkLinked();
 			int required = Math.min(stack.getCount(), crafter.required(stack, false));
 			if (required == 0)
 				return stack;

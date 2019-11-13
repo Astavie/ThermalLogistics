@@ -127,6 +127,9 @@ public class DistributorItem extends ServoItem {
 		for (Route<DuctUnitItem, GridItem> outputRoute : routesWithInsertSideList) {
 			if (outputRoute.pathDirections.size() <= getMaxRange()) {
 				DuctUnitItem.Cache c = outputRoute.endPoint.tileCache[outputRoute.getLastSide()];
+				if (c == null)
+					continue;
+
 				IItemHandler i = c.getItemHandler(outputRoute.getLastSide() ^ 1);
 				if (i == handler)
 					continue;
