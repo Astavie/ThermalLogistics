@@ -57,9 +57,9 @@ info.logistics.manager.d.2=Эти создатели уже связаны.
 info.logistics.manager.d.3=Успешно связано!
 info.logistics.manager.d.4=Связывание отменено.
 
-info.logistics.manager.e.0=Предметы, перемещающиеся в эту трубу
+info.logistics.manager.e.0=Предметы, перемещающиеся в этой трубе
 info.logistics.manager.e.1=%s x %s
-info.logistics.manager.e.2=Нет предметов, перемещающихся в эту трубу
+info.logistics.manager.e.2=Нет предметов, перемещающихся в этой трубе
 
 gui.logistics.terminal.request=Запрос
 gui.logistics.terminal.missing=Отсутствующие предметы
