@@ -29,7 +29,7 @@ public class TabCrafting extends TabBase {
 	public TabCrafting(GuiContainerCore gui, Shared.Item[] shared, Runnable click, Runnable request, Supplier<Boolean> enabled) {
 		this(gui, RIGHT, shared, click, request, enabled);
 		this.maxWidth = 118;
-		this.maxHeight = 100;
+		this.maxHeight = 106;
 		this.headerColor = 0xFF373737;
 	}
 
@@ -38,7 +38,7 @@ public class TabCrafting extends TabBase {
 		this.enabled = enabled;
 
 		int x = sideOffset() + 1;
-		int y = 21;
+		int y = 27;
 
 		grid = new ElementSlotItem[9];
 
@@ -79,7 +79,7 @@ public class TabCrafting extends TabBase {
 			}
 		});
 
-		addElement(amount = new ElementTextFieldAmount(gui, x + 1, y + 3 * 18 + 5, 52, 10));
+		addElement(amount = new ElementTextFieldAmount(gui, x + 1, y + 3 * 18 + 5, 52, 10, false));
 	}
 
 	public Object getStackAt(int x, int y) {

@@ -1,14 +1,15 @@
 package astavie.thermallogistics.client.gui;
 
+import astavie.thermallogistics.client.gui.element.ElementStack;
 import astavie.thermallogistics.client.gui.element.ElementTextFieldAmount;
 import astavie.thermallogistics.client.gui.element.ElementTextFieldClear;
 import astavie.thermallogistics.client.gui.tab.TabRequest;
+import astavie.thermallogistics.compat.jei.CompatJEI;
 import astavie.thermallogistics.tile.TileTerminal;
+import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.type.Type;
-import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
-import cofh.core.gui.element.ElementButtonManaged;
 import cofh.core.gui.element.ElementSlider;
 import cofh.core.gui.element.ElementTextField;
 import cofh.core.gui.element.listbox.SliderVertical;
@@ -23,25 +24,25 @@ import net.minecraft.inventory.Container;
 import net.minecraft.inventory.Slot;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.common.Loader;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
 import java.util.List;
 
-public abstract class GuiTerminal<I> extends GuiContainerCore {
+public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 
-	protected ElementTextField search;
+	public Shared<ElementTextField> search = new Shared<>();
 	protected ElementSlider slider;
 
-	protected ElementTextField amount;
-	protected ElementButtonManaged button;
+	protected Shared<ElementTextField> amount = new Shared<>(new ElementTextFieldAmount(this, 20, 4, 57, 10, true));
 
 	protected final List<Triple<Type<I>, Long, Boolean>> filter = NonNullList.create();
 	protected final TileTerminal<I> tile;
 
-	protected TabRequest tabRequest;
-
 	protected Type<I> selected;
+
+	protected TabRequest tabRequest;
 
 	protected int rows = 2;
 	protected int split = 27;
@@ -76,30 +77,29 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 		if (name.isEmpty())
 			name = StringHelper.localize(tile.getTileName());
 
-		search = new ElementTextFieldClear(this, 80, 5, 88, 10);
+		String prev = search.get() == null ? "" : search.get().getText();
+
+		search.accept(new ElementTextFieldClear(this, 80, 5, 88, 10, true) {
+			@Override
+			protected void onCharacterEntered(boolean success) {
+				if (Loader.isModLoaded("jei")) {
+					CompatJEI.synchronize(getText());
+				}
+			}
+		});
 		slider = new SliderVertical(this, 174, 18, 12, 34, 0);
 
-		addElement(search);
+		if (!prev.isEmpty()) {
+			search.get().setText(prev);
+		}
+
+		addElement(search.get());
 		addElement(slider);
+
+		search.get().setFocused(true);
 
 		slider.setLimits(0, Math.max((filter.size() - 1) / 9 - rows + 1, 0));
 		slider.setEnabled(filter.size() > rows * 9);
-
-		amount = new ElementTextFieldAmount(this, 44, 59, 71, 10);
-		button = new ElementButtonManaged(this, 118, 56, 50, 16, "") {
-			@Override
-			public void onClick() {
-				request(selected, amount.getText().isEmpty() ? 1 : Long.parseLong(amount.getText()));
-			}
-		};
-
-		boolean visible = requester().getHasStack();
-		amount.setVisible(visible);
-		button.setVisible(visible);
-
-		button.setText(StringHelper.localize("gui.logistics.terminal.request"));
-		addElement(amount);
-		addElement(button);
 	}
 
 	@Override
@@ -143,31 +143,9 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 	public void updateScreen() {
 		super.updateScreen();
 
-		boolean visible = requester().getHasStack();
-		amount.setVisible(visible && selected != null);
-		button.setVisible(visible);
-
-		if (!visible)
-			selected = null;
-
-		button.setEnabled(false);
-
-		long count = 1L;
-		if (!amount.getText().isEmpty())
-			count = Long.parseLong(amount.getText());
-
-		if (amount.isEnabled()) {
-			for (Type<I> item : tile.terminal.types()) {
-				if (isSelected(item)) {
-					button.setEnabled(count <= Integer.MAX_VALUE && (tile.terminal.craftable(item) || tile.terminal.amount(item) >= count));
-					break;
-				}
-			}
-		}
-
-		if (tile.refresh || !search.getText().equals(cache)) {
+		if (tile.refresh || !search.get().getText().equals(cache)) {
 			tile.refresh = false;
-			cache = search.getText();
+			cache = search.get().getText();
 
 			tabRequest.setList(tile.requests.stacks());
 
@@ -200,68 +178,81 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 	protected abstract int getTabOffsetY();
 
-	@Override
-	public void addTooltips(List<String> tooltip) {
-		super.addTooltips(tooltip);
-
-		if (selected != null && button.isVisible() && mouseX >= 25 && mouseX < 43 && mouseY >= 38 + (rows - 1) * 18 && mouseY < 38 + rows * 18)
-			tooltip.addAll(StackHandler.getTooltip(this, selected.getAsStack()));
-
+	public Object getStackAt(int mouseX, int mouseY) {
 		int i = slider.getValue() * 9;
 
+		a:
 		for (int y = 0; y < rows; y++) {
 			for (int x = 0; x < 9; x++) {
 				int slot = i + x + y * 9;
 				if (slot >= filter.size())
-					return;
+					break a;
 
 				int posX = 8 + x * 18;
 				int posY = 18 + y * 18;
 
-				if (mouseX >= posX - 1 && mouseX < posX + 17 && mouseY >= posY - 1 && mouseY < posY + 17)
-					tooltip.addAll(StackHandler.getTooltip(this, filter.get(slot).getLeft().getAsStack()));
+				if (mouseX >= posX - 1 && mouseX < posX + 17 && mouseY >= posY - 1 && mouseY < posY + 17) {
+					return filter.get(slot).getLeft().getAsStack();
+				}
+			}
+		}
+
+		return null;
+	}
+
+	@Override
+	public void addTooltips(List<String> tooltip) {
+		super.addTooltips(tooltip);
+
+		if (!withinOverlay(mouseX, mouseY)) {
+			int i = slider.getValue() * 9;
+
+			for (int y = 0; y < rows; y++) {
+				for (int x = 0; x < 9; x++) {
+					int slot = i + x + y * 9;
+					if (slot >= filter.size())
+						return;
+
+					int posX = 8 + x * 18;
+					int posY = 18 + y * 18;
+
+					if (mouseX >= posX - 1 && mouseX < posX + 17 && mouseY >= posY - 1 && mouseY < posY + 17)
+						tooltip.addAll(StackHandler.getTooltip(this, filter.get(slot).getLeft().getAsStack()));
+				}
 			}
 		}
 	}
 
 	@Override
 	protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
-
 		RenderHelper.enableGUIStandardItemLighting();
-		if (selected != null && button.isVisible())
-			StackHandler.render(this, 26, 38 + (rows - 1) * 18, selected.getAsStack(), false);
 
 		int i = slider.getValue() * 9;
 
+		a:
 		for (int y = 0; y < rows; y++) {
 			for (int x = 0; x < 9; x++) {
 				int slot = i + x + y * 9;
 				if (slot >= filter.size())
-					return;
+					break a;
 
 				int posX = 8 + x * 18;
 				int posY = 18 + y * 18;
 
 				Triple<Type<I>, Long, Boolean> triple = filter.get(slot);
 
-				if (isSelected(triple.getLeft())) {
-					GlStateManager.disableLighting();
-					GlStateManager.disableDepth();
-					drawGradientRect(posX, posY, posX + 16, posY + 16, 0xFFC5C5C5, 0xFFC5C5C5);
-					GlStateManager.enableLighting();
-					GlStateManager.enableDepth();
-				}
-
 				GlStateManager.enableDepth();
 				StackHandler.render(this, posX, posY, triple.getLeft().getAsStack(), triple.getMiddle() == 0L ? "Craft" : StringHelper.getScaledNumber(triple.getMiddle()));
 			}
 		}
+
+		GlStateManager.translate(0, 0, 100);
+		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
 	}
 
 	@Override
 	protected void mouseClicked(int mX, int mY, int mouseButton) throws IOException {
-		if (button.isVisible()) {
+		if (requester().getHasStack() && !withinOverlay(mX - guiLeft, mY - guiTop)) {
 			int mouseX = mX - guiLeft - 7;
 			int mouseY = mY - guiTop - 17;
 
@@ -272,8 +263,15 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 				int slot = slider.getValue() * 9 + posX + posY * 9;
 				if (slot < filter.size()) {
 					selected = filter.get(slot).getLeft();
-					updateAmount(filter.get(slot));
-				} else selected = null;
+
+					Overlay overlay = new Overlay(posX * 18 + 7, posY * 18 + 17, 81, 18);
+					overlay.elements.add(new ElementStack(this, 0, 0, selected, false));
+					overlay.elements.add(amount.get());
+
+					setOverlay(overlay);
+				} else {
+					setOverlay(null);
+				}
 
 				return;
 			}
@@ -284,20 +282,72 @@ public abstract class GuiTerminal<I> extends GuiContainerCore {
 
 	@Override
 	protected void keyTyped(char characterTyped, int keyPressed) throws IOException {
-		if (keyPressed == 28 && amount.isFocused())
-			button.onMousePressed(0, 0, 0);
-		else super.keyTyped(characterTyped, keyPressed);
+		if (Loader.isModLoaded("jei") && CompatJEI.checkKey(keyPressed)) {
+			return;
+		}
+
+		if (keyPressed == 1) {
+			if (selected != null) {
+				setOverlay(null);
+			} else {
+				mc.player.closeScreen();
+			}
+		} else if (keyPressed == 28 && amount.get().isFocused()) {
+			request(selected, amount.get().getText().isEmpty() ? 1 : Long.parseLong(amount.get().getText()));
+			setOverlay(null);
+		} else super.keyTyped(characterTyped, keyPressed);
 	}
 
-	protected abstract boolean isSelected(Type<I> stack);
+	@Override
+	protected void setOverlay(Overlay overlay) {
+		super.setOverlay(overlay);
+		if (overlay == null) {
+			selected = null;
+			amount.get().setFocused(false);
+		} else {
+			amount.get().onMousePressed(1000, 0, 0);
+		}
+	}
+
+	@Override
+	public void onFocus(ElementTextField text) {
+		if (!search.test(text)) {
+			search.get().setFocused(false);
+		}
+	}
+
+	@Override
+	public void onLeave(ElementTextField text) {
+		if (!search.test(text)) {
+			search.get().onMousePressed(1000, 0, 0);
+		}
+	}
 
 	protected abstract void updateFilter();
-
-	protected abstract void updateAmount(Triple<Type<I>, Long, Boolean> stack);
 
 	@Override
 	protected boolean onMouseWheel(int mouseX, int mouseY, int wheelMovement) {
 		return mouseX >= 7 && mouseX < 169 && mouseY >= 17 && mouseY < 71 && slider.onMouseWheel(mouseX, mouseY, wheelMovement);
+	}
+
+	@Override
+	protected void mouseReleased(int mX, int mY, int mouseButton) {
+		mX -= guiLeft;
+		mY -= guiTop;
+
+		if (mouseButton >= 0 && mouseButton <= 2) {
+			for (TabBase tab : tabs) {
+				if (tab.isFullyOpened()) {
+					tab.onMouseReleased(mouseX, mouseY);
+					break;
+				}
+			}
+		}
+
+		mX += guiLeft;
+		mY += guiTop;
+
+		super.mouseReleased(mX, mY, mouseButton);
 	}
 
 	@Override

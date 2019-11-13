@@ -59,19 +59,21 @@ public class StackHandler {
 			gui.drawFluid(x, y, (FluidStack) item, 16, 16);
 		} else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
 
-		GlStateManager.disableLighting();
-		GlStateManager.disableDepth();
-		GlStateManager.disableBlend();
+		if (text != null) {
+			GlStateManager.disableLighting();
+			GlStateManager.disableDepth();
+			GlStateManager.disableBlend();
 
-		GlStateManager.pushMatrix();
+			GlStateManager.pushMatrix();
 
-		GlStateManager.scale(0.5, 0.5, 0.5);
-		gui.getFontRenderer().drawStringWithShadow(text, (x + 16) * 2 - gui.getFontRenderer().getStringWidth(text), (y + 12) * 2, 0xFFFFFF);
+			GlStateManager.scale(0.5, 0.5, 0.5);
+			gui.getFontRenderer().drawStringWithShadow(text, (x + 16) * 2 - gui.getFontRenderer().getStringWidth(text), (y + 12) * 2, 0xFFFFFF);
 
-		GlStateManager.popMatrix();
+			GlStateManager.popMatrix();
 
-		GlStateManager.enableLighting();
-		GlStateManager.enableDepth();
+			GlStateManager.enableLighting();
+			GlStateManager.enableDepth();
+		}
 	}
 
 	@SideOnly(Side.CLIENT)

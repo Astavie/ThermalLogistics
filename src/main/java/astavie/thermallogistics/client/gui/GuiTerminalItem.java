@@ -53,31 +53,15 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		this.size = 238;
 	}
 
+	@Override
 	public Object getStackAt(int mouseX, int mouseY) {
-		if (selected != null && button.isVisible() && mouseX >= 25 && mouseX < 43 && mouseY >= 73 && mouseY < 91)
-			return selected.getAsStack();
+		Object o = super.getStackAt(mouseX, mouseY);
 
-		int i = slider.getValue() * 9;
-
-		a:
-		for (int y = 0; y < rows; y++) {
-			for (int x = 0; x < 9; x++) {
-				int slot = i + x + y * 9;
-				if (slot >= filter.size())
-					break a;
-
-				int posX = 8 + x * 18;
-				int posY = 18 + y * 18;
-
-				if (mouseX >= posX - 1 && mouseX < posX + 17 && mouseY >= posY - 1 && mouseY < posY + 17)
-					return filter.get(slot).getLeft();
-			}
+		if (o == null && tabCrafting.isFullyOpened()) {
+			return tabCrafting.getStackAt(mouseX, mouseY);
 		}
 
-		if (tabCrafting.isFullyOpened())
-			return tabCrafting.getStackAt(mouseX, mouseY);
-
-		return null;
+		return o;
 	}
 
 	@Override
@@ -265,7 +249,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 	@Override
 	protected void mouseClicked(int mX, int mY, int mouseButton) throws IOException {
-		if (button.isVisible() && !Minecraft.getMinecraft().player.inventory.getItemStack().isEmpty()) {
+		if (requester().getHasStack() && !Minecraft.getMinecraft().player.inventory.getItemStack().isEmpty()) {
 			int mouseX = mX - guiLeft - 7;
 			int mouseY = mY - guiTop - 17;
 
@@ -282,7 +266,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 	@Override
 	protected void mouseClickMove(int mX, int mY, int lastClick, long timeSinceClick) {
-		if (lastClick == 0 && button.isVisible() && Arrays.stream(tabCrafting.grid).anyMatch(slot -> slot.intersectsWith(mX - guiLeft - tabCrafting.posX(), mY - guiTop - tabCrafting.getPosY()))) {
+		if (lastClick == 0 && requester().getHasStack() && Arrays.stream(tabCrafting.grid).anyMatch(slot -> slot.intersectsWith(mX - guiLeft - tabCrafting.posX(), mY - guiTop - tabCrafting.getPosY()))) {
 			try {
 				mouseClicked(mX, mY, lastClick);
 			} catch (IOException e) {
@@ -314,18 +298,13 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	}
 
 	@Override
-	protected boolean isSelected(Type<ItemStack> type) {
-		return type.equals(selected);
-	}
-
-	@Override
 	protected void updateFilter() {
 		filter.clear();
 		for (Type<ItemStack> type : tile.terminal.types()) {
-			if (search.getText().isEmpty() || type.getDisplayName().toLowerCase().contains(search.getText().toLowerCase())) {
+			if (search.get().getText().isEmpty() || type.getDisplayName().toLowerCase().contains(search.get().getText().toLowerCase())) {
 				filter.add(Triple.of(type, tile.terminal.amount(type), tile.terminal.craftable(type)));
 			} else for (String string : getItemToolTip(type.getAsStack())) {
-				if (string.toLowerCase().contains(search.getText().toLowerCase())) {
+				if (string.toLowerCase().contains(search.get().getText().toLowerCase())) {
 					filter.add(Triple.of(type, tile.terminal.amount(type), tile.terminal.craftable(type)));
 					break;
 				}
@@ -374,8 +353,13 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 	}
 
 	@Override
-	protected void updateAmount(Triple<Type<ItemStack>, Long, Boolean> stack) {
-		amount.setText(Long.toString(stack.getRight() ? selected.getAsStack().getMaxStackSize() : Math.min(stack.getMiddle(), selected.getAsStack().getMaxStackSize())));
+	protected int getOverlaySheetX() {
+		return 194;
+	}
+
+	@Override
+	protected int getOverlaySheetY() {
+		return 28;
 	}
 
 }

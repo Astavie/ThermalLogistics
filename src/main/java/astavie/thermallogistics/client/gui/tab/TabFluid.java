@@ -35,7 +35,7 @@ public class TabFluid extends TabBase {
 		this.maxHeight = 64;
 		this.maxWidth = 72;
 
-		this.text = new ElementTextFieldAmount(gui, sideOffset() + 26, 25, 33, 10);
+		this.text = new ElementTextFieldAmount(gui, sideOffset() + 26, 25, 33, 10, false);
 		this.slot = new ElementSlotFluid(gui, sideOffset() + 4, 21, shared, shared, false);
 
 		addElement(text);
