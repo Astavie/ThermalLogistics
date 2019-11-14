@@ -51,7 +51,9 @@ public class ThermalLogistics {
 	};
 
 	public Configuration config;
+
 	public int refreshDelay;
+	public int syncDelay;
 
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
@@ -59,7 +61,10 @@ public class ThermalLogistics {
 		AttachmentRegistry.registerAttachment(DistributorFluid.ID, DistributorFluid::new);
 
 		config = new Configuration(event.getSuggestedConfigurationFile());
-		refreshDelay = config.getInt("Refresh Delay", Configuration.CATEGORY_GENERAL, 10, 1, 100, "The amount of ticks delay between sync packets from the server when looking at a GUI.");
+
+		refreshDelay = config.getInt("Refresh Delay", Configuration.CATEGORY_GENERAL, 20, 1, 100, "The amount of ticks a terminal item list is cached.");
+		syncDelay = config.getInt("Sync Delay", Configuration.CATEGORY_GENERAL, 20, 1, 100, "The amount of ticks delay between terminal update packets from the server.");
+
 		config.save();
 	}
 

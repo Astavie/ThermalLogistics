@@ -44,14 +44,17 @@ public abstract class StackList<S> {
 		));
 	}
 
-	public int remove(S stack) {
-		Type<S> type = getType(stack);
+	public long remove(S stack) {
+		return remove(getType(stack), getAmount(stack));
+	}
+
+	public long remove(Type<S> type, long count) {
 		Pair<Long, Boolean> amount = map.get(type);
 		if (amount == null)
-			return getAmount(stack);
+			return count;
 
-		if (getAmount(stack) < amount.getLeft()) {
-			map.put(type, Pair.of(amount.getLeft() - getAmount(stack), amount.getRight()));
+		if (count < amount.getLeft()) {
+			map.put(type, Pair.of(amount.getLeft() - count, amount.getRight()));
 			return 0;
 		} else {
 			if (amount.getRight())
@@ -59,7 +62,7 @@ public abstract class StackList<S> {
 			else
 				map.remove(type);
 
-			return (int) (getAmount(stack) - amount.getLeft());
+			return (int) (count - amount.getLeft());
 		}
 	}
 

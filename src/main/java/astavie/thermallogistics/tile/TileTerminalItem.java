@@ -6,7 +6,7 @@ import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.util.Shared;
-import astavie.thermallogistics.util.StackHandler;
+import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.type.ItemType;
 import codechicken.lib.inventory.InventorySimple;
@@ -44,7 +44,6 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
 import net.minecraftforge.items.wrapper.PlayerMainInvWrapper;
 
@@ -328,7 +327,6 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	@Override
 	protected void updateTerminal() {
 		Set<GridItem> grids = new HashSet<>();
-		Set<IItemHandler> handlers = new HashSet<>();
 
 		terminal.clear();
 		for (byte side = 0; side < 6; side++) {
@@ -336,7 +334,8 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			if (duct == null || grids.contains(duct.getGrid()))
 				continue;
 
-			StackHandler.addItems((ItemList) terminal, duct.getGrid(), handlers);
+			// TODO: If two grids have a common inventory it will count it twice!
+			terminal.addAll(Snapshot.INSTANCE.getItems(duct.getGrid()));
 			grids.add(duct.getGrid());
 		}
 	}
@@ -344,11 +343,6 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	@Override
 	public Class<ItemStack> getItemClass() {
 		return ItemStack.class;
-	}
-
-	@Override
-	public void cancel(ItemStack item) {
-
 	}
 
 	@Override

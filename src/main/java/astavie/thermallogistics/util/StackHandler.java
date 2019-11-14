@@ -1,21 +1,15 @@
 package astavie.thermallogistics.util;
 
-import astavie.thermallogistics.attachment.ICrafter;
-import astavie.thermallogistics.util.collection.ItemList;
-import astavie.thermallogistics.util.type.ItemType;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
-import cofh.thermaldynamics.duct.item.GridItem;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import net.minecraftforge.items.IItemHandler;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -83,27 +77,6 @@ public class StackHandler {
 		else if (item instanceof FluidStack)
 			return Collections.singletonList(((FluidStack) item).getLocalizedName());
 		else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
-	}
-
-	public static void addItems(ItemList list, GridItem grid, Collection<IItemHandler> blacklist) {
-		for (IItemHandler inv : Snapshot.INSTANCE.getInventories(grid)) {
-			if (blacklist.contains(inv))
-				continue;
-			blacklist.add(inv);
-
-			for (int slot = 0; slot < inv.getSlots(); slot++) {
-				ItemStack extract = inv.getStackInSlot(slot);
-				if (extract.isEmpty())
-					continue;
-				list.add(extract);
-			}
-		}
-
-		for (ICrafter<ItemStack> crafter : Snapshot.INSTANCE.getCrafters(grid)) {
-			for (ItemStack output : crafter.getOutputs()) {
-				list.addCraftable(new ItemType(output));
-			}
-		}
 	}
 
 }

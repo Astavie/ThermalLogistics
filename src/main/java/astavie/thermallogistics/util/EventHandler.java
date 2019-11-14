@@ -13,7 +13,7 @@ public class EventHandler {
 
 	@SubscribeEvent
 	public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-		if (event.phase == TickEvent.Phase.START && !event.player.world.isRemote && event.player.world.getTotalWorldTime() % ThermalLogistics.INSTANCE.refreshDelay == 0) {
+		if (event.phase == TickEvent.Phase.START && !event.player.world.isRemote && event.player.world.getTotalWorldTime() % ThermalLogistics.INSTANCE.syncDelay == 0) {
 			// TODO
 			//if (event.player.openContainer instanceof ContainerCrafter)
 			//	((ContainerCrafter) event.player.openContainer).crafter.sync(event.player);

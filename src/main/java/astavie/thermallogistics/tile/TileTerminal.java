@@ -105,6 +105,15 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	}
 
 	@Override
+	public void cancel(Type<I> type, long amount) {
+	}
+
+	@Override
+	public StackList<I> getRequestedStacks() {
+		return requests;
+	}
+
+	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
 		super.writeToNBT(nbt);
 
