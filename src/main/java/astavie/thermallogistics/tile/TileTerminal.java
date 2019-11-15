@@ -1,6 +1,7 @@
 package astavie.thermallogistics.tile;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.IRequester;
 import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.util.RequesterReference;
@@ -26,12 +27,10 @@ import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Set;
+import java.util.*;
 
 public abstract class TileTerminal<I> extends TileNameable implements ITickable, IRequester<I> {
 
@@ -62,8 +61,9 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		terminal.writePacket(packet);
 
 		packet.addInt(requests.size());
-		for (Request<I> request : requests) {
-			Request.writePacket(packet, request);
+		for (int i = 0; i < requests.size(); i++) {
+			Request<I> request = requests.get(i);
+			Request.writePacket(packet, request, i);
 		}
 	}
 
@@ -101,17 +101,14 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			byte message = payload.getByte();
 			if (message == 0) {
 				request(payload);
-				markChunkDirty();
-				PacketHandler.sendToAllAround(getSyncPacket(), this);
 			} else if (message == 1) {
-				int index = payload.getInt();
-				if (index < requests.size()) {
-					Request<I> remove = requests.remove(index);
+				int start = payload.getInt();
+				int end = payload.getInt();
+
+				if (start < requests.size()) {
+					requests.subList(start, Math.min(end, requests.size())).clear(); // TODO: Notify crafters
 					markChunkDirty();
-
 					PacketHandler.sendToAllAround(getSyncPacket(), this);
-
-					// TODO: Shrink
 				}
 			} else read(payload, message, player);
 		} else {
@@ -126,7 +123,30 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	}
 
 	@Override
-	public void cancel(MultiBlockGrid<?> grid, Type<I> type, long amount) {
+	public void onFail(MultiBlockGrid<?> grid, ICrafter<I> crafter, Type<I> type, long amount) {
+		// TODO: Do something with the crafter
+
+		long left = amount;
+
+		for (byte side = 0; side < 6; side++) {
+			DuctUnit<?, ?, ?> duct = getDuct(side);
+			if (duct == null || duct.getGrid() != grid)
+				continue;
+
+			long remove = Math.min(left, amountRequested(type, side));
+			removeRequested(type, remove, side);
+			left -= remove;
+
+			if (left == 0)
+				break;
+		}
+
+		if (left > 0) {
+			// This shouldn't happen
+			throw new IllegalStateException();
+		}
+
+		request(type, amount);
 	}
 
 	@Override
@@ -135,7 +155,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 		NBTTagList list = new NBTTagList();
 		for (Request<I> request : requests)
-			list.appendTag(Request.writeNBT(request));
+			if (!request.isError())
+				list.appendTag(Request.writeNBT(request));
 
 		nbt.setTag("requester", requester.get().writeToNBT(new NBTTagCompound()));
 		nbt.setTag("requests", list);
@@ -154,7 +175,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		requests.clear();
 		NBTTagList list = nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < list.tagCount(); i++)
-			requests.add(Request.readNBT(list.getCompoundTagAt(i), terminal::readType));
+			requests.add(Request.readNBT(list.getCompoundTagAt(i), terminal::readType, i));
 	}
 
 	public void register(Container container) {
@@ -211,11 +232,19 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	@Override
 	public void update() {
 		boolean b = requester.get().isEmpty();
+		if (b) requests.clear(); // TODO: Notify crafters
 	}
 
 	private void request(PacketBase payload) {
 		Type<I> type = terminal.readType(payload);
 		long amount = payload.getLong();
+
+		request(type, amount);
+	}
+
+	private void request(Type<I> type, long amount) {
+
+		// CHECK FOR STACKS
 
 		for (byte side = 0; side < 6; side++) {
 			DuctUnit<?, ?, ?> duct = getDuct(side);
@@ -228,15 +257,22 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			long left = stacks.remove(type, amount);
 			long removed = amount - left;
 
-			addRequest(new Request<>(type, removed, side));
+			addRequest(new Request<>(type, removed, side, 0));
 
 			amount = left;
 			if (amount == 0)
 				break;
 		}
 
+		// TODO: CHECK FOR CRAFTERS
+
 		if (amount > 0) {
-			addRequest(new Request<>(type, amount, "Not enough items"));
+			addRequest(new Request<>(type, amount, 0, Collections.singletonList(Collections.singletonList(Pair.of(type, amount)))));
+		}
+
+		if (!world.isRemote) {
+			markChunkDirty();
+			PacketHandler.sendToAllAround(getSyncPacket(), this);
 		}
 	}
 
@@ -271,13 +307,22 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	}
 
 	private void addRequest(Request<I> request) {
-		if (!request.isError() && !requests.isEmpty()) {
-			Request<I> last = requests.getLast();
-			if (!last.isError() && last.side == request.side && last.type.equals(request.type)) {
-				last.amount += request.amount;
-				return;
+		if (!request.isError()) {
+
+			if (!world.isRemote) {
+				//noinspection unchecked
+				((StackList<I>) Snapshot.INSTANCE.getStacks(getDuct(request.side).getGrid())).remove(request.type, request.amount);
+			}
+
+			if (!requests.isEmpty()) {
+				Request<I> last = requests.getLast();
+				if (!last.isError() && last.side == request.side && last.type.equals(request.type)) {
+					last.amount += request.amount;
+					return;
+				}
 			}
 		}
+
 		requests.add(request);
 	}
 

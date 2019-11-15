@@ -2,7 +2,6 @@ package astavie.thermallogistics.client.gui;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.gui.tab.TabCrafting;
-import astavie.thermallogistics.client.gui.tab.TabRequest;
 import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.tile.TileTerminalItem;
 import astavie.thermallogistics.util.Shared;
@@ -97,40 +96,42 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		ItemList request = new ItemList();
 		ItemList missing = new ItemList();
 
-		a:
-		for (Shared.Item item : tile.shared) {
-			if (item.test(ItemStack.EMPTY))
-				continue;
-
-			int amount = count;
-
-			for (Type<ItemStack> type : copy.types()) {
-				boolean craftable = copy.craftable(type);
-				long size = copy.amount(type);
-
-				if (!craftable && size == 0L)
+		if (count > 0) {
+			a:
+			for (Shared.Item item : tile.shared) {
+				if (item.test(ItemStack.EMPTY))
 					continue;
 
-				if (!item.test(type))
-					continue;
+				int amount = count;
 
-				if (craftable) {
-					request.add(type.withAmount(count));
-					continue a;
-				} else {
-					int shrink = (int) Math.min(size, amount);
+				for (Type<ItemStack> type : copy.types()) {
+					boolean craftable = copy.craftable(type);
+					long size = copy.amount(type);
 
-					ItemStack stack = type.withAmount(shrink);
-					request.add(stack);
-					copy.remove(stack);
+					if (!craftable && size == 0L)
+						continue;
 
-					amount -= shrink;
-					if (amount == 0)
+					if (!item.test(type))
+						continue;
+
+					if (craftable) {
+						request.add(type.withAmount(count));
 						continue a;
-				}
-			}
+					} else {
+						int shrink = (int) Math.min(size, amount);
 
-			missing.add(ItemHelper.cloneStack(item.getDisplayStack(), amount));
+						ItemStack stack = type.withAmount(shrink);
+						request.add(stack);
+						copy.remove(stack);
+
+						amount -= shrink;
+						if (amount == 0)
+							continue a;
+					}
+				}
+
+				missing.add(ItemHelper.cloneStack(item.getDisplayStack(), amount));
+			}
 		}
 
 		if (missing.isEmpty()) {
@@ -196,7 +197,6 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 				for (Type<ItemStack> type : cache.getLeft().types())
 					request(type, cache.getLeft().amount(type));
 		}, () -> cache.getLeft() != null));
-		addTab(tabRequest = new TabRequest(this, tile));
 	}
 
 	@Override
@@ -234,7 +234,6 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 		boolean visible = requester().getHasStack();
 		tabCrafting.setVisible(visible);
-		tabRequest.setVisible(visible);
 	}
 
 	@Override

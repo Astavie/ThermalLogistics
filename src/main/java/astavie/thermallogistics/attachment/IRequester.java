@@ -6,6 +6,8 @@ import astavie.thermallogistics.util.type.Type;
 import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import net.minecraft.item.ItemStack;
 
+import javax.annotation.Nullable;
+
 public interface IRequester<I> {
 
 	/**
@@ -21,7 +23,7 @@ public interface IRequester<I> {
 	/**
 	 * A request has failed and an item is not able to be crafted
 	 */
-	void cancel(MultiBlockGrid<?> grid, Type<I> type, long amount);
+	void onFail(MultiBlockGrid<?> grid, @Nullable ICrafter<I> crafter, Type<I> type, long amount);
 
 	/**
 	 * @return The icon representing this requester

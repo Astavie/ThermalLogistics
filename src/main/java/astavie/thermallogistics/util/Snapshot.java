@@ -196,7 +196,7 @@ public class Snapshot {
 		for (Map.Entry<IRequester<ItemStack>, ItemList> entry : leftovers.entrySet()) {
 			for (Type<ItemStack> type : entry.getValue().types()) {
 				long amount = entry.getValue().amount(type);
-				entry.getKey().cancel(grid, type, amount);
+				entry.getKey().onFail(grid, null, type, amount);
 			}
 		}
 	}
@@ -300,7 +300,7 @@ public class Snapshot {
 		for (Map.Entry<IRequester<FluidStack>, FluidList> entry : leftovers.entrySet()) {
 			for (Type<FluidStack> type : entry.getValue().types()) {
 				long amount = entry.getValue().amount(type);
-				entry.getKey().cancel(grid, type, amount);
+				entry.getKey().onFail(grid, null, type, amount);
 			}
 		}
 	}

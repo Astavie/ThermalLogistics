@@ -3,8 +3,8 @@ package astavie.thermallogistics.client.gui;
 import astavie.thermallogistics.client.gui.element.ElementStack;
 import astavie.thermallogistics.client.gui.element.ElementTextFieldAmount;
 import astavie.thermallogistics.client.gui.element.ElementTextFieldClear;
-import astavie.thermallogistics.client.gui.tab.TabRequest;
 import astavie.thermallogistics.compat.jei.CompatJEI;
+import astavie.thermallogistics.tile.Request;
 import astavie.thermallogistics.tile.TileTerminal;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;
@@ -25,43 +25,43 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Loader;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 
-	public Shared<ElementTextField> search = new Shared<>();
-	protected ElementSlider slider;
-
-	protected Shared<ElementTextField> amount = new Shared<>(new ElementTextFieldAmount(this, 20, 4, 57, 10, true));
-
 	protected final List<Triple<Type<I>, Long, Boolean>> filter = NonNullList.create();
 	protected final TileTerminal<I> tile;
-
+	public Shared<ElementTextField> search = new Shared<>();
+	protected ElementSlider slider;
+	protected Shared<ElementTextField> amount = new Shared<>(new ElementTextFieldAmount(this, 20, 4, 57, 10, true));
 	protected Type<I> selected;
-
-	protected TabRequest tabRequest;
 
 	protected int rows = 2;
 	protected int split = 27;
 	protected int size;
 
+	private int bar;
+
 	private String cache = "";
 
+	public GuiTerminal(TileTerminal<I> tile, Container container, ResourceLocation texture) {
+		super(container, texture);
+		this.tile = tile;
+	}
+
 	protected void request(Type<I> stack, long amount) {
+		tile.terminal.remove(stack, amount);
+		updateFilter();
+
 		PacketTileInfo packet = PacketTileInfo.newPacket(tile);
 		packet.addByte(0);
 		stack.writePacket(packet);
 		packet.addLong(amount);
 		PacketHandler.sendToServer(packet);
-	}
-
-	public GuiTerminal(TileTerminal<I> tile, Container container, ResourceLocation texture) {
-		super(container, texture);
-		this.tile = tile;
 	}
 
 	protected Slot requester() {
@@ -138,6 +138,8 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 				slot.yPos += rows * 18;
 			}
 		}
+
+		bar = 20 + rows * 18;
 	}
 
 	@Override
@@ -147,8 +149,6 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 		if (tile.refresh || !search.get().getText().equals(cache)) {
 			tile.refresh = false;
 			cache = search.get().getText();
-
-			tabRequest.setList(tile.requests.stream().map(r -> r.type.withAmount(Math.toIntExact(r.amount))).collect(Collectors.toList()));
 
 			updateFilter();
 
@@ -197,6 +197,14 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 			}
 		}
 
+		int max = Math.min(8, tile.requests.size());
+		for (int j = 0; j < max; j++) {
+			Request<?> request = tile.requests.get(tile.requests.size() - j - 1);
+			if (mouseX >= 25 + j * 18 && mouseX < 43 + j * 18 && mouseY >= bar - 1 && mouseY < bar + 17) {
+				return request.type.getAsStack();
+			}
+		}
+
 		return null;
 	}
 
@@ -207,18 +215,40 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 		if (!withinOverlay(mouseX, mouseY)) {
 			int i = slider.getValue() * 9;
 
+			a:
 			for (int y = 0; y < rows; y++) {
 				for (int x = 0; x < 9; x++) {
 					int slot = i + x + y * 9;
 					if (slot >= filter.size())
-						return;
+						break a;
 
 					int posX = 8 + x * 18;
 					int posY = 18 + y * 18;
 
 					if (mouseX >= posX - 1 && mouseX < posX + 17 && mouseY >= posY - 1 && mouseY < posY + 17)
-						tooltip.addAll(StackHandler.getTooltip(this, filter.get(slot).getLeft().getAsStack()));
+						tooltip.addAll(filter.get(slot).getLeft().getTooltip(this));
 				}
+			}
+		}
+
+		int max = Math.min(8, tile.requests.size());
+		for (int j = 0; j < max; j++) {
+			Request<I> request = tile.requests.get(tile.requests.size() - j - 1);
+
+			if (mouseX >= 25 + j * 18 && mouseX < 43 + j * 18 && mouseY >= bar - 1 && mouseY < bar + 17) {
+				tooltip.addAll(request.type.getTooltip(this));
+				if (request.isError()) {
+					tooltip.add("");
+					tooltip.add(StringHelper.localize("gui.logistics.terminal.missing"));
+					for (List<Pair<Type<I>, Long>> list : request.error) {
+						if (request.error.get(0) != list)
+							tooltip.add(StringHelper.localize("gui.logistics.terminal.or"));
+						for (Pair<Type<I>, Long> pair : list)
+							tooltip.add("§7" + StringHelper.localizeFormat("info.logistics.manager.e.1", pair.getRight(), pair.getLeft().getDisplayName()));
+					}
+				}
+				tooltip.add("");
+				tooltip.add("§7" + StringHelper.localize("gui.logistics.terminal.cancel"));
 			}
 		}
 	}
@@ -246,19 +276,44 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 			}
 		}
 
+		int max = Math.min(8, tile.requests.size());
+		for (int j = 0; j < max; j++) {
+			Request<?> request = tile.requests.get(tile.requests.size() - j - 1);
+
+			if (request.isError()) {
+				int l = j == 0 ? 0 : -1;
+				int r = j == 7 ? 0 : +1;
+
+				GlStateManager.disableLighting();
+				GlStateManager.disableDepth();
+				drawGradientRect(l + 26 + j * 18, bar, r + 42 + j * 18, bar + 16, 0xFFFF4444, 0xFFFF4444);
+				GlStateManager.enableLighting();
+				GlStateManager.enableDepth();
+			}
+
+			GlStateManager.enableDepth();
+			StackHandler.render(this, 26 + j * 18, bar, request.type.getAsStack(), StringHelper.getScaledNumber(request.amount));
+		}
+
 		GlStateManager.translate(0, 0, 100);
 		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
 	}
 
 	@Override
 	protected void mouseClicked(int mX, int mY, int mouseButton) throws IOException {
-		if (requester().getHasStack() && !withinOverlay(mX - guiLeft, mY - guiTop)) {
+		if ((mouseButton == 0 || mouseButton == 1) && requester().getHasStack() && !withinOverlay(mX - guiLeft, mY - guiTop)) {
 			int mouseX = mX - guiLeft - 7;
 			int mouseY = mY - guiTop - 17;
 
 			if (mouseX >= 0 && mouseX < 9 * 18 && mouseY >= 0 && mouseY < rows * 18) {
 				int posX = mouseX / 18;
 				int posY = mouseY / 18;
+
+				if (mouseButton == 1) {
+					amount.get().setText("");
+				} else if (amount.get().getText().isEmpty()) {
+					amount.get().setText("1");
+				}
 
 				int slot = slider.getValue() * 9 + posX + posY * 9;
 				if (slot < filter.size()) {
@@ -274,6 +329,22 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 				}
 
 				return;
+			} else if (mouseButton == 1 && mouseX >= 18 && mouseX < 9 * 18 && mouseY >= bar - 17 && mouseY < bar + 1) {
+				int pos = tile.requests.size() - mouseX / 18;
+				if (pos >= 0) {
+					Request<?> request = tile.requests.remove(pos);
+					int start = request.index;
+					int end = tile.requests.size() <= pos ? tile.requests.size() + 1 : tile.requests.get(pos).index;
+
+					PacketTileInfo packet = PacketTileInfo.newPacket(tile);
+					packet.addByte(1);
+					packet.addInt(start);
+					packet.addInt(end);
+					PacketHandler.sendToServer(packet);
+
+					playClickSound(1.0F);
+					return;
+				}
 			}
 		}
 

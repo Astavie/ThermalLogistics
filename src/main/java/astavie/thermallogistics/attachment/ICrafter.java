@@ -14,8 +14,6 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	void unlink(RequesterReference<?> reference);
 
-	void cancelLinked(int recipes);
-
 	boolean isEnabled();
 
 	Collection<I> getInputs();
@@ -33,6 +31,16 @@ public interface ICrafter<I> extends IRequester<I> {
 	 * Requests this recipe x times. Will <strong>not</strong> notify linked crafters.
 	 * Recommended to only use this within {@link #request(I)}.
 	 */
-	boolean request(int amount);
+	boolean request(int recipes);
+
+	/**
+	 * A requester doesn't need this crafter anymore
+	 */
+	void cancel(IRequester<I> requester, I output);
+
+	/**
+	 * A linked crafter failed to make its recipe x times.
+	 */
+	void cancelLinked(int recipes);
 
 }

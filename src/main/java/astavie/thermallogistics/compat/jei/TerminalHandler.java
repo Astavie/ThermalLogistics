@@ -44,11 +44,11 @@ public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminal
 	@Nullable
 	@Override
 	public IRecipeTransferError transferRecipe(@Nonnull ContainerTerminalItem container, @Nonnull IRecipeLayout recipeLayout, @Nonnull EntityPlayer player, boolean maxTransfer, boolean doTransfer) {
-		if (!container.gui.tabCrafting.open) {
-			container.gui.tabCrafting.toggleOpen();
-		}
-
 		if (doTransfer) {
+			if (!container.gui.tabCrafting.open) {
+				container.gui.tabCrafting.toggleOpen();
+			}
+
 			ItemStack[][] stacks = new ItemStack[9][];
 
 			// Shamelessly copied from Logistics Pipes
