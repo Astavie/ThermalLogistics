@@ -14,6 +14,8 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	void unlink(RequesterReference<?> reference);
 
+	void cancelLinked(int recipes);
+
 	boolean isEnabled();
 
 	Collection<I> getInputs();

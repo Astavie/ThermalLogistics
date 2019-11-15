@@ -3,6 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
+import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import net.minecraft.item.ItemStack;
 
 public interface IRequester<I> {
@@ -20,7 +21,7 @@ public interface IRequester<I> {
 	/**
 	 * A request has failed and an item is not able to be crafted
 	 */
-	void cancel(Type<I> type, long amount);
+	void cancel(MultiBlockGrid<?> grid, Type<I> type, long amount);
 
 	/**
 	 * @return The icon representing this requester
@@ -33,8 +34,8 @@ public interface IRequester<I> {
 	ItemStack getTileIcon();
 
 	/**
-	 * @return The stacks this requester is currently waiting on
+	 * @return The stacks this requester is currently waiting on, <strong>excluding</strong> stacks from crafters
 	 */
-	StackList<I> getRequestedStacks();
+	StackList<I> getRequestedStacks(MultiBlockGrid<?> grid);
 
 }

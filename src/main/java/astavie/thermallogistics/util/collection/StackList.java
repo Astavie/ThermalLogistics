@@ -15,7 +15,7 @@ public abstract class StackList<S> {
 
 	public abstract Type<S> getType(S stack);
 
-	protected abstract int getAmount(S stack);
+	public abstract int getAmount(S stack);
 
 	public void add(S stack) {
 		add(getType(stack), getAmount(stack));
@@ -117,11 +117,13 @@ public abstract class StackList<S> {
 		type.writePacket(packet);
 	}
 
-	protected abstract Type<S> readType(PacketBase packet);
+	public abstract Type<S> readType(PacketBase packet);
 
-	protected abstract NBTTagCompound writeType(Type<S> type);
+	protected NBTTagCompound writeType(Type<S> type) {
+		return type.writeNbt();
+	}
 
-	protected abstract Type<S> readType(NBTTagCompound tag);
+	public abstract Type<S> readType(NBTTagCompound tag);
 
 	public void writePacket(PacketBase packet) {
 		packet.addInt(map.size());

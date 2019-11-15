@@ -56,6 +56,11 @@ public class ItemType implements Type<ItemStack> {
 	}
 
 	@Override
+	public NBTTagCompound writeNbt() {
+		return writeNbt(this);
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		return obj instanceof ItemType && ItemHelper.itemsIdentical(compare, ((ItemType) obj).compare);
 	}

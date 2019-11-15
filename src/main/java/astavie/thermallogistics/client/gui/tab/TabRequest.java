@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.tileentity.TileEntity;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 public class TabRequest extends TabBase {
@@ -21,20 +22,19 @@ public class TabRequest extends TabBase {
 
 	private final TileEntity tile;
 
-	private List<?> list;
+	private List<?> list = Collections.emptyList();
 
 	private int num;
 	private int max;
 
 	private int first = 0;
 
-	public TabRequest(GuiContainerCore gui, List<?> list, TileEntity tile) {
-		this(gui, RIGHT, list, tile);
+	public TabRequest(GuiContainerCore gui, TileEntity tile) {
+		this(gui, RIGHT, tile);
 	}
 
-	public TabRequest(GuiContainerCore gui, int side, List<?> list, TileEntity tile) {
+	public TabRequest(GuiContainerCore gui, int side, TileEntity tile) {
 		super(gui, side);
-		this.list = list;
 		this.tile = tile;
 
 		this.maxWidth = 88;

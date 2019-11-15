@@ -3,6 +3,7 @@ package astavie.thermallogistics.util.type;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.network.PacketBase;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -17,6 +18,8 @@ public interface Type<I> {
 	String getDisplayName();
 
 	void writePacket(PacketBase packet);
+
+	NBTTagCompound writeNbt();
 
 	@SideOnly(Side.CLIENT)
 	default List<String> getTooltip(GuiContainerCore gui) {

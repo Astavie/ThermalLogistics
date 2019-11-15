@@ -196,7 +196,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 				for (Type<ItemStack> type : cache.getLeft().types())
 					request(type, cache.getLeft().amount(type));
 		}, () -> cache.getLeft() != null));
-		addTab(tabRequest = new TabRequest(this, tile.requests.stacks(), tile));
+		addTab(tabRequest = new TabRequest(this, tile));
 	}
 
 	@Override

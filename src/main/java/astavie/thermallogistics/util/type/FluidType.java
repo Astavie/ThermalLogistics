@@ -51,6 +51,11 @@ public class FluidType implements Type<FluidStack> {
 	}
 
 	@Override
+	public NBTTagCompound writeNbt() {
+		return writeNbt(this);
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		return obj instanceof FluidType && compare.isFluidEqual(((FluidType) obj).compare);
 	}

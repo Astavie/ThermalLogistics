@@ -25,22 +25,17 @@ public class ItemList extends StackList<ItemStack> {
 	}
 
 	@Override
-	protected int getAmount(ItemStack stack) {
+	public int getAmount(ItemStack stack) {
 		return stack.getCount();
 	}
 
 	@Override
-	protected Type<ItemStack> readType(PacketBase packet) {
+	public Type<ItemStack> readType(PacketBase packet) {
 		return ItemType.readPacket(packet);
 	}
 
 	@Override
-	protected NBTTagCompound writeType(Type<ItemStack> type) {
-		return ItemType.writeNbt((ItemType) type);
-	}
-
-	@Override
-	protected ItemType readType(NBTTagCompound tag) {
+	public ItemType readType(NBTTagCompound tag) {
 		return ItemType.readNbt(tag);
 	}
 

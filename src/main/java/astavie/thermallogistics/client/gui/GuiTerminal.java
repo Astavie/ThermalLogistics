@@ -29,6 +29,7 @@ import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 
@@ -147,10 +148,9 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 			tile.refresh = false;
 			cache = search.get().getText();
 
-			tabRequest.setList(tile.requests.stacks());
+			tabRequest.setList(tile.requests.stream().map(r -> r.type.withAmount(Math.toIntExact(r.amount))).collect(Collectors.toList()));
 
 			updateFilter();
-
 
 			slider.setLimits(0, Math.max((filter.size() - 1) / 9 - rows + 1, 0));
 			slider.setEnabled(filter.size() > rows * 9);

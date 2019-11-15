@@ -138,9 +138,13 @@ public class Snapshot {
 					if (attachment instanceof IRequester && !requesters.contains(attachment))
 						//noinspection unchecked
 						requesters.add((IRequester<ItemStack>) attachment);
-					if (attachment instanceof ICrafter && !crafters.contains(attachment) && ((ICrafter) attachment).isEnabled())
+					if (attachment instanceof ICrafter && !crafters.contains(attachment) && ((ICrafter) attachment).isEnabled()) {
 						//noinspection unchecked
 						crafters.add((ICrafter<ItemStack>) attachment);
+						//noinspection unchecked
+						for (ItemStack stack : ((ICrafter<ItemStack>) attachment).getOutputs())
+							list.addCraftable(list.getType(stack));
+					}
 					if (!attachment.canSend())
 						continue;
 				}
@@ -148,9 +152,13 @@ public class Snapshot {
 				if (cache.tile instanceof IRequester && !requesters.contains(cache.tile))
 					//noinspection unchecked
 					requesters.add((IRequester<ItemStack>) cache.tile);
-				if (cache.tile instanceof ICrafter && !crafters.contains(cache.tile) && ((ICrafter) cache.tile).isEnabled())
+				if (cache.tile instanceof ICrafter && !crafters.contains(cache.tile) && ((ICrafter) cache.tile).isEnabled()) {
 					//noinspection unchecked
 					crafters.add((ICrafter<ItemStack>) cache.tile);
+					//noinspection unchecked
+					for (ItemStack stack : ((ICrafter<ItemStack>) cache.tile).getOutputs())
+						list.addCraftable(list.getType(stack));
+				}
 
 				// Cache inventories
 
@@ -174,7 +182,7 @@ public class Snapshot {
 
 		// first complete stack list
 		for (IRequester<ItemStack> requester : requesters) {
-			StackList<ItemStack> requested = requester.getRequestedStacks();
+			StackList<ItemStack> requested = requester.getRequestedStacks(grid);
 			for (Type<ItemStack> type : requested.types()) {
 				long leftover = list.remove(type, requested.amount(type));
 				if (leftover > 0) {
@@ -188,7 +196,7 @@ public class Snapshot {
 		for (Map.Entry<IRequester<ItemStack>, ItemList> entry : leftovers.entrySet()) {
 			for (Type<ItemStack> type : entry.getValue().types()) {
 				long amount = entry.getValue().amount(type);
-				entry.getKey().cancel(type, amount);
+				entry.getKey().cancel(grid, type, amount);
 			}
 		}
 	}
@@ -234,9 +242,13 @@ public class Snapshot {
 					if (attachment instanceof IRequester && !requesters.contains(attachment))
 						//noinspection unchecked
 						requesters.add((IRequester<FluidStack>) attachment);
-					if (attachment instanceof ICrafter && !crafters.contains(attachment) && ((ICrafter) attachment).isEnabled())
+					if (attachment instanceof ICrafter && !crafters.contains(attachment) && ((ICrafter) attachment).isEnabled()) {
 						//noinspection unchecked
 						crafters.add((ICrafter<FluidStack>) attachment);
+						//noinspection unchecked
+						for (FluidStack stack : ((ICrafter<FluidStack>) attachment).getOutputs())
+							list.addCraftable(list.getType(stack));
+					}
 					if (!attachment.canSend())
 						continue;
 				}
@@ -244,9 +256,13 @@ public class Snapshot {
 				if (cache.tile instanceof IRequester && !requesters.contains(cache.tile))
 					//noinspection unchecked
 					requesters.add((IRequester<FluidStack>) cache.tile);
-				if (cache.tile instanceof ICrafter && !crafters.contains(cache.tile) && ((ICrafter) cache.tile).isEnabled())
+				if (cache.tile instanceof ICrafter && !crafters.contains(cache.tile) && ((ICrafter) cache.tile).isEnabled()) {
 					//noinspection unchecked
 					crafters.add((ICrafter<FluidStack>) cache.tile);
+					//noinspection unchecked
+					for (FluidStack stack : ((ICrafter<FluidStack>) cache.tile).getOutputs())
+						list.addCraftable(list.getType(stack));
+				}
 
 				// Cache tanks
 
@@ -270,7 +286,7 @@ public class Snapshot {
 
 		// first complete stack list
 		for (IRequester<FluidStack> requester : requesters) {
-			StackList<FluidStack> requested = requester.getRequestedStacks();
+			StackList<FluidStack> requested = requester.getRequestedStacks(grid);
 			for (Type<FluidStack> type : requested.types()) {
 				long leftover = list.remove(type, requested.amount(type));
 				if (leftover > 0) {
@@ -284,7 +300,7 @@ public class Snapshot {
 		for (Map.Entry<IRequester<FluidStack>, FluidList> entry : leftovers.entrySet()) {
 			for (Type<FluidStack> type : entry.getValue().types()) {
 				long amount = entry.getValue().amount(type);
-				entry.getKey().cancel(type, amount);
+				entry.getKey().cancel(grid, type, amount);
 			}
 		}
 	}
@@ -307,6 +323,14 @@ public class Snapshot {
 	public Collection<ICrafter<FluidStack>> getCrafters(GridFluid grid) {
 		refresh(grid);
 		return fluidCrafters.get(grid);
+	}
+
+	public StackList<?> getStacks(MultiBlockGrid<?> grid) {
+		if (grid instanceof GridItem)
+			return getItems((GridItem) grid);
+		else if (grid instanceof GridFluid)
+			return getFluids((GridFluid) grid);
+		return null;
 	}
 
 	public ItemList getItems(GridItem grid) {

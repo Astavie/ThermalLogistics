@@ -14,22 +14,17 @@ public class FluidList extends StackList<FluidStack> {
 	}
 
 	@Override
-	protected int getAmount(FluidStack stack) {
+	public int getAmount(FluidStack stack) {
 		return stack.amount;
 	}
 
 	@Override
-	protected Type<FluidStack> readType(PacketBase packet) {
+	public Type<FluidStack> readType(PacketBase packet) {
 		return FluidType.readPacket(packet);
 	}
 
 	@Override
-	protected NBTTagCompound writeType(Type<FluidStack> type) {
-		return FluidType.writeNbt((FluidType) type);
-	}
-
-	@Override
-	protected Type<FluidStack> readType(NBTTagCompound tag) {
+	public Type<FluidStack> readType(NBTTagCompound tag) {
 		return FluidType.readNbt(tag);
 	}
 

@@ -8,6 +8,7 @@ import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.collection.ItemList;
+import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.ItemType;
 import codechicken.lib.inventory.InventorySimple;
 import cofh.core.inventory.InventoryCraftingFalse;
@@ -21,6 +22,7 @@ import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
+import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
 import com.google.common.collect.Lists;
@@ -61,19 +63,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	public final InventorySimple inventory = new InventorySimple(27);
 
 	public TileTerminalItem() {
-		super(new ItemList(), new ItemList());
-	}
-
-	@Override
-	protected void sync(PacketBase packet) {
-		terminal.writePacket(packet);
-		requests.writePacket(packet);
-	}
-
-	@Override
-	protected void read(PacketBase packet) {
-		terminal.readPacket(packet);
-		requests.readPacket(packet);
+		super(new ItemList());
 	}
 
 	@Override
@@ -212,7 +202,8 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		}
 	}
 
-	private DuctUnitItem getDuct(byte side) {
+	@Override
+	protected DuctUnitItem getDuct(byte side) {
 		TileEntity tile = world.getTileEntity(pos.offset(EnumFacing.byIndex(side)));
 		if (tile instanceof TileGrid) {
 			DuctUnitItem duct = ((TileGrid) tile).getDuct(DuctToken.ITEMS);
@@ -274,7 +265,6 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		}
 
 		nbt.setTag("inventory", slots);
-		nbt.setTag("requests", requests.writeNbt());
 		return nbt;
 	}
 
@@ -287,8 +277,6 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			NBTTagCompound item = slots.getCompoundTagAt(i);
 			inventory.setInventorySlotContents(item.getInteger("slot"), new ItemStack(item));
 		}
-
-		requests.readNbt(nbt.getTagList("requests", Constants.NBT.TAG_COMPOUND));
 	}
 
 	@Override
@@ -310,18 +298,13 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	@Override
 	public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
 		if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && facing != world.getBlockState(pos).getValue(BlockTerminal.DIRECTION).getFace())
-			return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(new Inventory(this, inventory));
+			return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(new Inventory(this, inventory, (byte) facing.getIndex()));
 		return super.getCapability(capability, facing);
 	}
 
 	@Override
 	public String getTileName() {
 		return ThermalLogistics.Blocks.terminal_item.getTranslationKey() + ".name";
-	}
-
-	@Override
-	protected void request(PacketBase payload) {
-		requests.add(ItemType.readPacket(payload), payload.getLong());
 	}
 
 	@Override
@@ -341,22 +324,35 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	}
 
 	@Override
-	public Class<ItemStack> getItemClass() {
-		return ItemStack.class;
+	public ItemStack getTileIcon() {
+		return new ItemStack(ThermalLogistics.Blocks.terminal_item);
 	}
 
 	@Override
-	public ItemStack getTileIcon() {
-		return new ItemStack(ThermalLogistics.Blocks.terminal_item);
+	public StackList<ItemStack> getRequestedStacks(MultiBlockGrid<?> grid) {
+		ItemList list = new ItemList();
+
+		for (Request<ItemStack> request : requests) {
+			if (request.isError())
+				continue;
+
+			DuctUnitItem duct = getDuct(request.side);
+			if (duct != null && duct.getGrid() == grid)
+				list.add(request.type, request.amount);
+		}
+
+		return list;
 	}
 
 	private static class Inventory extends InvWrapper {
 
 		private final TileTerminalItem tile;
+		private final byte side;
 
-		private Inventory(TileTerminalItem tile, IInventory inv) {
+		private Inventory(TileTerminalItem tile, IInventory inv, byte side) {
 			super(inv);
 			this.tile = tile;
+			this.side = side;
 		}
 
 		@Nonnull
@@ -374,14 +370,19 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-			ItemStack insert = ItemHelper.cloneStack(stack, (int) Math.min(stack.getCount(), tile.requests.amount(stack)));
+			ItemType type = new ItemType(stack);
+
+			ItemStack insert = ItemHelper.cloneStack(stack, (int) Math.min(stack.getCount(), tile.amountRequested(type, side)));
 			if (insert.isEmpty())
 				return stack;
 
 			ItemStack remainder = super.insertItem(slot, insert, simulate);
 			if (!simulate) {
-				tile.requests.remove(ItemHelper.cloneStack(insert, insert.getCount() - remainder.getCount()));
-				PacketHandler.sendToAllAround(tile.getSyncPacket(), tile);
+				int amount = insert.getCount() - remainder.getCount();
+				if (amount > 0) {
+					tile.removeRequested(type, amount, side);
+					PacketHandler.sendToAllAround(tile.getSyncPacket(), tile);
+				}
 			}
 
 			return ItemHelper.cloneStack(stack, stack.getCount() - insert.getCount() + remainder.getCount());
