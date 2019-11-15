@@ -1,6 +1,7 @@
 package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.util.RequesterReference;
+import astavie.thermallogistics.util.type.Type;
 
 import java.util.Collection;
 
@@ -36,7 +37,7 @@ public interface ICrafter<I> extends IRequester<I> {
 	/**
 	 * A requester doesn't need this crafter anymore
 	 */
-	void cancel(IRequester<I> requester, I output);
+	void cancel(IRequester<I> requester, Type<I> type, long amount);
 
 	/**
 	 * A linked crafter failed to make its recipe x times.

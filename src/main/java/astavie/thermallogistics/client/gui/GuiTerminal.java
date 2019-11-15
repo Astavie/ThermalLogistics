@@ -337,7 +337,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 				if (pos >= 0) {
 					Request<?> request = tile.requests.remove(pos);
 					int start = request.index;
-					int end = tile.requests.size() <= pos ? tile.requests.size() + 1 : tile.requests.get(pos).index;
+					int end = tile.requests.size() <= pos ? Integer.MAX_VALUE : tile.requests.get(pos).index;
 
 					PacketTileInfo packet = PacketTileInfo.newPacket(tile);
 					packet.addByte(1);

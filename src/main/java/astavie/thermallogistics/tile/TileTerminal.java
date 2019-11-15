@@ -30,6 +30,7 @@ import net.minecraftforge.common.util.Constants;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 
 public abstract class TileTerminal<I> extends TileNameable implements ITickable, IRequester<I> {
@@ -106,7 +107,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 				int end = payload.getInt();
 
 				if (start < requests.size()) {
-					requests.subList(start, Math.min(end, requests.size())).clear(); // TODO: Notify crafters
+					clearRequests(requests.subList(start, Math.min(end, requests.size())));
+
 					markChunkDirty();
 					PacketHandler.sendToAllAround(getSyncPacket(), this);
 				}
@@ -117,6 +119,24 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		}
 	}
 
+	private void clearRequests(List<Request<I>> list) {
+		for (Iterator<Request<I>> iterator = list.iterator(); iterator.hasNext(); ) {
+			removeRequest(iterator.next());
+			iterator.remove();
+		}
+	}
+
+	private void removeRequest(Request<I> request) {
+		if (!request.isError()) {
+			if (request.crafter == null) {
+				Snapshot.INSTANCE.<I>getStacks(getDuct(request.side).getGrid()).add(request.type, request.amount);
+				terminal.add(request.type, request.amount);
+			} else {
+				request.crafter.cancel(this, request.type, request.amount);
+			}
+		}
+	}
+
 	@Override
 	public boolean shouldRefresh(World world, BlockPos pos, @Nonnull IBlockState oldState, @Nonnull IBlockState newSate) {
 		return oldState.getBlock() != newSate.getBlock();
@@ -124,8 +144,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 	@Override
 	public void onFail(MultiBlockGrid<?> grid, ICrafter<I> crafter, Type<I> type, long amount) {
-		// TODO: Do something with the crafter
-
 		long left = amount;
 
 		for (byte side = 0; side < 6; side++) {
@@ -133,8 +151,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			if (duct == null || duct.getGrid() != grid)
 				continue;
 
-			long remove = Math.min(left, amountRequested(type, side));
-			removeRequested(type, remove, side);
+			long remove = Math.min(left, amountRequested(crafter, type, side));
+			removeRequested(crafter, type, remove, side);
 			left -= remove;
 
 			if (left == 0)
@@ -232,7 +250,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	@Override
 	public void update() {
 		boolean b = requester.get().isEmpty();
-		if (b) requests.clear(); // TODO: Notify crafters
+		if (b) clearRequests(requests);
 	}
 
 	private void request(PacketBase payload) {
@@ -243,6 +261,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	}
 
 	private void request(Type<I> type, long amount) {
+		updateTerminal();
 
 		// CHECK FOR STACKS
 
@@ -251,15 +270,14 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			if (duct == null)
 				continue;
 
-			//noinspection unchecked
-			StackList<I> stacks = (StackList<I>) Snapshot.INSTANCE.getStacks(duct.getGrid());
+			StackList<I> stacks = Snapshot.INSTANCE.getStacks(duct.getGrid());
 
-			long left = stacks.remove(type, amount);
-			long removed = amount - left;
+			long removed = Math.min(Math.min(stacks.amount(type), terminal.amount(type)), amount);
+			stacks.remove(type, removed);
 
-			addRequest(new Request<>(type, removed, side, 0));
+			addRequest(new Request<>(type, removed, side, null, 0));
 
-			amount = left;
+			amount -= removed;
 			if (amount == 0)
 				break;
 		}
@@ -276,20 +294,20 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		}
 	}
 
-	protected long amountRequested(Type<I> type, byte side) {
+	protected long amountRequested(@Nullable ICrafter<I> crafter, Type<I> type, byte side) {
 		long amount = 0;
 
 		for (Request<I> request : requests)
-			if (!request.isError() && request.side == side && request.type.equals(type))
+			if (!request.isError() && request.side == side && request.type.equals(type) && request.crafter == crafter)
 				amount += request.amount;
 
 		return amount;
 	}
 
-	protected void removeRequested(Type<I> type, long amount, byte side) {
+	protected void removeRequested(@Nullable ICrafter<I> crafter, Type<I> type, long amount, byte side) {
 		for (Iterator<Request<I>> iterator = requests.iterator(); iterator.hasNext(); ) {
 			Request<I> request = iterator.next();
-			if (request.side != side || !request.type.equals(type))
+			if (request.side != side || !request.type.equals(type) || request.crafter != crafter)
 				continue;
 
 			long remove = Math.min(request.amount, amount);
@@ -309,14 +327,14 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	private void addRequest(Request<I> request) {
 		if (!request.isError()) {
 
-			if (!world.isRemote) {
-				//noinspection unchecked
-				((StackList<I>) Snapshot.INSTANCE.getStacks(getDuct(request.side).getGrid())).remove(request.type, request.amount);
+			if (!world.isRemote && request.crafter == null) {
+				Snapshot.INSTANCE.<I>getStacks(getDuct(request.side).getGrid()).remove(request.type, request.amount);
+				terminal.remove(request.type, request.amount);
 			}
 
 			if (!requests.isEmpty()) {
 				Request<I> last = requests.getLast();
-				if (!last.isError() && last.side == request.side && last.type.equals(request.type)) {
+				if (!last.isError() && last.crafter == request.crafter && last.side == request.side && last.type.equals(request.type)) {
 					last.amount += request.amount;
 					return;
 				}

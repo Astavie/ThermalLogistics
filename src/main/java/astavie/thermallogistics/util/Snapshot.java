@@ -325,11 +325,13 @@ public class Snapshot {
 		return fluidCrafters.get(grid);
 	}
 
-	public StackList<?> getStacks(MultiBlockGrid<?> grid) {
+	public <I> StackList<I> getStacks(MultiBlockGrid<?> grid) {
 		if (grid instanceof GridItem)
-			return getItems((GridItem) grid);
+			//noinspection unchecked
+			return (StackList<I>) getItems((GridItem) grid);
 		else if (grid instanceof GridFluid)
-			return getFluids((GridFluid) grid);
+			//noinspection unchecked
+			return (StackList<I>) getFluids((GridFluid) grid);
 		return null;
 	}
 

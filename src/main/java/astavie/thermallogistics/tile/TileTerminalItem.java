@@ -46,6 +46,7 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
 import net.minecraftforge.items.wrapper.PlayerMainInvWrapper;
 
@@ -311,14 +312,29 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	protected void updateTerminal() {
 		Set<GridItem> grids = new HashSet<>();
 
+		Set<IItemHandler> inventories = new HashSet<>();
+
 		terminal.clear();
 		for (byte side = 0; side < 6; side++) {
 			DuctUnitItem duct = getDuct(side);
 			if (duct == null || grids.contains(duct.getGrid()))
 				continue;
 
-			// TODO: If two grids have a common inventory it will count it twice!
 			terminal.addAll(Snapshot.INSTANCE.getItems(duct.getGrid()));
+
+			// Remove duplicate items
+			for (IItemHandler handler : Snapshot.INSTANCE.getInventories(duct.getGrid())) {
+				if (!inventories.add(handler)) {
+					// Duplicate!
+					for (int slot = 0; slot < handler.getSlots(); slot++) {
+						ItemStack extract = handler.getStackInSlot(slot);
+						if (extract.isEmpty())
+							continue;
+						terminal.remove(extract);
+					}
+				}
+			}
+
 			grids.add(duct.getGrid());
 		}
 	}
@@ -370,9 +386,11 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
+			// TODO: Determine which crafter sent it
+
 			ItemType type = new ItemType(stack);
 
-			ItemStack insert = ItemHelper.cloneStack(stack, (int) Math.min(stack.getCount(), tile.amountRequested(type, side)));
+			ItemStack insert = ItemHelper.cloneStack(stack, (int) Math.min(stack.getCount(), tile.amountRequested(null, type, side)));
 			if (insert.isEmpty())
 				return stack;
 
@@ -380,7 +398,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			if (!simulate) {
 				int amount = insert.getCount() - remainder.getCount();
 				if (amount > 0) {
-					tile.removeRequested(type, amount, side);
+					tile.removeRequested(null, type, amount, side);
 					PacketHandler.sendToAllAround(tile.getSyncPacket(), tile);
 				}
 			}

@@ -1,10 +1,13 @@
 package astavie.thermallogistics.tile;
 
+import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.type.Type;
 import cofh.core.network.PacketBase;
 import net.minecraft.nbt.NBTTagCompound;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -12,18 +15,25 @@ import java.util.function.Function;
 
 public class Request<I> {
 
-	public final Type<I> type;
+	// Server-side only
+
 	public final byte side;
+	public final ICrafter<I> crafter; // Doesn't have to be a reference because everything in a grid is loaded at once
+
+	// Both sides
+
+	public final Type<I> type;
 	public final int index;
 
 	public final List<List<Pair<Type<I>, Long>>> error;
 
 	public long amount;
 
-	public Request(Type<I> type, long amount, byte side, int index) {
+	public Request(Type<I> type, long amount, byte side, @Nullable ICrafter<I> crafter, int index) {
 		this.type = type;
 		this.amount = amount;
 		this.side = side;
+		this.crafter = crafter;
 		this.index = index;
 		this.error = Collections.emptyList();
 	}
@@ -32,6 +42,7 @@ public class Request<I> {
 		this.type = type;
 		this.amount = amount;
 		this.side = 0;
+		this.crafter = null;
 		this.index = index;
 		this.error = error;
 	}
@@ -74,16 +85,15 @@ public class Request<I> {
 				packet.addLong(pair.getRight());
 			}
 		}
-
-		// Not writing side because the client doesn't need to know that
-		// TODO: But because of this the order is different on the client than on the server
 	}
 
 	public static <I> Request<I> readNBT(NBTTagCompound nbt, Function<NBTTagCompound, Type<I>> func, int index) {
 		Type<I> type = func.apply(nbt);
 		long amount = nbt.getLong("Count");
 		byte side = nbt.getByte("side");
-		return new Request<>(type, amount, side, index);
+		ICrafter<I> crafter = nbt.hasKey("crafter") ? (ICrafter<I>) RequesterReference.readNBT(nbt.getCompoundTag("crafter")).get() : null;
+
+		return new Request<>(type, amount, side, crafter, index);
 	}
 
 	public static NBTTagCompound writeNBT(Request<?> request) {
@@ -91,6 +101,10 @@ public class Request<I> {
 		NBTTagCompound nbt = request.type.writeNbt();
 		nbt.setLong("Count", request.amount);
 		nbt.setByte("side", request.side);
+		if (request.crafter != null) {
+			nbt.setTag("crafter", RequesterReference.writeNBT(request.crafter.createReference()));
+		}
+
 		return nbt;
 	}
 
