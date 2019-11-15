@@ -35,9 +35,12 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 
 	protected final List<Triple<Type<I>, Long, Boolean>> filter = NonNullList.create();
 	protected final TileTerminal<I> tile;
+
 	public Shared<ElementTextField> search = new Shared<>();
+
 	protected ElementSlider slider;
 	protected Shared<ElementTextField> amount = new Shared<>(new ElementTextFieldAmount(this, 20, 4, 57, 10, true));
+
 	protected Type<I> selected;
 
 	protected int rows = 2;

@@ -17,7 +17,7 @@ item.logistics.crafter.info=Crafts items/fluids on request.
 item.logistics.distributor.basic.name=Distributor
 item.logistics.distributor.hardened.name=Hardened Distributor
 item.logistics.distributor.reinforced.name=Reinforced Distributor
-item.logistics.distributor.signalum.name=Signalum Distribuytor
+item.logistics.distributor.signalum.name=Signalum Distributor
 
 item.logistics.distributor.resonant.name=Resonant Distributor
 item.logistics.distributor.info=Extracts items/fluids while prioritizing filters.
