@@ -16,7 +16,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class ProcessItem extends Process<ItemStack> {
 
-	public ProcessItem(IProcessRequester<ItemStack> requester) {
+	public ProcessItem(IProcessRequesterItem requester) {
 		super(requester);
 	}
 
@@ -87,9 +87,9 @@ public class ProcessItem extends Process<ItemStack> {
 		if (route == null)
 			return ItemStack.EMPTY;
 
-		int maxPull = 64; // TODO:
-		boolean multiStack = true; // TODO:
-		byte speed = 1; // TODO:
+		int maxPull = ((IProcessRequesterItem) requester).maxSize();
+		boolean multiStack = ((IProcessRequesterItem) requester).multiStack();
+		byte speed = ((IProcessRequesterItem) requester).speedBoost();
 
 		for (int slot = 0; slot < inv.getSlots(); slot++) {
 			ItemStack item = inv.getStackInSlot(slot);

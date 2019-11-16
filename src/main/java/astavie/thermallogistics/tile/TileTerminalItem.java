@@ -5,6 +5,7 @@ import astavie.thermallogistics.attachment.DistributorItem;
 import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.container.ContainerTerminalItem;
+import astavie.thermallogistics.process.IProcessRequesterItem;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.process.Source;
@@ -62,7 +63,7 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class TileTerminalItem extends TileTerminal<ItemStack> {
+public class TileTerminalItem extends TileTerminal<ItemStack> implements IProcessRequesterItem {
 
 	public final Shared.Item[] shared = new Shared.Item[9];
 
@@ -382,6 +383,21 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 		sources.setList(list, ListWrapper.SortType.NORMAL);
 		return sources;
+	}
+
+	@Override
+	public int maxSize() {
+		return ServoItem.maxSize[requester.get().getMetadata()];
+	}
+
+	@Override
+	public boolean multiStack() {
+		return ServoItem.multiStack[requester.get().getMetadata()];
+	}
+
+	@Override
+	public byte speedBoost() {
+		return ServoItem.speedBoost[requester.get().getMetadata()];
 	}
 
 	private static class Inventory extends InvWrapper {

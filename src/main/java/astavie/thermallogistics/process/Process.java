@@ -53,14 +53,16 @@ public abstract class Process<I> {
 				return true;
 			}
 
+			boolean b = false;
 			for (Type<I> type : list.types()) {
 				long remove = list.amount(type) - crafter.reserved(requester, type);
 				if (remove > 0) {
 					// Crafter cancelled without telling us
 					requester.onFail(null, source.crafter, type, remove);
-					return true;
+					b = true;
 				}
 			}
+			if (b) return true;
 
 			if (attemptPull(crafter, list)) {
 				return true;
