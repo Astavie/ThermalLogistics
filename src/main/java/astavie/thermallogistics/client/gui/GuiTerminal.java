@@ -4,7 +4,7 @@ import astavie.thermallogistics.client.gui.element.ElementStack;
 import astavie.thermallogistics.client.gui.element.ElementTextFieldAmount;
 import astavie.thermallogistics.client.gui.element.ElementTextFieldClear;
 import astavie.thermallogistics.compat.jei.CompatJEI;
-import astavie.thermallogistics.tile.Request;
+import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.tile.TileTerminal;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;

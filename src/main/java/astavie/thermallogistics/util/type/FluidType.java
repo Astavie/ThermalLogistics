@@ -56,6 +56,11 @@ public class FluidType implements Type<FluidStack> {
 	}
 
 	@Override
+	public boolean references(FluidStack stack) {
+		return compare.isFluidEqual(stack);
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		return obj instanceof FluidType && compare.isFluidEqual(((FluidType) obj).compare);
 	}

@@ -121,7 +121,7 @@ public class RequesterReference<I> {
 	}
 
 	public boolean references(IRequester<?> requester) {
-		return requester.referencedBy(this);
+		return requester != null && requester.referencedBy(this);
 	}
 
 	public boolean equals(Object object) {

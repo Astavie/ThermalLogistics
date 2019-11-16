@@ -21,6 +21,8 @@ public interface Type<I> {
 
 	NBTTagCompound writeNbt();
 
+	boolean references(I stack);
+
 	@SideOnly(Side.CLIENT)
 	default List<String> getTooltip(GuiContainerCore gui) {
 		return StackHandler.getTooltip(gui, getAsStack());

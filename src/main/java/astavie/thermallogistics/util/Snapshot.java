@@ -12,6 +12,7 @@ import cofh.thermaldynamics.duct.fluid.DuctUnitFluid;
 import cofh.thermaldynamics.duct.fluid.GridFluid;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
+import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -194,6 +195,11 @@ public class Snapshot {
 
 		// then cancel leftovers
 		for (Map.Entry<IRequester<ItemStack>, ItemList> entry : leftovers.entrySet()) {
+
+			StackMap travelling = grid.travelingItems.getOrDefault(entry.getKey().getDestination(), new StackMap());
+			for (ItemStack item : travelling.getItems())
+				entry.getValue().remove(item);
+
 			for (Type<ItemStack> type : entry.getValue().types()) {
 				long amount = entry.getValue().amount(type);
 				entry.getKey().onFail(grid, null, type, amount);
@@ -221,6 +227,10 @@ public class Snapshot {
 		fluids.computeIfAbsent(grid, g -> new FluidList());
 		FluidList list = fluids.get(grid);
 		list.clear();
+
+		if (grid.hasValidFluid()) {
+			list.add(grid.getFluid());
+		}
 
 		Set<IRequester<FluidStack>> requesters = new HashSet<>();
 

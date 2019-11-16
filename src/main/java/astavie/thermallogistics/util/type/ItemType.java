@@ -61,6 +61,11 @@ public class ItemType implements Type<ItemStack> {
 	}
 
 	@Override
+	public boolean references(ItemStack stack) {
+		return ItemHelper.itemsIdentical(compare, stack);
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		return obj instanceof ItemType && ItemHelper.itemsIdentical(compare, ((ItemType) obj).compare);
 	}

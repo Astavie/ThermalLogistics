@@ -44,4 +44,13 @@ public interface ICrafter<I> extends IRequester<I> {
 	 */
 	void cancelLinked(int recipes);
 
+	/**
+	 * @return The amount of items reserved for the requester
+	 */
+	long reserved(IRequester<I> requester, Type<I> type);
+
+	void finish(IRequester<I> requester, Type<I> type, long amount);
+
+	boolean hasRouteTo(IRequester<I> requester);
+
 }

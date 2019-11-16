@@ -5,6 +5,9 @@ import astavie.thermallogistics.attachment.DistributorItem;
 import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.container.ContainerTerminalItem;
+import astavie.thermallogistics.process.ProcessItem;
+import astavie.thermallogistics.process.Request;
+import astavie.thermallogistics.process.Source;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.collection.ItemList;
@@ -21,6 +24,7 @@ import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
+import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import cofh.thermaldynamics.multiblock.Route;
@@ -49,6 +53,7 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
 import net.minecraftforge.items.wrapper.PlayerMainInvWrapper;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -64,7 +69,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	public final InventorySimple inventory = new InventorySimple(27);
 
 	public TileTerminalItem() {
-		super(new ItemList());
+		process = new ProcessItem(this);
 	}
 
 	@Override
@@ -204,7 +209,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	}
 
 	@Override
-	protected DuctUnitItem getDuct(byte side) {
+	public DuctUnitItem getDuct(byte side) {
 		TileEntity tile = world.getTileEntity(pos.offset(EnumFacing.byIndex(side)));
 		if (tile instanceof TileGrid) {
 			DuctUnitItem duct = ((TileGrid) tile).getDuct(DuctToken.ITEMS);
@@ -240,7 +245,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			if (duct == null)
 				continue;
 
-			TravelingItem item = DistributorItem.findRouteForItem(stack, getRoutes(duct), duct, side, ServoItem.range[type], ServoItem.speedBoost[type]);
+			TravelingItem item = DistributorItem.findRouteForItem(stack, getRoutes(duct), duct, side ^ 1, ServoItem.range[type], ServoItem.speedBoost[type]);
 			if (item == null)
 				continue;
 
@@ -288,6 +293,11 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	@Override
 	public Object getGuiServer(InventoryPlayer inventory) {
 		return new ContainerTerminalItem(this, inventory);
+	}
+
+	@Override
+	protected StackList<ItemStack> createStackList() {
+		return new ItemList();
 	}
 
 	@Override
@@ -349,15 +359,29 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		ItemList list = new ItemList();
 
 		for (Request<ItemStack> request : requests) {
-			if (request.isError())
+			if (request.isError() || request.source.isCrafter())
 				continue;
 
-			DuctUnitItem duct = getDuct(request.side);
+			DuctUnitItem duct = getDuct(request.source.side);
 			if (duct != null && duct.getGrid() == grid)
 				list.add(request.type, request.amount);
 		}
 
 		return list;
+	}
+
+	@Override
+	public ListWrapper<Pair<DuctUnit, Byte>> getSources(byte side) {
+		ListWrapper<Pair<DuctUnit, Byte>> sources = new ListWrapper<>();
+
+		DuctUnitItem duct = getDuct(side);
+
+		LinkedList<Pair<DuctUnit, Byte>> list = new LinkedList<>();
+		Stream<Route<DuctUnitItem, GridItem>> stream = ServoItem.getRoutesWithDestinations(duct.getCache().outputRoutes);
+		stream.filter(r -> r.endPoint != duct || r.getLastSide() != (side ^ 1)).map(r -> Pair.of((DuctUnit) r.endPoint, r.getLastSide())).forEach(list::add);
+
+		sources.setList(list, ListWrapper.SortType.NORMAL);
+		return sources;
 	}
 
 	private static class Inventory extends InvWrapper {
@@ -386,11 +410,9 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-			// TODO: Determine which crafter sent it
-
 			ItemType type = new ItemType(stack);
 
-			ItemStack insert = ItemHelper.cloneStack(stack, (int) Math.min(stack.getCount(), tile.amountRequested(null, type, side)));
+			ItemStack insert = ItemHelper.cloneStack(stack, (int) Math.min(stack.getCount(), tile.amountRequested(new Source<>(side), type)));
 			if (insert.isEmpty())
 				return stack;
 
@@ -398,7 +420,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			if (!simulate) {
 				int amount = insert.getCount() - remainder.getCount();
 				if (amount > 0) {
-					tile.removeRequested(null, type, amount, side);
+					tile.removeRequested(new Source<>(side), type, amount);
 					PacketHandler.sendToAllAround(tile.getSyncPacket(), tile);
 				}
 			}
