@@ -1037,6 +1037,7 @@ public class CrafterFluid extends ServoFluid implements ICrafter<FluidStack> {
 
 		@Override
 		public int fill(FluidStack resource, boolean doFill) {
+			crafter.checkLinked();
 			int required = Math.min(resource.amount, crafter.required(resource));
 			if (required == 0)
 				return 0;
