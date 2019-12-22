@@ -1,7 +1,9 @@
 package astavie.thermallogistics.attachment;
 
-public interface IRequesterContainer {
+import java.util.List;
 
-	IRequester<?> getRequester(int index);
+public interface IRequesterContainer<I> {
+
+	List<IRequester<I>> getRequesters();
 
 }

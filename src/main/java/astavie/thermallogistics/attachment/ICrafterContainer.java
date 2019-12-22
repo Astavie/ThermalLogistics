@@ -1,12 +1,15 @@
 package astavie.thermallogistics.attachment;
 
-public interface ICrafterContainer extends IRequesterContainer {
+import java.util.List;
+import java.util.stream.Collectors;
 
-	ICrafter<?> getCrafter(int index);
+public interface ICrafterContainer<I> extends IRequesterContainer<I> {
+
+	List<ICrafter<I>> getCrafters();
 
 	@Override
-	default IRequester<?> getRequester(int index) {
-		return getCrafter(index);
+	default List<IRequester<I>> getRequesters() {
+		return getCrafters().stream().map(c -> (IRequester<I>) c).collect(Collectors.toList());
 	}
 
 }

@@ -3,6 +3,7 @@ package astavie.thermallogistics.util.type;
 import codechicken.lib.fluid.FluidUtils;
 import cofh.core.network.PacketBase;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -58,6 +59,16 @@ public class FluidType implements Type<FluidStack> {
 	@Override
 	public boolean references(FluidStack stack) {
 		return compare.isFluidEqual(stack);
+	}
+
+	@Override
+	public int maxSize() {
+		return Fluid.BUCKET_VOLUME;
+	}
+
+	@Override
+	public int normalSize() {
+		return Fluid.BUCKET_VOLUME;
 	}
 
 	@Override

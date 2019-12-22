@@ -1,5 +1,10 @@
 package astavie.thermallogistics.util;
 
+import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.attachment.ICrafterContainer;
+import astavie.thermallogistics.attachment.IRequester;
+import astavie.thermallogistics.attachment.IRequesterContainer;
+import astavie.thermallogistics.util.collection.StackList;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
@@ -10,6 +15,7 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -77,6 +83,39 @@ public class StackHandler {
 		else if (item instanceof FluidStack)
 			return Collections.singletonList(((FluidStack) item).getLocalizedName());
 		else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
+	}
+
+	public static <I> void addRequesters(Collection<IRequester<I>> collection, Object object) {
+		if (object instanceof IRequester) {
+			//noinspection unchecked
+			collection.add((IRequester<I>) object);
+		} else if (object instanceof IRequesterContainer) {
+			for (IRequester<?> requester : ((IRequesterContainer<?>) object).getRequesters())
+				addRequesters(collection, requester);
+		}
+	}
+
+	public static <I> void addCrafters(Collection<ICrafter<I>> collection, Object object) {
+		if (object instanceof ICrafter) {
+			if (((ICrafter) object).isEnabled())
+				//noinspection unchecked
+				collection.add((ICrafter<I>) object);
+		} else if (object instanceof ICrafterContainer) {
+			for (ICrafter<?> crafter : ((ICrafterContainer<?>) object).getCrafters())
+				addCrafters(collection, crafter);
+		}
+	}
+
+	public static <I> void addCraftable(StackList<I> list, Object object) {
+		if (object instanceof ICrafter) {
+			if (((ICrafter) object).isEnabled())
+				//noinspection unchecked
+				for (I stack : ((ICrafter<I>) object).getOutputs())
+					list.addCraftable(list.getType(stack));
+		} else if (object instanceof ICrafterContainer) {
+			for (ICrafter<?> crafter : ((ICrafterContainer<?>) object).getCrafters())
+				addCraftable(list, crafter);
+		}
 	}
 
 }

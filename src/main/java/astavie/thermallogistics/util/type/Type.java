@@ -23,6 +23,10 @@ public interface Type<I> {
 
 	boolean references(I stack);
 
+	int normalSize();
+
+	int maxSize();
+
 	@SideOnly(Side.CLIENT)
 	default List<String> getTooltip(GuiContainerCore gui) {
 		return StackHandler.getTooltip(gui, getAsStack());

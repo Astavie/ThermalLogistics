@@ -7,14 +7,16 @@ import net.minecraft.nbt.NBTTagByte;
 import net.minecraft.nbt.NBTTagCompound;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import java.util.Objects;
+
 public class Source<I> {
 
 	public final RequesterReference<I> crafter;
 	public final byte side;
 
-	public Source(RequesterReference<I> crafter) {
+	public Source(byte side, RequesterReference<I> crafter) {
 		this.crafter = crafter;
-		this.side = 0;
+		this.side = side;
 	}
 
 	public Source(byte side) {
@@ -24,9 +26,9 @@ public class Source<I> {
 
 	public static <I> Source<I> readPacket(PacketBase packet) {
 		if (packet.getBool()) {
-			return new Source<>(RequesterReference.readPacket(packet));
+			return new Source<>((byte) 0, RequesterReference.readPacket(packet));
 		} else {
-			return null;
+			return new Source<>((byte) 0);
 		}
 	}
 
@@ -39,7 +41,7 @@ public class Source<I> {
 
 	public static <I> Source<I> readNbt(NBTBase nbt) {
 		if (nbt instanceof NBTTagCompound) {
-			return new Source<>(RequesterReference.readNBT((NBTTagCompound) nbt));
+			return new Source<>(((NBTTagCompound) nbt).getByte("des"), RequesterReference.readNBT((NBTTagCompound) nbt));
 		} else if (nbt instanceof NBTTagByte) {
 			return new Source<>(((NBTTagByte) nbt).getByte());
 		} else throw new IllegalArgumentException();
@@ -47,7 +49,9 @@ public class Source<I> {
 
 	public static NBTBase writeNbt(Source<?> source) {
 		if (source.isCrafter()) {
-			return RequesterReference.writeNBT(source.crafter);
+			NBTTagCompound nbt = RequesterReference.writeNBT(source.crafter);
+			nbt.setByte("des", source.side);
+			return nbt;
 		} else {
 			return new NBTTagByte(source.side);
 		}
@@ -59,12 +63,12 @@ public class Source<I> {
 
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder().append(isCrafter()).append(isCrafter() ? crafter : side).build();
+		return new HashCodeBuilder().append(side).append(crafter).build();
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		return obj instanceof Source && ((Source) obj).isCrafter() == isCrafter() && (isCrafter() ? ((Source) obj).crafter.equals(crafter) : ((Source) obj).side == side);
+		return obj instanceof Source && ((Source) obj).side == side && Objects.equals(((Source) obj).crafter, crafter);
 	}
 
 }

@@ -66,6 +66,16 @@ public class ItemType implements Type<ItemStack> {
 	}
 
 	@Override
+	public int maxSize() {
+		return compare.getMaxStackSize();
+	}
+
+	@Override
+	public int normalSize() {
+		return 1;
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		return obj instanceof ItemType && ItemHelper.itemsIdentical(compare, ((ItemType) obj).compare);
 	}

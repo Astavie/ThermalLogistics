@@ -1,18 +1,23 @@
 package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.ItemType;
+import astavie.thermallogistics.util.type.Type;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
-import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Function;
 
 public class ProcessItem extends Process<ItemStack> {
 
@@ -21,11 +26,10 @@ public class ProcessItem extends Process<ItemStack> {
 	}
 
 	@Override
-	protected boolean updateRetrieval(byte endSide, StackList<ItemStack> requests) {
-		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources(endSide);
+	protected boolean updateRetrieval(StackList<ItemStack> requests) {
+		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
 		for (Pair<DuctUnit, Byte> source : sources) {
 			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
-
 			byte side = source.getRight();
 
 			Attachment attachment = endPoint.parent.getAttachment(side);
@@ -43,7 +47,7 @@ public class ProcessItem extends Process<ItemStack> {
 			if (inv == null)
 				continue;
 
-			ItemStack extract = extract(endPoint, side, inv, requests, (DuctUnitItem) requester.getDuct(endSide), (byte) (endSide ^ 1));
+			ItemStack extract = extract(endPoint, side, inv, requests::amount, (DuctUnitItem) requester.getDuct(), (byte) (requester.getSide() ^ 1));
 			if (!extract.isEmpty()) {
 				sources.advanceCursor();
 				return true;
@@ -54,35 +58,78 @@ public class ProcessItem extends Process<ItemStack> {
 	}
 
 	@Override
-	public boolean attemptPull(ICrafter<ItemStack> crafter, StackList<ItemStack> list) {
-		for (MultiBlockGrid<?> grid : requester.getGrids()) {
-			DuctUnitItem duct = (DuctUnitItem) crafter.getDuct(grid);
-			if (duct == null)
+	protected boolean updateWants() {
+		byte endSide = requester.getSide();
+
+		List<ICrafter<ItemStack>> crafters = new LinkedList<>();
+
+		// Try items
+
+		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
+		for (Pair<DuctUnit, Byte> source : sources) {
+			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
+			byte side = source.getRight();
+
+			Attachment attachment = endPoint.parent.getAttachment(side);
+			if (attachment != null) {
+				StackHandler.addCrafters(crafters, attachment);
+				if (!attachment.canSend())
+					continue;
+			}
+
+			DuctUnitItem.Cache cache = endPoint.tileCache[side];
+			if (cache == null)
 				continue;
 
-			byte side = crafter.getSide(grid);
+			StackHandler.addCrafters(crafters, cache.tile);
 
-			DuctUnitItem.Cache cache = duct.tileCache[side];
-			if (cache == null)
+			if ((!endPoint.isInput(side) && !endPoint.isOutput(side)) || !endPoint.parent.getConnectionType(side).allowTransfer)
 				continue;
 
 			IItemHandler inv = cache.getItemHandler(side ^ 1);
 			if (inv == null)
 				continue;
 
-			byte endSide = requester.getSide(grid);
-
-			ItemStack extract = extract(duct, side, inv, list, (DuctUnitItem) requester.getDuct(grid), endSide);
+			ItemStack extract = extract(endPoint, side, inv, requester::amountRequired, (DuctUnitItem) requester.getDuct(), (byte) (endSide ^ 1));
 			if (!extract.isEmpty()) {
-				crafter.finish(requester, new ItemType(extract), extract.getCount());
-				requester.onCrafterSend(crafter, new ItemType(extract), extract.getCount(), endSide);
+				sources.advanceCursor();
+				return true;
 			}
+		}
+
+		// TODO: Try crafters
+
+		return false;
+	}
+
+	@Override
+	public boolean attemptPull(ICrafter<ItemStack> crafter, StackList<ItemStack> list) {
+		DuctUnitItem duct = (DuctUnitItem) crafter.getDuct();
+		if (duct == null)
+			return false;
+
+		byte side = crafter.getSide();
+
+		DuctUnitItem.Cache cache = duct.tileCache[side];
+		if (cache == null)
+			return false;
+
+		IItemHandler inv = cache.getItemHandler(side ^ 1);
+		if (inv == null)
+			return false;
+
+		ItemStack extract = extract(duct, side, inv, list::amount, (DuctUnitItem) requester.getDuct(), (byte) (requester.getSide() ^ 1));
+		if (!extract.isEmpty()) {
+			crafter.finish(requester, new ItemType(extract), extract.getCount());
+			requester.onCrafterSend(crafter, new ItemType(extract), extract.getCount());
+
+			return true;
 		}
 
 		return false;
 	}
 
-	private ItemStack extract(DuctUnitItem duct, byte side, IItemHandler inv, StackList<ItemStack> list, DuctUnitItem end, byte endSide) {
+	private ItemStack extract(DuctUnitItem duct, byte side, IItemHandler inv, Function<Type<ItemStack>, Long> required, DuctUnitItem end, byte endSide) {
 		Route route = duct.getRoute(end);
 		if (route == null)
 			return ItemStack.EMPTY;
@@ -94,10 +141,12 @@ public class ProcessItem extends Process<ItemStack> {
 		for (int slot = 0; slot < inv.getSlots(); slot++) {
 			ItemStack item = inv.getStackInSlot(slot);
 			ItemType type = new ItemType(item);
-			if (!list.types().contains(type))
+
+			long req = required.apply(type);
+			if (req == 0)
 				continue;
 
-			item = type.withAmount((int) Math.min(maxPull, list.amount(type)));
+			item = type.withAmount((int) Math.min(maxPull, req));
 			// TODO: Check if item fits
 
 			maxPull = item.getCount();

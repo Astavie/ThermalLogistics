@@ -2,6 +2,8 @@ package astavie.thermallogistics.tile;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.attachment.IRequester;
+import astavie.thermallogistics.attachment.IRequesterContainer;
 import astavie.thermallogistics.block.BlockTerminal;
 import astavie.thermallogistics.process.IProcessRequester;
 import astavie.thermallogistics.process.Process;
@@ -18,7 +20,6 @@ import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
-import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -36,7 +37,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public abstract class TileTerminal<I> extends TileNameable implements ITickable, IProcessRequester<I> {
+public abstract class TileTerminal<I> extends TileNameable implements ITickable, IRequesterContainer<I> {
 
 	public final InventorySpecial requester = new InventorySpecial(1, i -> i.getItem() == ThermalLogistics.Items.requester, null);
 
@@ -45,7 +46,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 	private final Set<Container> registry = new HashSet<>();
 
-	protected Process<I> process;
+	@SuppressWarnings("unchecked")
+	protected TerminalRequester<I>[] requesters = new TerminalRequester[6];
 
 	public boolean refresh = false;
 
@@ -54,8 +56,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	}
 
 	public PacketTileInfo getSyncPacket() {
-		updateTerminal();
-
 		PacketTileInfo packet = PacketTileInfo.newPacket(this);
 
 		// Other
@@ -85,21 +85,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	}
 
 	protected abstract void read(PacketBase packet, byte message, EntityPlayer player);
-
-	@Override
-	public boolean referencedBy(RequesterReference<?> reference) {
-		return reference.dim == world.provider.getDimension() && reference.pos.equals(pos);
-	}
-
-	@Override
-	public RequesterReference<I> createReference() {
-		return new RequesterReference<>(world.provider.getDimension(), pos);
-	}
-
-	@Override
-	public ItemStack getIcon() {
-		return ItemStack.EMPTY;
-	}
 
 	@Override
 	public void handleTileInfoPacket(PacketBase payload, boolean isServer, EntityPlayer player) {
@@ -134,7 +119,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	private void removeRequest(Request<I> request) {
 		if (!request.isError()) {
 			if (request.source.isCrafter()) {
-				((ICrafter<I>) request.source.crafter.get()).cancel(this, request.type, request.amount);
+				IRequester<I> requester = requesters[request.source.side];
+				((ICrafter<I>) request.source.crafter.get()).cancel(requester, request.type, request.amount);
 			} else {
 				Snapshot.INSTANCE.<I>getStacks(getDuct(request.source.side).getGrid()).add(request.type, request.amount);
 				terminal.add(request.type, request.amount);
@@ -145,37 +131,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	@Override
 	public boolean shouldRefresh(World world, BlockPos pos, @Nonnull IBlockState oldState, @Nonnull IBlockState newSate) {
 		return oldState.getBlock() != newSate.getBlock();
-	}
-
-	@Override
-	public void onFail(MultiBlockGrid<?> grid, RequesterReference<I> crafter, Type<I> type, long amount) {
-		long left = amount;
-
-		if (grid != null) {
-			for (byte side = 0; side < 6; side++) {
-				DuctUnit<?, ?, ?> duct = getDuct(side);
-				if (duct == null || duct.getGrid() != grid)
-					continue;
-
-				long remove = Math.min(left, amountRequested(new Source<>(side), type));
-				removeRequested(new Source<>(side), type, remove);
-				left -= remove;
-
-				if (left == 0)
-					break;
-			}
-		} else {
-			long remove = Math.min(left, amountRequested(new Source<>(crafter), type));
-			removeRequested(new Source<>(crafter), type, remove);
-			left -= remove;
-		}
-
-		if (left > 0) {
-			// This shouldn't happen
-			throw new IllegalStateException();
-		}
-
-		request(type, amount);
 	}
 
 	@Override
@@ -259,32 +214,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	}
 
 	@Override
-	public DuctUnit<?, ?, ?> getDuct(MultiBlockGrid<?> grid) {
-		for (byte side = 0; side < 6; side++) {
-			DuctUnit<?, ?, ?> duct = getDuct(side);
-			if (duct == null || duct.getGrid() != grid)
-				continue;
-
-			return duct;
-		}
-
-		return null;
-	}
-
-	@Override
-	public byte getSide(MultiBlockGrid<?> grid) {
-		for (byte side = 0; side < 6; side++) {
-			DuctUnit<?, ?, ?> duct = getDuct(side);
-			if (duct == null || duct.getGrid() != grid)
-				continue;
-
-			return side;
-		}
-
-		throw new IllegalStateException();
-	}
-
-	@Override
 	public void update() {
 		if (!world.isRemote) {
 			if (requester.get().isEmpty()) {
@@ -300,52 +229,18 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 					}
 				}
 
-				process.update();
+				for (TerminalRequester<I> requester : requesters) {
+					if (requester.isEnabled() && requester.process.update()) {
+						break;
+					}
+				}
 			}
 		}
 	}
 
 	@Override
-	public void onCrafterSend(ICrafter<I> crafter, Type<I> type, long amount, byte side) {
-		for (int i = 0; i < requests.size(); i++) {
-			Request<I> request = requests.get(i);
-			if (request.isError() || !request.source.isCrafter() || !references(request.source.crafter, crafter) || !request.type.equals(type))
-				continue;
-
-			if (request.amount <= amount) {
-				amount -= request.amount;
-				request.source = new Source<>(side);
-			} else {
-				request.amount -= amount;
-				requests.add(i, new Request<>(type, amount, new Source<>(side), 0));
-				amount = 0;
-			}
-
-			if (amount == 0)
-				return;
-		}
-
-		// This shouldn't happen
-		throw new IllegalStateException();
-	}
-
-	@Override
-	public BlockPos getDestination() {
-		return pos;
-	}
-
-	@Override
-	public Map<Source<I>, StackList<I>> getRequests() {
-		Map<Source<I>, StackList<I>> map = new HashMap<>();
-
-		for (Request<I> request : requests) {
-			if (!request.isError()) {
-				map.computeIfAbsent(request.source, (c) -> createStackList());
-				map.get(request.source).add(request.type, request.amount);
-			}
-		}
-
-		return map;
+	public List<IRequester<I>> getRequesters() {
+		return Arrays.asList(requesters);
 	}
 
 	protected abstract StackList<I> createStackList();
@@ -357,30 +252,18 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		request(type, amount);
 	}
 
-	@Override
-	public Set<MultiBlockGrid<?>> getGrids() {
-		Set<MultiBlockGrid<?>> grids = new HashSet<>();
-
-		for (byte side = 0; side < 6; side++) {
-			DuctUnit<?, ?, ?> duct = getDuct(side);
-			if (duct != null)
-				grids.add(duct.getGrid());
-		}
-
-		return grids;
-	}
-
-	private void request(Type<I> type, long amount) { // TODO: Put this in Process
+	private void request(Type<I> type, long amount) { // TODO: Put this in Process somehow
 		updateTerminal();
-
-		Set<MultiBlockGrid<?>> grids = getGrids();
 
 		// REQUEST
 
 		long left = amount;
 
-		for (MultiBlockGrid<?> grid : grids) {
-			List<Request<I>> requests = process.request(grid, type, left, terminal::amount);
+		for (byte side = 0; side < 6; side++) {
+			if (!requesters[side].isEnabled())
+				continue;
+
+			List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount);
 			left = 0;
 
 			for (Request<I> request : requests) {
@@ -397,8 +280,11 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		if (left > 0) {
 			Request<I> error = new Request<>(type, left, 0, new LinkedList<>());
 
-			for (MultiBlockGrid<?> grid : grids) {
-				List<Request<I>> requests = process.request(grid, type, left, terminal::amount);
+			for (byte side = 0; side < 6; side++) {
+				if (!requesters[side].isEnabled())
+					continue;
+
+				List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount);
 				for (Request<I> request : requests) {
 					if (request.isError()) {
 						for (List<Pair<Type<I>, Long>> list : request.error)
@@ -411,7 +297,9 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 				}
 			}
 
-			addRequest(error);
+			if (!error.error.isEmpty()) {
+				addRequest(error);
+			}
 		}
 
 		if (!world.isRemote) {
@@ -450,6 +338,12 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		throw new IllegalStateException();
 	}
 
+	public abstract void updateTerminal();
+
+	protected abstract DuctUnit<?, ?, ?> getDuct(byte side);
+
+	protected abstract ItemStack getIcon();
+
 	private void addRequest(Request<I> request) {
 		if (!request.isError()) {
 
@@ -470,6 +364,134 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		requests.add(request);
 	}
 
-	protected abstract void updateTerminal();
+	public static abstract class TerminalRequester<I> implements IProcessRequester<I> {
+
+		protected final TileTerminal<I> terminal;
+		protected final byte side;
+
+		protected Process<I> process;
+
+		public TerminalRequester(TileTerminal<I> terminal, byte side) {
+			this.terminal = terminal;
+			this.side = side;
+		}
+
+		public boolean isEnabled() {
+			return getDuct() != null;
+		}
+
+		@Override
+		public Map<RequesterReference<I>, StackList<I>> getRequests() {
+			Map<RequesterReference<I>, StackList<I>> map = new HashMap<>();
+
+			for (Request<I> request : terminal.requests) {
+				if (!request.isError() && request.source.side == side) {
+					map.computeIfAbsent(request.source.crafter, (c) -> terminal.createStackList());
+					map.get(request.source.crafter).add(request.type, request.amount);
+				}
+			}
+
+			return map;
+		}
+
+		@Override
+		public void onCrafterSend(ICrafter<I> crafter, Type<I> type, long amount) {
+			for (int i = 0; i < terminal.requests.size(); i++) {
+				Request<I> request = terminal.requests.get(i);
+				if (request.isError() || !request.source.isCrafter() || !references(request.source.crafter, crafter) || request.source.side != side || !request.type.equals(type))
+					continue;
+
+				if (request.amount <= amount) {
+					amount -= request.amount;
+					request.source = new Source<>(side);
+				} else {
+					request.amount -= amount;
+					terminal.requests.add(i, new Request<>(type, amount, new Source<>(side), 0));
+					amount = 0;
+				}
+
+				if (amount == 0)
+					return;
+			}
+
+			// This shouldn't happen
+			throw new IllegalStateException();
+		}
+
+		@Override
+		public boolean hasWants() {
+			return false;
+		}
+
+		@Override
+		public long amountRequired(Type<I> type) {
+			return 0;
+		}
+
+		@Override
+		public void addRequest(Request<I> request) {
+			terminal.addRequest(request);
+		}
+
+		@Override
+		public boolean referencedBy(RequesterReference<?> reference) {
+			return reference.dim == terminal.world.provider.getDimension() && reference.pos.equals(terminal.pos) && reference.index == side;
+		}
+
+		@Override
+		public RequesterReference<I> createReference() {
+			return new RequesterReference<>(terminal.world.provider.getDimension(), terminal.pos, (byte) 0, side);
+		}
+
+		@Override
+		public ItemStack getIcon() {
+			return ItemStack.EMPTY;
+		}
+
+		@Override
+		public ItemStack getTileIcon() {
+			return terminal.getIcon();
+		}
+
+		@Override
+		public BlockPos getDestination() {
+			return terminal.pos;
+		}
+
+		@Override
+		public DuctUnit<?, ?, ?> getDuct() {
+			return terminal.getDuct(side);
+		}
+
+		@Override
+		public byte getSide() {
+			return side;
+		}
+
+		@Override
+		public void onFail(@Nullable RequesterReference<I> crafter, Type<I> type, long amount) {
+			Source<I> source = crafter == null ? new Source<>(side) : new Source<>(side, crafter);
+
+			long remove = terminal.amountRequested(source, type);
+			terminal.removeRequested(source, type, remove);
+
+			terminal.request(type, amount);
+		}
+
+		@Override
+		public StackList<I> getRequestedStacks() {
+			StackList<I> list = terminal.createStackList();
+
+			for (Request<I> request : terminal.requests) {
+				if (request.isError() || request.source.isCrafter() || request.source.side != side)
+					continue;
+
+				list.add(request.type, request.amount);
+			}
+
+			return list;
+		}
+
+	}
 
 }

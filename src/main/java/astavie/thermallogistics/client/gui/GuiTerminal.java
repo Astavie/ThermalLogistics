@@ -312,15 +312,15 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 				int posX = mouseX / 18;
 				int posY = mouseY / 18;
 
-				if (mouseButton == 1) {
-					amount.get().setText("");
-				} else if (amount.get().getText().isEmpty()) {
-					amount.get().setText("1");
-				}
-
 				int slot = slider.getValue() * 9 + posX + posY * 9;
 				if (slot < filter.size()) {
 					selected = filter.get(slot).getLeft();
+
+					if (mouseButton == 1) {
+						amount.get().setText("");
+					} else {
+						amount.get().setText(Long.toString(Math.min(StringHelper.isShiftKeyDown() ? selected.maxSize() : selected.normalSize(), filter.get(slot).getMiddle())));
+					}
 
 					Overlay overlay = new Overlay(posX * 18 + 7, posY * 18 + 17, 81, 18);
 					overlay.elements.add(new ElementStack(this, 0, 0, selected, false));

@@ -7,7 +7,6 @@ import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.process.IProcessRequesterItem;
 import astavie.thermallogistics.process.ProcessItem;
-import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.process.Source;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.Snapshot;
@@ -27,7 +26,6 @@ import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
-import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import cofh.thermaldynamics.multiblock.Route;
 import cofh.thermaldynamics.util.ListWrapper;
 import com.google.common.collect.Lists;
@@ -63,14 +61,16 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class TileTerminalItem extends TileTerminal<ItemStack> implements IProcessRequesterItem {
+public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 	public final Shared.Item[] shared = new Shared.Item[9];
 
 	public final InventorySimple inventory = new InventorySimple(27);
 
 	public TileTerminalItem() {
-		process = new ProcessItem(this);
+		for (byte side = 0; side < 6; side++) {
+			requesters[side] = new TileTerminalItem.TerminalItemRequester(this, side);
+		}
 	}
 
 	@Override
@@ -320,7 +320,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> implements IProces
 	}
 
 	@Override
-	protected void updateTerminal() {
+	public void updateTerminal() {
 		Set<GridItem> grids = new HashSet<>();
 
 		Set<IItemHandler> inventories = new HashSet<>();
@@ -351,53 +351,8 @@ public class TileTerminalItem extends TileTerminal<ItemStack> implements IProces
 	}
 
 	@Override
-	public ItemStack getTileIcon() {
+	protected ItemStack getIcon() {
 		return new ItemStack(ThermalLogistics.Blocks.terminal_item);
-	}
-
-	@Override
-	public StackList<ItemStack> getRequestedStacks(MultiBlockGrid<?> grid) {
-		ItemList list = new ItemList();
-
-		for (Request<ItemStack> request : requests) {
-			if (request.isError() || request.source.isCrafter())
-				continue;
-
-			DuctUnitItem duct = getDuct(request.source.side);
-			if (duct != null && duct.getGrid() == grid)
-				list.add(request.type, request.amount);
-		}
-
-		return list;
-	}
-
-	@Override
-	public ListWrapper<Pair<DuctUnit, Byte>> getSources(byte side) {
-		ListWrapper<Pair<DuctUnit, Byte>> sources = new ListWrapper<>();
-
-		DuctUnitItem duct = getDuct(side);
-
-		LinkedList<Pair<DuctUnit, Byte>> list = new LinkedList<>();
-		Stream<Route<DuctUnitItem, GridItem>> stream = ServoItem.getRoutesWithDestinations(duct.getCache().outputRoutes);
-		stream.filter(r -> r.endPoint != duct || r.getLastSide() != (side ^ 1)).map(r -> Pair.of((DuctUnit) r.endPoint, r.getLastSide())).forEach(list::add);
-
-		sources.setList(list, ListWrapper.SortType.NORMAL);
-		return sources;
-	}
-
-	@Override
-	public int maxSize() {
-		return ServoItem.maxSize[requester.get().getMetadata()];
-	}
-
-	@Override
-	public boolean multiStack() {
-		return ServoItem.multiStack[requester.get().getMetadata()];
-	}
-
-	@Override
-	public byte speedBoost() {
-		return ServoItem.speedBoost[requester.get().getMetadata()];
 	}
 
 	private static class Inventory extends InvWrapper {
@@ -442,6 +397,42 @@ public class TileTerminalItem extends TileTerminal<ItemStack> implements IProces
 			}
 
 			return ItemHelper.cloneStack(stack, stack.getCount() - insert.getCount() + remainder.getCount());
+		}
+
+	}
+
+	private static class TerminalItemRequester extends TerminalRequester<ItemStack> implements IProcessRequesterItem {
+
+		public TerminalItemRequester(TileTerminal<ItemStack> terminal, byte side) {
+			super(terminal, side);
+			process = new ProcessItem(this);
+		}
+
+		@Override
+		public int maxSize() {
+			return ServoItem.maxSize[terminal.requester.get().getMetadata()];
+		}
+
+		@Override
+		public boolean multiStack() {
+			return ServoItem.multiStack[terminal.requester.get().getMetadata()];
+		}
+
+		@Override
+		public byte speedBoost() {
+			return ServoItem.speedBoost[terminal.requester.get().getMetadata()];
+		}
+
+		@Override
+		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
+			ListWrapper<Pair<DuctUnit, Byte>> sources = new ListWrapper<>();
+
+			LinkedList<Pair<DuctUnit, Byte>> list = new LinkedList<>();
+			Stream<Route<DuctUnitItem, GridItem>> stream = ServoItem.getRoutesWithDestinations(((DuctUnitItem) getDuct()).getCache().outputRoutes);
+			stream.map(r -> Pair.of((DuctUnit) r.endPoint, r.getLastSide())).forEach(list::add);
+
+			sources.setList(list, ListWrapper.SortType.NORMAL);
+			return sources;
 		}
 
 	}

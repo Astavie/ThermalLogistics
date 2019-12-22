@@ -2,10 +2,10 @@ package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.IRequester;
+import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
-import cofh.thermaldynamics.multiblock.MultiBlockGrid;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
@@ -24,21 +24,23 @@ public abstract class Process<I> {
 	}
 
 	public boolean update() {
-		Map<Source<I>, StackList<I>> requests = requester.getRequests();
+		Map<RequesterReference<I>, StackList<I>> requests = requester.getRequests();
 
-		for (Source<I> source : requests.keySet()) {
-			if (!source.isCrafter()) {
-				if (updateRetrieval(source.side, requests.get(source))) return true;
+		// Update requests
+
+		for (RequesterReference<I> source : requests.keySet()) {
+			if (source == null) {
+				if (updateRetrieval(requests.get(null))) return true;
 				continue;
 			}
 
 			StackList<I> list = requests.get(source);
-			IRequester<I> r = source.crafter.get();
+			IRequester<I> r = source.get();
 
 			if (!(r instanceof ICrafter)) {
 				// Crafter got removed
 				for (Type<I> type : list.types()) {
-					requester.onFail(null, source.crafter, type, list.amount(type));
+					requester.onFail(source, type, list.amount(type));
 				}
 				return true;
 			}
@@ -48,7 +50,7 @@ public abstract class Process<I> {
 			if (!crafter.isEnabled() || !crafter.hasRouteTo(requester)) {
 				// Crafter got disabled or disconnected
 				for (Type<I> type : list.types()) {
-					requester.onFail(null, source.crafter, type, list.amount(type));
+					requester.onFail(source, type, list.amount(type));
 				}
 				return true;
 			}
@@ -58,7 +60,7 @@ public abstract class Process<I> {
 				long remove = list.amount(type) - crafter.reserved(requester, type);
 				if (remove > 0) {
 					// Crafter cancelled without telling us
-					requester.onFail(null, source.crafter, type, remove);
+					requester.onFail(source, type, remove);
 					b = true;
 				}
 			}
@@ -69,19 +71,23 @@ public abstract class Process<I> {
 			}
 		}
 
-		return false;
+		// Add requests
+
+		return requester.hasWants() && updateWants();
 	}
 
-	protected abstract boolean updateRetrieval(byte side, StackList<I> requests);
+	protected abstract boolean updateRetrieval(StackList<I> requests);
+
+	protected abstract boolean updateWants();
 
 	protected abstract boolean attemptPull(ICrafter<I> crafter, StackList<I> stacks);
 
-	public List<Request<I>> request(MultiBlockGrid<?> grid, Type<I> type, long amount, @Nullable Function<Type<I>, Long> func) {
+	public List<Request<I>> request(Type<I> type, long amount, @Nullable Function<Type<I>, Long> func) {
 		List<Request<I>> requests = new LinkedList<>();
 
 		// CHECK FOR STACKS
 
-		StackList<I> stacks = Snapshot.INSTANCE.getStacks(grid);
+		StackList<I> stacks = Snapshot.INSTANCE.getStacks(requester.getDuct().getGrid());
 
 		long am;
 		if (func == null) {
@@ -95,7 +101,7 @@ public abstract class Process<I> {
 			stacks.remove(type, removed);
 			amount -= removed;
 
-			requests.add(new Request<>(type, removed, new Source<>(requester.getSide(grid)), 0));
+			requests.add(new Request<>(type, removed, new Source<>(requester.getSide()), 0));
 		}
 
 		// TODO: CHECK FOR CRAFTERS

@@ -105,13 +105,13 @@ public class RequesterReference<I> {
 			if (tile instanceof IRequester) {
 				cache = (IRequester<I>) tile;
 			} else if (tile instanceof IRequesterContainer) {
-				cache = (IRequester<I>) ((IRequesterContainer) tile).getRequester(index);
+				cache = (IRequester<I>) ((IRequesterContainer) tile).getRequesters().get(index);
 			} else if (tile instanceof TileGrid) {
 				Attachment attachment = ((TileGrid) tile).getAttachment(side);
 				if (attachment instanceof IRequester)
 					cache = (IRequester<I>) attachment;
 				else if (attachment instanceof IRequesterContainer)
-					cache = (IRequester<I>) ((IRequesterContainer) attachment).getRequester(index);
+					cache = (IRequester<I>) ((IRequesterContainer) attachment).getRequesters().get(index);
 			}
 		} catch (ClassCastException ignore) {
 			cache = null;

@@ -18,8 +18,10 @@ public class EventHandler {
 			//if (event.player.openContainer instanceof ContainerCrafter)
 			//	((ContainerCrafter) event.player.openContainer).crafter.sync(event.player);
 			/*else*/
-			if (event.player.openContainer instanceof ContainerTerminal)
+			if (event.player.openContainer instanceof ContainerTerminal) {
+				((ContainerTerminal) event.player.openContainer).tile.updateTerminal();
 				PacketHandler.sendTo(((ContainerTerminal) event.player.openContainer).tile.getSyncPacket(), event.player);
+			}
 		}
 	}
 
