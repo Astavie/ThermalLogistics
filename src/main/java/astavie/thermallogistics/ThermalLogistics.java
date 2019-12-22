@@ -2,6 +2,7 @@ package astavie.thermallogistics;
 
 import astavie.thermallogistics.attachment.DistributorFluid;
 import astavie.thermallogistics.attachment.DistributorItem;
+import astavie.thermallogistics.attachment.RequesterItem;
 import astavie.thermallogistics.block.BlockTerminalItem;
 import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.item.ItemDistributor;
@@ -59,6 +60,8 @@ public class ThermalLogistics {
 	public void preInit(FMLPreInitializationEvent event) {
 		AttachmentRegistry.registerAttachment(DistributorItem.ID, DistributorItem::new);
 		AttachmentRegistry.registerAttachment(DistributorFluid.ID, DistributorFluid::new);
+
+		AttachmentRegistry.registerAttachment(RequesterItem.ID, RequesterItem::new);
 
 		config = new Configuration(event.getSuggestedConfigurationFile());
 

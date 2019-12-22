@@ -252,7 +252,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		request(type, amount);
 	}
 
-	private void request(Type<I> type, long amount) { // TODO: Put this in Process somehow
+	private void request(Type<I> type, long amount) {
 		updateTerminal();
 
 		// REQUEST

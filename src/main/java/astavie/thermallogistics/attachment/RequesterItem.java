@@ -16,6 +16,7 @@ import codechicken.lib.vec.Vector3;
 import codechicken.lib.vec.uv.IconTransformation;
 import cofh.thermaldynamics.duct.attachments.retriever.RetrieverItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
+import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.render.RenderDuct;
@@ -45,6 +46,7 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 	public RequesterItem(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
+		filter.handleFlagByte(24); // Whitelist by default
 	}
 
 	@Override
@@ -176,7 +178,16 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 		if (inv == null)
 			return 0;
 
-		return DuctUnitItem.getNumItems(inv, side ^ 1, type.getAsStack(), Integer.MAX_VALUE);
+		int travelling = 0;
+
+		StackMap map = itemDuct.getGrid().travelingItems.getOrDefault(getDestination(), new StackMap());
+		for (ItemStack item : map.getItems())
+			if (type.references(item))
+				travelling += item.getCount();
+
+		// TODO: Add from processes
+
+		return DuctUnitItem.getNumItems(inv, side ^ 1, type.getAsStack(), Integer.MAX_VALUE) + travelling;
 	}
 
 	@Override
