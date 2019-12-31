@@ -7,8 +7,6 @@ import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 
-import javax.annotation.Nullable;
-
 public interface IRequester<I> {
 
 	/**
@@ -46,8 +44,8 @@ public interface IRequester<I> {
 	StackList<I> getRequestedStacks();
 
 	/**
-	 * A request has failed and an item is not able to be crafted
+	 * An requested item isn't available anymore
 	 */
-	void onFail(@Nullable RequesterReference<I> crafter, Type<I> type, long amount);
+	void onFail(Type<I> type, long amount);
 
 }

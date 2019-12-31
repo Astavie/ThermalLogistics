@@ -32,7 +32,7 @@ public interface ICrafter<I> extends IRequester<I> {
 	 * Requests this recipe x times. Will <strong>not</strong> notify linked crafters.
 	 * Recommended to only use this within {@link #request(I)}.
 	 */
-	boolean request(int recipes);
+	boolean requestLinked(int recipes);
 
 	/**
 	 * A requester doesn't need this crafter anymore
@@ -51,6 +51,8 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	void finish(IRequester<I> requester, Type<I> type, long amount);
 
-	boolean hasRouteTo(IRequester<I> requester);
+	default boolean hasRouteTo(IRequester<I> requester) {
+		return getDuct().getGrid() == requester.getDuct().getGrid();
+	}
 
 }

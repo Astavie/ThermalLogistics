@@ -28,4 +28,11 @@ public class FluidList extends StackList<FluidStack> {
 		return FluidType.readNbt(tag);
 	}
 
+	@Override
+	public StackList<FluidStack> copy() {
+		FluidList list = new FluidList();
+		list.map.putAll(map);
+		return list;
+	}
+
 }

@@ -40,6 +40,8 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 	private final ProcessItem process = new ProcessItem(this);
 
+	private final Map<RequesterReference<ItemStack>, StackList<ItemStack>> requests = new HashMap<>();
+
 	public RequesterItem(TileGrid tile, byte side) {
 		super(tile, side);
 	}
@@ -94,8 +96,16 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 	}
 
 	@Override
-	public void onFail(@Nullable RequesterReference<ItemStack> crafter, Type<ItemStack> type, long amount) {
-		// TODO
+	public void onFail(RequesterReference<ItemStack> crafter, Type<ItemStack> type, long amount) {
+		StackList<ItemStack> list = requests.get(crafter);
+
+		if (list != null) {
+			list.remove(type, amount);
+
+			if (list.isEmpty()) {
+				requests.remove(crafter);
+			}
+		}
 	}
 
 	@Override
@@ -114,8 +124,12 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 	}
 
 	@Override
+	public void onFail(Type<ItemStack> type, long amount) {
+	}
+
+	@Override
 	public void onCrafterSend(ICrafter<ItemStack> crafter, Type<ItemStack> type, long amount) {
-		// TODO
+		onFail(crafter.createReference(), type, amount); // Basically the same thing
 	}
 
 	@Override
@@ -151,7 +165,12 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 	@Override
 	public Map<RequesterReference<ItemStack>, StackList<ItemStack>> getRequests() {
-		return new HashMap<>(); // TODO
+		Map<RequesterReference<ItemStack>, StackList<ItemStack>> copy = new HashMap<>();
+
+		for (Map.Entry<RequesterReference<ItemStack>, StackList<ItemStack>> entry : requests.entrySet())
+			copy.put(entry.getKey(), entry.getValue().copy());
+
+		return copy;
 	}
 
 	@Override
@@ -178,6 +197,8 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 		if (inv == null)
 			return 0;
 
+		// Get items in queue
+
 		int travelling = 0;
 
 		StackMap map = itemDuct.getGrid().travelingItems.getOrDefault(getDestination(), new StackMap());
@@ -185,14 +206,18 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 			if (type.references(item))
 				travelling += item.getCount();
 
-		// TODO: Add from processes
+		for (StackList<ItemStack> list : requests.values())
+			travelling += list.amount(type);
+
+		// Get total
 
 		return DuctUnitItem.getNumItems(inv, side ^ 1, type.getAsStack(), Integer.MAX_VALUE) + travelling;
 	}
 
 	@Override
 	public void addRequest(Request<ItemStack> request) {
-		// TODO
+		requests.computeIfAbsent(request.source.crafter, c -> new ItemList());
+		requests.get(request.source.crafter).add(request.type, request.amount);
 	}
 
 }

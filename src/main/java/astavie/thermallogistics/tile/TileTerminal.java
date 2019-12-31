@@ -19,6 +19,7 @@ import cofh.core.gui.GuiHandler;
 import cofh.core.network.PacketBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
+import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -218,12 +219,12 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		if (!world.isRemote) {
 			if (requester.get().isEmpty()) {
 				clearRequests(requests);
-			} else {
+			} else if (world.getTotalWorldTime() % ServoItem.tickDelays[requester.get().getMetadata()] == 0) {
 
 				// Remove requests without valid side
 				for (int i = requests.size() - 1; i >= 0; i--) {
 					Request<I> request = requests.get(i);
-					if (!request.isError() && !request.source.isCrafter() && getDuct(request.source.side) == null) {
+					if (!request.isError() && !requesters[request.source.side].isEnabled()) {
 						requests.remove(i);
 						request(request.type, request.amount);
 					}
@@ -469,8 +470,18 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		}
 
 		@Override
-		public void onFail(@Nullable RequesterReference<I> crafter, Type<I> type, long amount) {
-			Source<I> source = crafter == null ? new Source<>(side) : new Source<>(side, crafter);
+		public void onFail(Type<I> type, long amount) {
+			Source<I> source = new Source<>(side);
+
+			long remove = terminal.amountRequested(source, type);
+			terminal.removeRequested(source, type, remove);
+
+			terminal.request(type, amount);
+		}
+
+		@Override
+		public void onFail(RequesterReference<I> crafter, Type<I> type, long amount) {
+			Source<I> source = new Source<>(side, crafter);
 
 			long remove = terminal.amountRequested(source, type);
 			terminal.removeRequested(source, type, remove);

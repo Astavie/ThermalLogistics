@@ -147,6 +147,7 @@ public class ProcessItem extends Process<ItemStack> {
 				continue;
 
 			item = type.withAmount((int) Math.min(maxPull, req));
+
 			// TODO: Check if item fits
 
 			maxPull = item.getCount();

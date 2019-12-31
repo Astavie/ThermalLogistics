@@ -28,10 +28,21 @@ public interface IProcessRequester<I> extends IRequester<I> {
 	 */
 	void onCrafterSend(ICrafter<I> crafter, Type<I> type, long amount);
 
-	boolean hasWants();
-
-	long amountRequired(Type<I> type);
+	/**
+	 * A request has failed and an item is not able to be crafted
+	 */
+	void onFail(RequesterReference<I> reference, Type<I> type, long amount);
 
 	void addRequest(Request<I> request);
+
+	/**
+	 * @return If the requester should automatically requests more items
+	 */
+	boolean hasWants();
+
+	/**
+	 * @return How much the requester wants of the item type
+	 */
+	long amountRequired(Type<I> type);
 
 }

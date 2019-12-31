@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 public abstract class StackList<S> {
 
-	private final Map<Type<S>, Pair<Long, Boolean>> map = new LinkedHashMap<>();
+	protected final Map<Type<S>, Pair<Long, Boolean>> map = new LinkedHashMap<>();
 
 	public abstract Type<S> getType(S stack);
 
@@ -161,5 +161,7 @@ public abstract class StackList<S> {
 			map.put(readType(tag), Pair.of(tag.getLong("Count"), false));
 		}
 	}
+
+	public abstract StackList<S> copy();
 
 }

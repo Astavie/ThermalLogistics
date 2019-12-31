@@ -39,4 +39,11 @@ public class ItemList extends StackList<ItemStack> {
 		return ItemType.readNbt(tag);
 	}
 
+	@Override
+	public StackList<ItemStack> copy() {
+		ItemList list = new ItemList();
+		list.map.putAll(map);
+		return list;
+	}
+
 }
