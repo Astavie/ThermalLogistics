@@ -1,6 +1,7 @@
 package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.ItemType;
@@ -25,6 +26,9 @@ public class ProcessItem extends Process<ItemStack> {
 		super(requester);
 	}
 
+	/**
+	 * Used for terminals: pull reserved items from inventories
+	 */
 	@Override
 	protected boolean updateRetrieval(StackList<ItemStack> requests) {
 		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
@@ -57,6 +61,9 @@ public class ProcessItem extends Process<ItemStack> {
 		return false;
 	}
 
+	/**
+	 * Used for requesters: pull unreserved items from inventories
+	 */
 	@Override
 	protected boolean updateWants() {
 		byte endSide = requester.getSide();
@@ -97,11 +104,37 @@ public class ProcessItem extends Process<ItemStack> {
 			}
 		}
 
-		// TODO: Try crafters
+		// Try crafters
+
+		for (ICrafter<ItemStack> crafter : crafters) {
+			for (ItemStack output : crafter.getOutputs()) {
+				ItemType type = new ItemType(output);
+				long amount = requester.amountRequired(type);
+
+				// TODO: Check if item fits
+
+				Shared<Long> shared = new Shared<>(amount);
+
+				List<Request<ItemStack>> requests = new LinkedList<>();
+				request(requests, crafter, type, shared);
+
+				if (requests.size() > 0) {
+					for (Request<ItemStack> request : requests) {
+						requester.addRequest(request);
+					}
+
+					sources.advanceCursor();
+					return true;
+				}
+			}
+		}
 
 		return false;
 	}
 
+	/**
+	 * Attempts to pull out requested items from crafters
+	 */
 	@Override
 	public boolean attemptPull(ICrafter<ItemStack> crafter, StackList<ItemStack> list) {
 		DuctUnitItem duct = (DuctUnitItem) crafter.getDuct();
@@ -127,6 +160,40 @@ public class ProcessItem extends Process<ItemStack> {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Used in terminal: request from crafters
+	 */
+	@Override
+	protected long requestFromCrafters(List<Request<ItemStack>> requests, Type<ItemStack> type, long amount) {
+		// TODO: Add error
+
+		Shared<Long> shared = new Shared<>(amount);
+
+		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
+		for (Pair<DuctUnit, Byte> source : sources) {
+			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
+			byte side = source.getRight();
+
+			Attachment attachment = endPoint.parent.getAttachment(side);
+			if (attachment != null && StackHandler.forEachCrafter(attachment, (ICrafter<ItemStack> c) -> request(requests, c, type, shared))) {
+				sources.advanceCursor();
+				break;
+			}
+
+			DuctUnitItem.Cache cache = endPoint.tileCache[side];
+			if (cache == null) {
+				continue;
+			}
+
+			if (StackHandler.forEachCrafter(cache.tile, (ICrafter<ItemStack> c) -> request(requests, c, type, shared))) {
+				sources.advanceCursor();
+				break;
+			}
+		}
+
+		return shared.get();
 	}
 
 	private ItemStack extract(DuctUnitItem duct, byte side, IItemHandler inv, Function<Type<ItemStack>, Long> required, DuctUnitItem end, byte endSide) {

@@ -44,7 +44,7 @@ public interface IRequester<I> {
 	StackList<I> getRequestedStacks();
 
 	/**
-	 * An requested item isn't available anymore
+	 * A requested item isn't available anymore
 	 */
 	void onFail(Type<I> type, long amount);
 

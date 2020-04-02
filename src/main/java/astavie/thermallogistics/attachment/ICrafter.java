@@ -17,22 +17,14 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	boolean isEnabled();
 
-	Collection<I> getInputs();
-
 	Collection<I> getOutputs();
-
-	boolean canCraft(I item);
 
 	/**
 	 * Requests an item. Linked crafters will also be notified.
 	 */
-	boolean request(I item);
+	boolean request(IRequester<I> requester, Type<I> type, long amount);
 
-	/**
-	 * Requests this recipe x times. Will <strong>not</strong> notify linked crafters.
-	 * Recommended to only use this within {@link #request(I)}.
-	 */
-	boolean requestLinked(int recipes);
+	boolean requestLinked(long recipes);
 
 	/**
 	 * A requester doesn't need this crafter anymore
@@ -42,7 +34,7 @@ public interface ICrafter<I> extends IRequester<I> {
 	/**
 	 * A linked crafter failed to make its recipe x times.
 	 */
-	void cancelLinked(int recipes);
+	void cancelLinked(long recipes);
 
 	/**
 	 * @return The amount of items reserved for the requester

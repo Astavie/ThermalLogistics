@@ -1,7 +1,6 @@
 package astavie.thermallogistics.util;
 
 import astavie.thermallogistics.ThermalLogistics;
-import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.IRequester;
 import astavie.thermallogistics.util.collection.FluidList;
 import astavie.thermallogistics.util.collection.ItemList;
@@ -37,18 +36,17 @@ public class Snapshot {
 	private Multimap<GridItem, IItemHandler> inventories = HashMultimap.create();
 	private Multimap<GridFluid, IFluidHandler> tanks = HashMultimap.create();
 
-	private Multimap<GridItem, ICrafter<ItemStack>> itemCrafters = HashMultimap.create();
-	private Multimap<GridFluid, ICrafter<FluidStack>> fluidCrafters = HashMultimap.create();
-
 	// experimental
 
 	private Map<GridItem, ItemList> items = new HashMap<>();
 	private Map<GridFluid, FluidList> fluids = new HashMap<>();
 
-	private Snapshot real;
-
 	private Snapshot() {
 	}
+
+	/*
+
+	private Snapshot real;
 
 	public void startExperiment() {
 		real = copy();
@@ -68,13 +66,17 @@ public class Snapshot {
 	private Snapshot copy() {
 		Snapshot copy = new Snapshot();
 
-		copy.items.putAll(items);
-		copy.fluids.putAll(fluids);
+		for (Map.Entry<GridItem, ItemList> entry : items.entrySet())
+			copy.items.put(entry.getKey(), entry.getValue().copy());
+		for (Map.Entry<GridFluid, FluidList> entry : fluids.entrySet())
+			copy.fluids.put(entry.getKey(), entry.getValue().copy());
 
 		copy.real = real;
 
 		return copy;
 	}
+
+	*/
 
 	private void refresh(World world) {
 		if (globalTick < world.getTotalWorldTime() + ThermalLogistics.INSTANCE.refreshDelay) {
@@ -88,9 +90,6 @@ public class Snapshot {
 
 				inventories.removeAll(grid);
 				tanks.removeAll(grid);
-
-				itemCrafters.removeAll(grid);
-				fluidCrafters.removeAll(grid);
 
 				//noinspection SuspiciousMethodCalls
 				items.remove(grid);
@@ -114,9 +113,6 @@ public class Snapshot {
 		Collection<IItemHandler> handlers = inventories.get(grid);
 		handlers.clear();
 
-		Collection<ICrafter<ItemStack>> crafters = itemCrafters.get(grid);
-		crafters.clear();
-
 		items.computeIfAbsent(grid, g -> new ItemList());
 		ItemList list = items.get(grid);
 		list.clear();
@@ -137,8 +133,6 @@ public class Snapshot {
 				Attachment attachment = duct.parent.getAttachment(side);
 				if (attachment != null) {
 					StackHandler.addRequesters(requesters, attachment);
-
-					StackHandler.addCrafters(crafters, attachment);
 					StackHandler.addCraftable(list, attachment);
 
 					if (!attachment.canSend())
@@ -146,8 +140,6 @@ public class Snapshot {
 				}
 
 				StackHandler.addRequesters(requesters, cache.tile);
-
-				StackHandler.addCrafters(crafters, cache.tile);
 				StackHandler.addCraftable(list, cache.tile);
 
 				// Cache inventories
@@ -210,9 +202,6 @@ public class Snapshot {
 		Collection<IFluidHandler> handlers = tanks.get(grid);
 		handlers.clear();
 
-		Collection<ICrafter<FluidStack>> crafters = fluidCrafters.get(grid);
-		crafters.clear();
-
 		fluids.computeIfAbsent(grid, g -> new FluidList());
 		FluidList list = fluids.get(grid);
 		list.clear();
@@ -239,8 +228,6 @@ public class Snapshot {
 				Attachment attachment = duct.parent.getAttachment(side);
 				if (attachment != null) {
 					StackHandler.addRequesters(requesters, attachment);
-
-					StackHandler.addCrafters(crafters, attachment);
 					StackHandler.addCraftable(list, attachment);
 
 					if (!attachment.canSend())
@@ -248,8 +235,6 @@ public class Snapshot {
 				}
 
 				StackHandler.addRequesters(requesters, cache.tile);
-
-				StackHandler.addCrafters(crafters, cache.tile);
 				StackHandler.addCraftable(list, cache.tile);
 
 				// Cache tanks
@@ -301,16 +286,6 @@ public class Snapshot {
 	public Collection<IFluidHandler> getTanks(GridFluid grid) {
 		refresh(grid);
 		return tanks.get(grid);
-	}
-
-	public Collection<ICrafter<ItemStack>> getCrafters(GridItem grid) {
-		refresh(grid);
-		return itemCrafters.get(grid);
-	}
-
-	public Collection<ICrafter<FluidStack>> getCrafters(GridFluid grid) {
-		refresh(grid);
-		return fluidCrafters.get(grid);
 	}
 
 	public <I> StackList<I> getStacks(MultiBlockGrid<?> grid) {

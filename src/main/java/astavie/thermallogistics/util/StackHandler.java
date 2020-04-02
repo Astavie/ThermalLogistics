@@ -18,6 +18,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class StackHandler {
 
@@ -104,6 +105,19 @@ public class StackHandler {
 			for (ICrafter<?> crafter : ((ICrafterContainer<?>) object).getCrafters())
 				addCrafters(collection, crafter);
 		}
+	}
+
+	public static <I> boolean forEachCrafter(Object object, Predicate<ICrafter<I>> function) {
+		if (object instanceof ICrafter) {
+			if (((ICrafter) object).isEnabled())
+				//noinspection unchecked
+				return function.test((ICrafter<I>) object);
+		} else if (object instanceof ICrafterContainer) {
+			for (ICrafter<?> crafter : ((ICrafterContainer<?>) object).getCrafters())
+				if (forEachCrafter(crafter, function))
+					return true;
+		}
+		return false;
 	}
 
 	public static <I> void addCraftable(StackList<I> list, Object object) {

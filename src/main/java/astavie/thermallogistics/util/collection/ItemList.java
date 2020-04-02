@@ -40,7 +40,7 @@ public class ItemList extends StackList<ItemStack> {
 	}
 
 	@Override
-	public StackList<ItemStack> copy() {
+	public ItemList copy() {
 		ItemList list = new ItemList();
 		list.map.putAll(map);
 		return list;

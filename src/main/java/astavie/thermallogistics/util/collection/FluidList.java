@@ -29,7 +29,7 @@ public class FluidList extends StackList<FluidStack> {
 	}
 
 	@Override
-	public StackList<FluidStack> copy() {
+	public FluidList copy() {
 		FluidList list = new FluidList();
 		list.map.putAll(map);
 		return list;
