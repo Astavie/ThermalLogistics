@@ -6,6 +6,7 @@ import astavie.thermallogistics.process.IProcessRequesterItem;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.util.RequesterReference;
+import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.collection.ListWrapperWrapper;
 import astavie.thermallogistics.util.collection.StackList;
@@ -22,11 +23,13 @@ import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.render.RenderDuct;
 import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
+import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.items.IItemHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -40,7 +43,7 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 	private final ProcessItem process = new ProcessItem(this);
 
-	private final Map<RequesterReference<ItemStack>, StackList<ItemStack>> requests = new HashMap<>();
+	private Map<RequesterReference<ItemStack>, StackList<ItemStack>> requests = new HashMap<>();
 
 	public RequesterItem(TileGrid tile, byte side) {
 		super(tile, side);
@@ -86,6 +89,18 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 	}
 
 	@Override
+	public void writeToNBT(NBTTagCompound tag) {
+		super.writeToNBT(tag);
+		tag.setTag("requests", StackHandler.writeRequestMap(requests));
+	}
+
+	@Override
+	public void readFromNBT(NBTTagCompound tag) {
+		super.readFromNBT(tag);
+		requests = StackHandler.readRequestMap(tag.getTagList("requests", Constants.NBT.TAG_COMPOUND), ItemList::new);
+	}
+
+	@Override
 	public boolean referencedBy(RequesterReference<?> reference) {
 		return reference.dim == baseTile.world().provider.getDimension() && reference.pos.equals(baseTile.getPos()) && reference.side == side;
 	}
@@ -104,6 +119,7 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 			if (list.isEmpty()) {
 				requests.remove(crafter);
+				markDirty();
 			}
 		}
 	}
@@ -218,6 +234,11 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 	public void addRequest(Request<ItemStack> request) {
 		requests.computeIfAbsent(request.source.crafter, c -> new ItemList());
 		requests.get(request.source.crafter).add(request.type, request.amount);
+		markDirty();
+	}
+
+	public void markDirty() {
+		baseTile.markChunkDirty();
 	}
 
 }

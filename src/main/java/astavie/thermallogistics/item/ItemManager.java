@@ -151,7 +151,7 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.2"));
 					} else {
 						// Success
-						crafter.link(other);
+						crafter.link((ICrafter<?>) other.get());
 
 						player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_ARROW_HIT_PLAYER, SoundCategory.PLAYERS, 0.4F, 0.45F);
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.3"));

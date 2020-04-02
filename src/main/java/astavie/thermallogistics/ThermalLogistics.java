@@ -1,5 +1,6 @@
 package astavie.thermallogistics;
 
+import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.DistributorFluid;
 import astavie.thermallogistics.attachment.DistributorItem;
 import astavie.thermallogistics.attachment.RequesterItem;
@@ -62,6 +63,8 @@ public class ThermalLogistics {
 		AttachmentRegistry.registerAttachment(DistributorFluid.ID, DistributorFluid::new);
 
 		AttachmentRegistry.registerAttachment(RequesterItem.ID, RequesterItem::new);
+
+		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
 
 		config = new Configuration(event.getSuggestedConfigurationFile());
 

@@ -4,6 +4,6 @@ import java.util.List;
 
 public interface IRequesterContainer<I> {
 
-	List<IRequester<I>> getRequesters();
+	List<? extends IRequester<I>> getRequesters(); // TODO: Requesters of different types?
 
 }

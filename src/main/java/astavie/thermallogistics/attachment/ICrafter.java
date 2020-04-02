@@ -11,6 +11,10 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	boolean isLinked(RequesterReference<?> reference);
 
+	void link(ICrafter<?> crafter);
+
+	void unlink(ICrafter<?> crafter);
+
 	void link(RequesterReference<?> reference);
 
 	void unlink(RequesterReference<?> reference);
@@ -24,17 +28,10 @@ public interface ICrafter<I> extends IRequester<I> {
 	 */
 	boolean request(IRequester<I> requester, Type<I> type, long amount);
 
-	boolean requestLinked(long recipes);
-
 	/**
 	 * A requester doesn't need this crafter anymore
 	 */
 	void cancel(IRequester<I> requester, Type<I> type, long amount);
-
-	/**
-	 * A linked crafter failed to make its recipe x times.
-	 */
-	void cancelLinked(long recipes);
 
 	/**
 	 * @return The amount of items reserved for the requester

@@ -1,5 +1,6 @@
 package astavie.thermallogistics.item;
 
+import astavie.thermallogistics.attachment.CrafterItem;
 import cofh.core.util.helpers.RecipeHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.Attachment;
@@ -8,6 +9,7 @@ import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
 import cofh.thermaldynamics.duct.attachments.servo.ServoBase;
 import cofh.thermaldynamics.duct.attachments.servo.ServoFluid;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
+import cofh.thermaldynamics.duct.tiles.DuctToken;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.item.ItemRetriever;
 import net.minecraft.client.Minecraft;
@@ -50,15 +52,11 @@ public class ItemCrafter extends ItemAttachmentLogistics {
 
 	@Override
 	public Attachment getAttachment(EnumFacing side, ItemStack stack, TileGrid tile) {
-		/*
-
 		int type = stack.getItemDamage();
-		if (tile.getDuct(DuctToken.FLUID) != null)
-			return new CrafterFluid(tile, (byte) (side.ordinal() ^ 1), type);
+		//if (tile.getDuct(DuctToken.FLUID) != null)
+		//	return new CrafterFluid(tile, (byte) (side.ordinal() ^ 1), type);
 		if (tile.getDuct(DuctToken.ITEMS) != null)
 			return new CrafterItem(tile, (byte) (side.ordinal() ^ 1), type);
-
-		 */
 
 		return null;
 	}
