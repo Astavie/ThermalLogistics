@@ -5,6 +5,8 @@ import astavie.thermallogistics.attachment.DistributorFluid;
 import astavie.thermallogistics.attachment.DistributorItem;
 import astavie.thermallogistics.attachment.RequesterItem;
 import astavie.thermallogistics.block.BlockTerminalItem;
+import astavie.thermallogistics.compat.CompatTE;
+import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.item.ItemCrafter;
 import astavie.thermallogistics.item.ItemDistributor;
 import astavie.thermallogistics.item.ItemManager;
@@ -33,6 +35,8 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 @Mod(modid = ThermalLogistics.MOD_ID, name = ThermalLogistics.MOD_NAME, dependencies = "required-after:thermaldynamics;")
@@ -44,6 +48,8 @@ public class ThermalLogistics {
 
 	@Mod.Instance(MOD_ID)
 	public static ThermalLogistics INSTANCE;
+
+	private final Map<Class<?>, ICrafterWrapper<?>> registry = new HashMap<>();
 
 	public CreativeTabs tab = new CreativeTabCore(MOD_ID) {
 		@Override
@@ -57,6 +63,17 @@ public class ThermalLogistics {
 	public int refreshDelay;
 	public int syncDelay;
 
+	public <T extends TileEntity> boolean registerWrapper(Class<T> c, ICrafterWrapper<T> w) {
+		if (registry.containsKey(c))
+			return false;
+		registry.put(c, w);
+		return true;
+	}
+
+	public ICrafterWrapper<?> getWrapper(Class<?> c) {
+		return registry.get(c);
+	}
+
 	@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		AttachmentRegistry.registerAttachment(DistributorItem.ID, DistributorItem::new);
@@ -65,6 +82,10 @@ public class ThermalLogistics {
 		AttachmentRegistry.registerAttachment(RequesterItem.ID, RequesterItem::new);
 
 		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
+
+		if (Loader.isModLoaded("thermalexpansion")) {
+			registerWrapper(CompatTE.TILE, new CompatTE());
+		}
 
 		config = new Configuration(event.getSuggestedConfigurationFile());
 

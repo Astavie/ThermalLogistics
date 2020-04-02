@@ -1,5 +1,6 @@
 package astavie.thermallogistics.compat.jei;
 
+import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import mezz.jei.Internal;
 import mezz.jei.api.*;
@@ -25,17 +26,16 @@ public class CompatJEI implements IModPlugin {
 	public void register(IModRegistry registry) {
 		IRecipeTransferHandlerHelper helper = registry.getJeiHelpers().recipeTransferHandlerHelper();
 
-		// TODO
-		// CrafterHandler crafter = new CrafterHandler();
+		CrafterHandler crafter = new CrafterHandler();
 		TerminalHandler terminal = new TerminalHandler(helper);
 
 		registry.getRecipeTransferRegistry().addRecipeTransferHandler(terminal, VanillaRecipeCategoryUid.CRAFTING);
-		// registry.getRecipeTransferRegistry().addUniversalRecipeTransferHandler(crafter);
+		registry.getRecipeTransferRegistry().addUniversalRecipeTransferHandler(crafter);
 
-		registry.addAdvancedGuiHandlers(terminal/*, crafter*/);
+		registry.addAdvancedGuiHandlers(terminal, crafter);
 
 		registry.addGhostIngredientHandler(GuiTerminalItem.class, terminal);
-		// registry.addGhostIngredientHandler(GuiCrafter.class, crafter);
+		registry.addGhostIngredientHandler(GuiCrafter.class, crafter);
 	}
 
 	public static void synchronize(String search) {

@@ -6,6 +6,7 @@ import astavie.thermallogistics.attachment.IAttachmentCrafter;
 import astavie.thermallogistics.attachment.Recipe;
 import astavie.thermallogistics.client.gui.element.ElementSlot;
 import astavie.thermallogistics.client.gui.tab.TabFluid;
+import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.util.StackHandler;
 import cofh.core.gui.GuiContainerCore;
@@ -14,12 +15,14 @@ import cofh.core.gui.element.tab.TabInfo;
 import cofh.core.gui.element.tab.TabRedstoneControl;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
+import cofh.core.util.helpers.BlockHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.attachments.ConnectionBase;
 import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
 import com.google.common.primitives.Ints;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -40,7 +43,7 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 	private static final int[][] flagButtonsPos = {{176, 0}, {176, 60}, {216, 0}, {216, 60}, {176, 120}, {216, 120}, {176, 180}, {216, 180},};
 	public final List<ElementSlot> slots = new LinkedList<>();
 
-	// private final ICrafterWrapper<?> wrapper; TODO
+	private final ICrafterWrapper<?> wrapper;
 	public final IAttachmentCrafter<?> crafter;
 	private final ConnectionBase attachment;
 	public TabFluid tab = null;
@@ -58,14 +61,12 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 		this.name = attachment.getName();
 		this.ySize = 204;
 
-		/*
 		TileEntity tile = BlockHelper.getAdjacentTileEntity(attachment.baseTile, attachment.side);
 		if (tile == null) {
 			wrapper = null;
 		} else {
 			wrapper = ThermalLogistics.INSTANCE.getWrapper(tile.getClass());
 		}
-		*/
 
 		String info = attachment.getInfo();
 		if (info != null)
@@ -124,13 +125,11 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 			}
 		}
 
-		/*
 		if (wrapper != null) {
 			ElementButton button = new ElementButton(this, 10, 48, "import", 80, 0, 80, 16, 16, 16, ICON_PATH);
 			button.setToolTip("info.logistics.import");
 			addElement(button);
 		}
-		*/
 	}
 
 	private void setButtons() {

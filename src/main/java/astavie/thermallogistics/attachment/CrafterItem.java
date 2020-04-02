@@ -3,6 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.TLTextures;
 import astavie.thermallogistics.client.gui.GuiCrafter;
+import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.StackHandler;
@@ -323,7 +324,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 				this.recipes.add(recipe);
 			}
 
-			baseTile.markChunkDirty();
+			markDirty();
 		}
 	}
 
@@ -371,14 +372,11 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 				} else if (message == 3) {
 					TileEntity tile = BlockHelper.getAdjacentTileEntity(baseTile, side);
 					if (tile != null) {
-						// TODO: Wrapper
-						/*
 						ICrafterWrapper<?> wrapper = ThermalLogistics.INSTANCE.getWrapper(tile.getClass());
 						if (wrapper != null) {
 							recipes.clear();
-							sent.stacks.clear();
 
-							Recipe<ItemStack> recipe = new Recipe<>(new RequestItem(null));
+							Recipe<ItemStack> recipe = newRecipe();
 							recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, ItemStack.EMPTY));
 							recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
 
@@ -387,7 +385,6 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 							recipes.add(recipe);
 							markDirty();
 						}
-						*/
 					}
 				} else if (message == 4) {
 					int recipe = payload.getInt();
