@@ -2,12 +2,15 @@ package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.util.Shared;
+import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.StackHandler;
+import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.ItemType;
 import astavie.thermallogistics.util.type.Type;
 import cofh.thermaldynamics.duct.Attachment;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
+import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.multiblock.Route;
@@ -68,67 +71,95 @@ public class ProcessItem extends Process<ItemStack> {
 	protected boolean updateWants() {
 		byte endSide = requester.getSide();
 
-		List<ICrafter<ItemStack>> crafters = new LinkedList<>();
-
-		// Try items
-
 		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
-		for (Pair<DuctUnit, Byte> source : sources) {
-			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
-			byte side = source.getRight();
 
-			Attachment attachment = endPoint.parent.getAttachment(side);
-			if (attachment != null) {
-				StackHandler.addCrafters(crafters, attachment);
-				if (!attachment.canSend())
+		// Check if there are interesting items
+
+		ItemList stacks = Snapshot.INSTANCE.getItems((GridItem) requester.getDuct().getGrid());
+		if (stacks.types().stream().anyMatch(type -> requester.amountRequired(type) > 0)) {
+
+			// Try items
+			for (Pair<DuctUnit, Byte> source : sources) {
+				DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
+				byte side = source.getRight();
+
+				Attachment attachment = endPoint.parent.getAttachment(side);
+				if (attachment != null && !attachment.canSend())
 					continue;
-			}
 
-			DuctUnitItem.Cache cache = endPoint.tileCache[side];
-			if (cache == null)
-				continue;
+				DuctUnitItem.Cache cache = endPoint.tileCache[side];
+				if (cache == null)
+					continue;
 
-			StackHandler.addCrafters(crafters, cache.tile);
+				if ((!endPoint.isInput(side) && !endPoint.isOutput(side)) || !endPoint.parent.getConnectionType(side).allowTransfer)
+					continue;
 
-			if ((!endPoint.isInput(side) && !endPoint.isOutput(side)) || !endPoint.parent.getConnectionType(side).allowTransfer)
-				continue;
+				IItemHandler inv = cache.getItemHandler(side ^ 1);
+				if (inv == null)
+					continue;
 
-			IItemHandler inv = cache.getItemHandler(side ^ 1);
-			if (inv == null)
-				continue;
-
-			ItemStack extract = extract(endPoint, side, inv, requester::amountRequired, (DuctUnitItem) requester.getDuct(), (byte) (endSide ^ 1));
-			if (!extract.isEmpty()) {
-				sources.advanceCursor();
-				return true;
-			}
-		}
-
-		// Try crafters
-
-		for (ICrafter<ItemStack> crafter : crafters) {
-			for (ItemStack output : crafter.getOutputs()) {
-				ItemType type = new ItemType(output);
-				long amount = requester.amountRequired(type);
-
-				// TODO: Check if item fits
-
-				Shared<Long> shared = new Shared<>(amount);
-
-				List<Request<ItemStack>> requests = new LinkedList<>();
-				request(requests, crafter, type, shared);
-
-				if (requests.size() > 0) {
-					for (Request<ItemStack> request : requests) {
-						requester.addRequest(request);
-					}
-
+				ItemStack extract = extract(endPoint, side, inv, requester::amountRequired, (DuctUnitItem) requester.getDuct(), (byte) (endSide ^ 1));
+				if (!extract.isEmpty()) {
 					sources.advanceCursor();
 					return true;
 				}
 			}
+
+		} else {
+
+			// Try crafters
+
+			for (Pair<DuctUnit, Byte> source : sources) {
+				DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
+				byte side = source.getRight();
+
+				Attachment attachment = endPoint.parent.getAttachment(side);
+				if (attachment != null) {
+					if (StackHandler.forEachCrafter(attachment, this::requestFromCrafter)) {
+						sources.advanceCursor();
+						break;
+					}
+					if (!attachment.canSend())
+						continue;
+				}
+
+				DuctUnitItem.Cache cache = endPoint.tileCache[side];
+				if (cache == null)
+					continue;
+
+				if (StackHandler.forEachCrafter(cache.tile, this::requestFromCrafter)) {
+					sources.advanceCursor();
+					break;
+				}
+			}
+
 		}
 
+		return false;
+	}
+
+	/**
+	 * Used in requester: request from crafter
+	 */
+	private boolean requestFromCrafter(ICrafter<ItemStack> crafter) {
+		for (ItemStack output : crafter.getOutputs()) {
+			ItemType type = new ItemType(output);
+			long amount = requester.amountRequired(type);
+
+			// TODO: Check if item fits
+
+			Shared<Long> shared = new Shared<>(amount);
+
+			List<Request<ItemStack>> requests = new LinkedList<>();
+			request(requests, crafter, type, shared);
+
+			if (requests.size() > 0) {
+				for (Request<ItemStack> request : requests) {
+					requester.addRequest(request);
+				}
+				return true;
+			}
+		}
 		return false;
 	}
 

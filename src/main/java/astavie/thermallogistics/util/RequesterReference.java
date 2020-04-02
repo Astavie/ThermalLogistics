@@ -23,6 +23,7 @@ public class RequesterReference<I> {
 	private long tick;
 	private IRequester<I> cache;
 
+	// TODO: Maybe remove this?
 	private ItemStack icon = ItemStack.EMPTY;
 	private ItemStack tile = ItemStack.EMPTY;
 

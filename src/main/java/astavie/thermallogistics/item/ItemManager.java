@@ -146,16 +146,24 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 				RequesterReference<?> other = RequesterReference.readNBT(item.getSubCompound("Link"));
 				if (other instanceof ICrafter && !other.references(crafter)) {
 					if (crafter.isLinked(other)) {
+						// Fail
+						player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.2"));
 					} else {
+						// Success
 						crafter.link(other);
+
+						player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_ARROW_HIT_PLAYER, SoundCategory.PLAYERS, 0.4F, 0.45F);
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.3"));
 					}
 				} else {
-					if (other.references(crafter))
+					// Fail
+					player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+					if (other.references(crafter)) {
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.4"));
-					else
+					} else {
 						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.1"));
+					}
 				}
 				item.getTagCompound().removeTag("Link");
 			} else {
