@@ -25,6 +25,7 @@ import cofh.thermaldynamics.gui.GuiHandler;
 import cofh.thermaldynamics.render.RenderDuct;
 import com.google.common.primitives.Ints;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -177,9 +178,14 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			for (ItemStack stack : recipe.outputs)
 				outputs.appendTag(stack.writeToNBT(new NBTTagCompound()));
 
+			NBTTagList linked = new NBTTagList();
+			for (RequesterReference<?> link : recipe.linked)
+				linked.appendTag(RequesterReference.writeNBT(link));
+
 			NBTTagCompound nbt = new NBTTagCompound();
 			nbt.setTag("inputs", inputs);
 			nbt.setTag("outputs", outputs);
+			nbt.setTag("linked", linked);
 			nbt.setTag("requestInput", StackHandler.writeRequestMap(recipe.requestInput));
 			nbt.setTag("requestOutput", StackHandler.writeRequestMap(recipe.requestOutput));
 			nbt.setTag("leftovers", recipe.leftovers.writeNbt());
@@ -265,6 +271,10 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 				NBTTagList outputs = nbt.getTagList("outputs", Constants.NBT.TAG_COMPOUND);
 				for (int j = 0; j < outputs.tagCount(); j++)
 					recipe.outputs.add(new ItemStack(outputs.getCompoundTagAt(j)));
+
+				NBTTagList linked = nbt.getTagList("linked", Constants.NBT.TAG_COMPOUND);
+				for (int j = 0; j < linked.tagCount(); j++)
+					recipe.linked.add(RequesterReference.readNBT(linked.getCompoundTagAt(j)));
 
 				recipe.requestInput = StackHandler.readRequestMap(nbt.getTagList("requestInput", Constants.NBT.TAG_COMPOUND), ItemList::new);
 				recipe.requestOutput = StackHandler.readRequestMap(nbt.getTagList("requestOutput", Constants.NBT.TAG_COMPOUND), ItemList::new);
@@ -370,7 +380,16 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 						markDirty();
 					}
 				} else if (message == 2) {
-					// TODO: Remove linked
+					int index1 = payload.getInt();
+					int index2 = payload.getInt();
+
+					if (index1 < recipes.size()) {
+						Recipe<ItemStack> recipe = recipes.get(index1);
+						if (index2 < recipe.linked.size()) {
+							// TODO: Check linked
+							recipe.unlink((ICrafter<?>) recipe.linked.get(index2).get());
+						}
+					}
 				} else if (message == 3) {
 					TileEntity tile = BlockHelper.getAdjacentTileEntity(baseTile, side);
 					if (tile != null) {
@@ -406,6 +425,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 						if (stack.getItem() == ThermalLogistics.Items.manager) {
 							ThermalLogistics.Items.manager.link(player, stack, recipes.get(index));
+							((EntityPlayerMP) player).updateHeldItem();
 						}
 					}
 				}
@@ -442,6 +462,8 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 						int linked = payload.getInt();
 						Recipe<?> recipe = recipes.get(i);
+
+						recipe.linked.clear();
 
 						for (int j = 0; j < linked; j++) {
 							recipe.linked.add(RequesterReference.readPacket(payload));

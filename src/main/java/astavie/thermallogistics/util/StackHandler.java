@@ -61,6 +61,7 @@ public class StackHandler {
 	@SideOnly(Side.CLIENT)
 	public static void render(GuiContainerCore gui, int x, int y, Object item, String text) {
 		if (item instanceof ItemStack) {
+			RenderHelper.enableGUIStandardItemLighting();
 			gui.drawItemStack((ItemStack) item, x, y, true, "");
 		} else if (item instanceof FluidStack) {
 			GlStateManager.disableLighting();

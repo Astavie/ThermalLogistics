@@ -64,6 +64,8 @@ info.logistics.manager.e.0=Items travelling to this duct
 info.logistics.manager.e.1=%s x %s
 info.logistics.manager.e.2=No items are travelling to this duct
 
+info.logistics.manager.f=Linking %s at {x%s, y%s, z%s, %s}
+
 gui.logistics.terminal.request=Request
 gui.logistics.terminal.missing=Missing items
 gui.logistics.terminal.enough=No items need to be requested

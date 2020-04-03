@@ -322,7 +322,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 						amount.get().setText(Long.toString(Math.min(StringHelper.isShiftKeyDown() ? selected.maxSize() : selected.normalSize(), filter.get(slot).getMiddle())));
 					}
 
-					Overlay overlay = new Overlay(posX * 18 + 7, posY * 18 + 17, 81, 18);
+					Overlay overlay = new Overlay(this, posX * 18 + 7, posY * 18 + 17, 81, 18);
 					overlay.elements.add(new ElementStack(this, 0, 0, selected, false));
 					overlay.elements.add(amount.get());
 
@@ -373,7 +373,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 	}
 
 	@Override
-	protected void setOverlay(Overlay overlay) {
+	public void setOverlay(Overlay overlay) {
 		super.setOverlay(overlay);
 		if (overlay == null) {
 			selected = null;

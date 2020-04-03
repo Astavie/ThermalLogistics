@@ -35,6 +35,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
 import net.minecraftforge.client.model.ModelLoader;
 
@@ -62,6 +63,18 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 
 	@Override
 	public void addInformation(ItemStack stack, @Nullable World world, List<String> tooltip, ITooltipFlag flagIn) {
+		if (stack.hasTagCompound()) {
+			NBTTagCompound link = stack.getSubCompound("Link");
+			NBTTagCompound visual = stack.getSubCompound("VisualLink");
+			if (link != null && visual != null) {
+				ItemStack crafter = new ItemStack(visual);
+				RequesterReference<?> reference = RequesterReference.readNBT(link);
+
+				String dimension = DimensionType.getById(reference.dim).getName();
+				tooltip.add(StringHelper.localizeFormat("info.logistics.manager.f", crafter.getDisplayName(), reference.pos.getX(), reference.pos.getY(), reference.pos.getZ(), dimension));
+			}
+		}
+
 		if (StringHelper.displayShiftForDetail && !StringHelper.isShiftKeyDown())
 			tooltip.add(StringHelper.shiftForDetails());
 		if (!StringHelper.isShiftKeyDown())
@@ -184,6 +197,7 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 			item.getTagCompound().removeTag("Link");
 		} else {
 			item.getTagCompound().setTag("Link", RequesterReference.writeNBT(crafter.createReference()));
+			item.getTagCompound().setTag("VisualLink", crafter.getIcon().writeToNBT(new NBTTagCompound()));
 			ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.0"));
 		}
 	}

@@ -10,7 +10,6 @@ import astavie.thermallogistics.client.gui.tab.TabFluid;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.util.StackHandler;
-import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementButton;
 import cofh.core.gui.element.tab.TabInfo;
 import cofh.core.gui.element.tab.TabRedstoneControl;
@@ -33,7 +32,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class GuiCrafter extends GuiContainerCore implements IFluidGui {
+public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 	public static final String ICON_PATH = ThermalLogistics.MOD_ID + ":textures/gui/icons/crafter.png";
 
@@ -213,6 +212,11 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 			// Add link info
 			this.links.add((ElementButtonLinks) addElement(new ElementButtonLinks(this, 80, 38, 0)));
 		}
+
+		if (overlay != null) {
+			elements.remove(overlay);
+			elements.add(overlay);
+		}
 	}
 
 	@Override
@@ -222,10 +226,26 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 
 	@Override
 	protected void mouseClicked(int mX, int mY, int mouseButton) throws IOException {
-		if (fluid != null && slots.stream().noneMatch(slot -> slot.intersectsWith(mX - guiLeft, mY - guiTop)))
+		if (fluid != null && slots.stream().noneMatch(slot -> slot.intersectsWith(mX - guiLeft, mY - guiTop))) {
 			fluid = null;
-		else
+		} else {
 			super.mouseClicked(mX, mY, mouseButton);
+		}
+	}
+
+	@Override
+	protected int getOverlaySheetX() {
+		return 96;
+	}
+
+	@Override
+	protected int getOverlaySheetY() {
+		return 20;
+	}
+
+	@Override
+	protected ResourceLocation getOverlayTexture() {
+		return new ResourceLocation(ICON_PATH);
 	}
 
 	@Override

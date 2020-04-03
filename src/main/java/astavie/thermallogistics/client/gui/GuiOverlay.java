@@ -12,13 +12,13 @@ import java.util.List;
 
 public abstract class GuiOverlay extends GuiContainerCore {
 
-	private Overlay overlay;
+	public Overlay overlay;
 
 	public GuiOverlay(Container container, ResourceLocation texture) {
 		super(container, texture);
 	}
 
-	protected void setOverlay(Overlay overlay) {
+	public void setOverlay(Overlay overlay) {
 		if (this.overlay != null) {
 			elements.remove(this.overlay);
 		}
@@ -32,8 +32,9 @@ public abstract class GuiOverlay extends GuiContainerCore {
 
 	@Override
 	protected void mouseClicked(int mX, int mY, int mouseButton) throws IOException {
-		if (overlay != null && !withinOverlay(mX - guiLeft, mY - guiTop))
+		if (overlay != null && !withinOverlay(mX - guiLeft, mY - guiTop)) {
 			setOverlay(null);
+		}
 
 		super.mouseClicked(mX, mY, mouseButton);
 	}
@@ -89,14 +90,26 @@ public abstract class GuiOverlay extends GuiContainerCore {
 		}
 	}
 
-	public class Overlay extends ElementBase {
+	public static class Overlay extends ElementBase {
 
 		public List<ElementBase> elements = new LinkedList<>();
 
 		private float ticks;
+		private GuiOverlay gui;
 
-		public Overlay(int posX, int posY, int width, int height) {
-			super(GuiOverlay.this, posX - 4, posY - 4, width + 8, height + 8);
+		public Overlay(GuiOverlay gui, int posX, int posY, int width, int height) {
+			super(gui, posX - 4, posY - 4, width + 8, height + 8);
+			this.gui = gui;
+		}
+
+		public void setPos(int posX, int posY) {
+			this.posX = posX - 4;
+			this.posY = posY - 4;
+		}
+
+		public void setDimensions(int width, int height) {
+			sizeX = width + 8;
+			sizeY = height + 8;
 		}
 
 		@Override
@@ -111,8 +124,8 @@ public abstract class GuiOverlay extends GuiContainerCore {
 
 			GlStateManager.color(1, 1, 1, 1);
 
-			bindTexture(GuiOverlay.this.getOverlayTexture());
-			overlay(posX, posY, sizeX, sizeY);
+			gui.bindTexture(gui.getOverlayTexture());
+			gui.overlay(posX, posY, sizeX, sizeY);
 
 			GlStateManager.translate(posX + 4, posY + 4, 0);
 
