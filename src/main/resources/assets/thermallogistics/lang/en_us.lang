@@ -36,6 +36,8 @@ info.logistics.fluid.get=Get Fluid
 info.logistics.inputs=Inputs: §f%s
 info.logistics.outputs=Outputs: §f%s
 info.logistics.split=Recipes: %s
+info.logistics.unlinked.0=This recipe is unlinked
+info.logistics.unlinked.1=Click on with a Network Manager to start linking
 
 info.logistics.tab.link=Linked Crafters
 info.logistics.tab.fluid=Add Fluid

@@ -2,6 +2,7 @@ package astavie.thermallogistics.item;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.ICrafter;
+import astavie.thermallogistics.attachment.ICrafterContainer;
 import astavie.thermallogistics.util.RequesterReference;
 import cofh.api.item.IMultiModeItem;
 import cofh.core.item.ItemCore;
@@ -127,11 +128,17 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 				RayTraceResult raytrace = RayTracer.retraceBlock(world, player, pos);
 				if (raytrace != null && raytrace.subHit >= 14 && raytrace.subHit < 20) {
 					Attachment attachment = ((TileGrid) tile).getAttachment(raytrace.subHit - 14);
-					if (attachment instanceof ICrafter)
+					if (attachment instanceof ICrafter) {
 						crafter = (ICrafter<?>) attachment;
+					} else if (attachment instanceof ICrafterContainer) {
+						// TODO
+					}
 				}
-			} else if (tile instanceof ICrafter)
+			} else if (tile instanceof ICrafter) {
 				crafter = (ICrafter<?>) tile;
+			} else if (tile instanceof ICrafterContainer) {
+				// TODO
+			}
 
 			if (crafter == null)
 				return EnumActionResult.PASS;
@@ -139,41 +146,46 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 			if (world.isRemote)
 				return EnumActionResult.SUCCESS;
 
-			if (!item.hasTagCompound())
-				item.setTagCompound(new NBTTagCompound());
-
-			if (item.getSubCompound("Link") != null) {
-				RequesterReference<?> other = RequesterReference.readNBT(item.getSubCompound("Link"));
-				if (other instanceof ICrafter && !other.references(crafter)) {
-					if (crafter.isLinked(other)) {
-						// Fail
-						player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
-						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.2"));
-					} else {
-						// Success
-						crafter.link((ICrafter<?>) other.get());
-
-						player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_ARROW_HIT_PLAYER, SoundCategory.PLAYERS, 0.4F, 0.45F);
-						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.3"));
-					}
-				} else {
-					// Fail
-					player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
-					if (other.references(crafter)) {
-						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.4"));
-					} else {
-						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.1"));
-					}
-				}
-				item.getTagCompound().removeTag("Link");
-			} else {
-				item.getTagCompound().setTag("Link", RequesterReference.writeNBT(crafter.createReference()));
-				ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.0"));
-			}
+			link(player, item, crafter);
 
 			return EnumActionResult.SUCCESS;
 		}
 		return EnumActionResult.PASS;
+	}
+
+	public void link(EntityPlayer player, ItemStack item, ICrafter<?> crafter) {
+		if (!item.hasTagCompound()) {
+			item.setTagCompound(new NBTTagCompound());
+		}
+
+		if (item.getSubCompound("Link") != null) {
+			RequesterReference<?> other = RequesterReference.readNBT(item.getSubCompound("Link"));
+			if (other.get() instanceof ICrafter && !other.references(crafter)) {
+				if (crafter.isLinked(other)) {
+					// Fail
+					player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.2"));
+				} else {
+					// Success
+					crafter.link((ICrafter<?>) other.get());
+
+					player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_ARROW_HIT_PLAYER, SoundCategory.PLAYERS, 0.4F, 0.45F);
+					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.3"));
+				}
+			} else {
+				// Fail
+				player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+				if (other.references(crafter)) {
+					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.4"));
+				} else {
+					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.1"));
+				}
+			}
+			item.getTagCompound().removeTag("Link");
+		} else {
+			item.getTagCompound().setTag("Link", RequesterReference.writeNBT(crafter.createReference()));
+			ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.0"));
+		}
 	}
 
 	@Override

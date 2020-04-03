@@ -66,7 +66,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	public CrafterItem(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
 
-		Recipe<ItemStack> recipe = newRecipe();
+		Recipe<ItemStack> recipe = newRecipe(0);
 		recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, ItemStack.EMPTY));
 		recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
 
@@ -77,8 +77,8 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 		super(tile, side);
 	}
 
-	private Recipe<ItemStack> newRecipe() {
-		return new Recipe<>(this, itemDuct, ItemList::new);
+	private Recipe<ItemStack> newRecipe(int index) {
+		return new Recipe<>(this, itemDuct, ItemList::new, index);
 	}
 
 	@Override
@@ -183,6 +183,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			nbt.setTag("requestInput", StackHandler.writeRequestMap(recipe.requestInput));
 			nbt.setTag("requestOutput", StackHandler.writeRequestMap(recipe.requestOutput));
 			nbt.setTag("leftovers", recipe.leftovers.writeNbt());
+			nbt.setBoolean("enabled", recipe.enabled);
 			recipes.appendTag(nbt);
 		}
 
@@ -198,7 +199,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 		if (tag.hasKey("Inputs") || tag.hasKey("Outputs") || tag.hasKey("Linked")) {
 			// Version 0.1-x nbt format
 
-			Recipe<ItemStack> recipe = newRecipe();
+			Recipe<ItemStack> recipe = newRecipe(0);
 			recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, ItemStack.EMPTY));
 			recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
 
@@ -228,7 +229,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			for (int i = 0; i < recipes.tagCount(); i++) {
 				NBTTagCompound nbt = recipes.getCompoundTagAt(i);
 
-				Recipe<ItemStack> recipe = newRecipe();
+				Recipe<ItemStack> recipe = newRecipe(i);
 
 				NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
 				for (int j = 0; j < inputs.tagCount(); j++)
@@ -255,7 +256,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			for (int i = 0; i < recipes.tagCount(); i++) {
 				NBTTagCompound nbt = recipes.getCompoundTagAt(i);
 
-				Recipe<ItemStack> recipe = newRecipe();
+				Recipe<ItemStack> recipe = newRecipe(i);
 
 				NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
 				for (int j = 0; j < inputs.tagCount(); j++)
@@ -268,6 +269,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 				recipe.requestInput = StackHandler.readRequestMap(nbt.getTagList("requestInput", Constants.NBT.TAG_COMPOUND), ItemList::new);
 				recipe.requestOutput = StackHandler.readRequestMap(nbt.getTagList("requestOutput", Constants.NBT.TAG_COMPOUND), ItemList::new);
 				recipe.leftovers.readNbt(nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND));
+				recipe.enabled = nbt.getBoolean("enabled");
 				this.recipes.add(recipe);
 			}
 		}
@@ -311,7 +313,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			for (int i = 0; i < recipes.tagCount(); i++) {
 				NBTTagCompound nbt = recipes.getCompoundTagAt(i);
 
-				Recipe<ItemStack> recipe = newRecipe();
+				Recipe<ItemStack> recipe = newRecipe(i);
 
 				NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
 				for (int j = 0; j < inputs.tagCount(); j++)
@@ -376,7 +378,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 						if (wrapper != null) {
 							recipes.clear();
 
-							Recipe<ItemStack> recipe = newRecipe();
+							Recipe<ItemStack> recipe = newRecipe(0);
 							recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, ItemStack.EMPTY));
 							recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
 
@@ -395,6 +397,17 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 						for (int i = 0; i < r.outputs.size(); i++)
 							r.outputs.set(i, payload.getItemStack());
 					}
+				} else if (message == 5) {
+					// Link!
+					int index = payload.getInt();
+
+					if (index >= 0 && index < recipes.size()) {
+						ItemStack stack = player.inventory.getItemStack();
+
+						if (stack.getItem() == ThermalLogistics.Items.manager) {
+							ThermalLogistics.Items.manager.link(player, stack, recipes.get(index));
+						}
+					}
 				}
 
 				// Send to clients
@@ -405,7 +418,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 					recipes.clear();
 					int size = payload.getInt();
 					for (int i = 0; i < size; i++) {
-						Recipe<ItemStack> recipe = newRecipe();
+						Recipe<ItemStack> recipe = newRecipe(i);
 
 						int inputs = payload.getInt();
 						for (int j = 0; j < inputs; j++)
@@ -415,11 +428,25 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 						for (int j = 0; j < outputs; j++)
 							recipe.outputs.add(payload.getItemStack());
 
+						recipe.enabled = payload.getBool();
+
 						recipes.add(recipe);
 					}
 				}
 				if (message == 0 || message == 1) {
-					// TODO: Read linked
+					int size = payload.getInt();
+					for (int i = 0; i < size; i++) {
+						if (i >= recipes.size()) {
+							break;
+						}
+
+						int linked = payload.getInt();
+						Recipe<?> recipe = recipes.get(i);
+
+						for (int j = 0; j < linked; j++) {
+							recipe.linked.add(RequesterReference.readPacket(payload));
+						}
+					}
 				}
 			}
 		} else super.handleInfoPacketType(a, payload, isServer, player);
@@ -447,6 +474,8 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			packet.addInt(recipe.outputs.size());
 			for (ItemStack output : recipe.outputs)
 				packet.addItemStack(output);
+
+			packet.addBool(recipe.enabled);
 		}
 
 		writeSyncPacket(packet);
@@ -454,7 +483,13 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	}
 
 	private void writeSyncPacket(PacketTileInfo packet) {
-		// TODO Send linked
+		packet.addInt(recipes.size());
+		for (Recipe<ItemStack> recipe : recipes) {
+			packet.addInt(recipe.linked.size());
+			for (RequesterReference<?> reference : recipe.linked) {
+				RequesterReference.writePacket(packet, reference);
+			}
+		}
 	}
 
 	@Override
@@ -484,7 +519,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 		int recipes = SIZE[type] / split;
 		for (int i = 0; i < recipes; i++) {
-			Recipe<ItemStack> recipe = newRecipe();
+			Recipe<ItemStack> recipe = newRecipe(i);
 
 			for (int j = 0; j < split; j++) {
 				recipe.inputs.add(inputs[(i * split + j) * 2]);

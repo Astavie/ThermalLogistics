@@ -22,7 +22,7 @@ public class Recipe<I> implements ICrafter<I> {
 
 	public final List<RequesterReference<?>> linked = NonNullList.create();
 
-	public boolean enabled;
+	public boolean enabled = true;
 	public int index;
 
 	public List<I> inputs = NonNullList.create();
@@ -36,11 +36,12 @@ public class Recipe<I> implements ICrafter<I> {
 	private DuctUnit<?, ?, ?> duct;
 	private Supplier<StackList<I>> supplier;
 
-	public Recipe(ServoBase parent, DuctUnit<?, ?, ?> duct, Supplier<StackList<I>> supplier) {
+	public Recipe(ServoBase parent, DuctUnit<?, ?, ?> duct, Supplier<StackList<I>> supplier, int index) {
 		this.parent = parent;
 		this.duct = duct;
 		this.supplier = supplier;
 		this.leftovers = supplier.get();
+		this.index = index;
 	}
 
 	public void onDisable() {

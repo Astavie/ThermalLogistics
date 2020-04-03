@@ -4,6 +4,7 @@ import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.IAttachmentCrafter;
 import astavie.thermallogistics.attachment.Recipe;
+import astavie.thermallogistics.client.gui.element.ElementButtonLinks;
 import astavie.thermallogistics.client.gui.element.ElementSlot;
 import astavie.thermallogistics.client.gui.tab.TabFluid;
 import astavie.thermallogistics.compat.ICrafterWrapper;
@@ -34,14 +35,16 @@ import java.util.function.Supplier;
 
 public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 
-	private static final String ICON_PATH = ThermalLogistics.MOD_ID + ":textures/gui/crafter.png";
+	public static final String ICON_PATH = ThermalLogistics.MOD_ID + ":textures/gui/icons/crafter.png";
 
-	private static final String TEX_PATH = "thermaldynamics:textures/gui/connection.png";
+	private static final String TEX_PATH = ThermalLogistics.MOD_ID + ":textures/gui/crafter.png";
 	private static final ResourceLocation TEXTURE = new ResourceLocation(TEX_PATH);
 
-	private static final int[][] levelButtonPos = {{-1, -1}, {0, 204}, {80, 204}};
+	private static final int[][] levelButtonPos = {{-1, -1}, {176, 180}, {80, 204}};
 	private static final int[][] flagButtonsPos = {{176, 0}, {176, 60}, {216, 0}, {216, 60}, {176, 120}, {216, 120}, {176, 180}, {216, 180},};
+
 	public final List<ElementSlot> slots = new LinkedList<>();
+	public final List<ElementButtonLinks> links = new LinkedList<>();
 
 	private final ICrafterWrapper<?> wrapper;
 	public final IAttachmentCrafter<?> crafter;
@@ -59,7 +62,7 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 		this.attachment = crafter;
 		this.attachment.getFilter();
 		this.name = attachment.getName();
-		this.ySize = 204;
+		this.ySize = 224;
 
 		TileEntity tile = BlockHelper.getAdjacentTileEntity(attachment.baseTile, attachment.side);
 		if (tile == null) {
@@ -104,7 +107,7 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 			buttonSize = 20;
 			int button_offset = buttonSize + 6;
 			int x0 = xSize / 2 - buttonNo * (button_offset / 2) + 3;
-			int y0 = 38 + 2 * 18 + 8;
+			int y0 = 20 + 38 + 2 * 18 + 8;
 
 			if (attachment.type > 0) {
 				splitButton = new ElementButton(this, x0, y0, "split", 0, 0, 0, buttonSize, 0, buttonSize * 2, buttonSize, buttonSize, ICON_PATH);
@@ -126,10 +129,13 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 		}
 
 		if (wrapper != null) {
-			ElementButton button = new ElementButton(this, 10, 48, "import", 80, 0, 80, 16, 16, 16, ICON_PATH);
+			ElementButton button = new ElementButton(this, 10, 20 + 48, "import", 80, 0, 80, 16, 16, 16, ICON_PATH);
 			button.setToolTip("info.logistics.import");
 			addElement(button);
 		}
+
+		// TODO TEST
+		// addElement(new ElementButton(this, 80, 20, "link", 116, 0, 116, 16, 16, 16, ICON_PATH));
 	}
 
 	private void setButtons() {
@@ -159,7 +165,9 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 		}
 
 		elements.removeAll(slots);
+		elements.removeAll(links);
 		slots.clear();
+		links.clear();
 
 		if (attachment.type > 0) {
 			int slots = CrafterItem.SIZE[attachment.type];
@@ -167,12 +175,13 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 
 			int start = slots * 9 + (crafter.getCrafters().size() - 1);
 			int x0 = xSize / 2 - start;
-			int y0 = 20;
+			int y0 = 20 + 20;
 
 			for (int i = 0; i < crafter.getCrafters().size(); i++) {
 				for (int x = 0; x < recipeSlots; x++) {
 					int posX = x0 + (x + i * recipeSlots) * 18 + i * 2;
 
+					// Add slots
 					Slot<?> up = new Slot<>(crafter, i, true, x * 2);
 					this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, posX, y0, up)));
 
@@ -182,11 +191,16 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 					Slot<?> output = new Slot<>(crafter, i, false, x);
 					this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, posX, y0 + 38, output)));
 				}
+
+				// Add link info
+				int pos0 = x0 + (i * recipeSlots) * 18 + i * 2;
+				this.links.add((ElementButtonLinks) addElement(new ElementButtonLinks(this, pos0 + (recipeSlots * 18) / 2 - 8, 20, i)));
 			}
 		} else {
 			int x0 = xSize / 2;
-			int y0 = 38;
+			int y0 = 20 + 38;
 
+			// Add slots
 			Slot<?> left = new Slot<>(crafter, 0, true, 0);
 			this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, x0 - 18, y0, left)));
 
@@ -195,6 +209,9 @@ public class GuiCrafter extends GuiContainerCore implements IFluidGui {
 
 			Slot<?> output = new Slot<>(crafter, 0, false, 0);
 			this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, x0 - 9, y0 + 20, output)));
+
+			// Add link info
+			this.links.add((ElementButtonLinks) addElement(new ElementButtonLinks(this, 80, 38, 0)));
 		}
 	}
 

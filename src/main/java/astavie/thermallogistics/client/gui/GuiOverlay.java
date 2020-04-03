@@ -46,6 +46,10 @@ public abstract class GuiOverlay extends GuiContainerCore {
 
 	protected abstract int getOverlaySheetY();
 
+	protected ResourceLocation getOverlayTexture() {
+		return texture;
+	}
+
 	private void overlay(int x, int y, int width, int height) {
 		nineInchSprite(x, y, width - 8, height - 8, 1, 4, getOverlaySheetX(), getOverlaySheetY());
 	}
@@ -107,7 +111,7 @@ public abstract class GuiOverlay extends GuiContainerCore {
 
 			GlStateManager.color(1, 1, 1, 1);
 
-			bindTexture(GuiOverlay.this.texture);
+			bindTexture(GuiOverlay.this.getOverlayTexture());
 			overlay(posX, posY, sizeX, sizeY);
 
 			GlStateManager.translate(posX + 4, posY + 4, 0);
