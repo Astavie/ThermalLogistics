@@ -27,6 +27,8 @@ public interface Type<I> {
 
 	int maxSize();
 
+	boolean isNothing();
+
 	@SideOnly(Side.CLIENT)
 	default List<String> getTooltip(GuiContainerCore gui) {
 		return StackHandler.getTooltip(gui, getAsStack());

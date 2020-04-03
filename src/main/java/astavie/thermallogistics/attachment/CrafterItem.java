@@ -79,7 +79,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	}
 
 	private Recipe<ItemStack> newRecipe(int index) {
-		return new Recipe<>(this, itemDuct, ItemList::new, index);
+		return new Recipe.Item(this, index);
 	}
 
 	@Override
@@ -133,7 +133,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 	@Override
 	public ItemStack insertItem(ItemStack item, boolean simulate) {
-		return super.insertItem(item, simulate);
+		return super.insertItem(item, simulate); // TODO Send items to requesters
 	}
 
 	@Override
@@ -143,7 +143,16 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 	@Override
 	public void handleItemSending() {
-		super.handleItemSending();
+		for (Recipe<ItemStack> recipe : recipes) {
+			recipe.check();
+		}
+
+		boolean onlyCheck = false;
+		for (Recipe<ItemStack> recipe : recipes) {
+			if (recipe.process.update(onlyCheck)) {
+				onlyCheck = true;
+			}
+		}
 	}
 
 	@Override
@@ -386,7 +395,6 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 					if (index1 < recipes.size()) {
 						Recipe<ItemStack> recipe = recipes.get(index1);
 						if (index2 < recipe.linked.size()) {
-							// TODO: Check linked
 							recipe.unlink((ICrafter<?>) recipe.linked.get(index2).get());
 						}
 					}
@@ -505,12 +513,20 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	}
 
 	private void writeSyncPacket(PacketTileInfo packet) {
+		checkLinked();
+
 		packet.addInt(recipes.size());
 		for (Recipe<ItemStack> recipe : recipes) {
 			packet.addInt(recipe.linked.size());
 			for (RequesterReference<?> reference : recipe.linked) {
 				RequesterReference.writePacket(packet, reference);
 			}
+		}
+	}
+
+	private void checkLinked() {
+		for (Recipe<ItemStack> recipe : recipes) {
+			recipe.checkLinked();
 		}
 	}
 

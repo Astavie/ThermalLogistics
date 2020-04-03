@@ -230,9 +230,10 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 					}
 				}
 
+				boolean onlyCheck = false;
 				for (TerminalRequester<I> requester : requesters) {
-					if (requester.isEnabled() && requester.process.update()) {
-						break;
+					if (requester.isEnabled() && requester.process.update(onlyCheck)) {
+						onlyCheck = true;
 					}
 				}
 			}
@@ -498,6 +499,21 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 					continue;
 
 				list.add(request.type, request.amount);
+			}
+
+			return list;
+		}
+
+		@Override
+		public StackList<I> getRequestedStacks(ICrafter<I> crafter) {
+			StackList<I> list = terminal.createStackList();
+
+			for (Request<I> request : terminal.requests) {
+				if (request.isError() || !request.source.isCrafter() || request.source.side != side)
+					continue;
+
+				if (request.source.crafter.references(crafter))
+					list.add(request.type, request.amount);
 			}
 
 			return list;

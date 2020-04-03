@@ -30,7 +30,7 @@ public class ProcessItem extends Process<ItemStack> {
 	}
 
 	/**
-	 * Used for terminals: pull reserved items from inventories
+	 * Used for terminals and crafters: pull reserved items from inventories
 	 */
 	@Override
 	protected boolean updateRetrieval(StackList<ItemStack> requests) {
@@ -76,7 +76,7 @@ public class ProcessItem extends Process<ItemStack> {
 		// Check if there are interesting items
 
 		ItemList stacks = Snapshot.INSTANCE.getItems((GridItem) requester.getDuct().getGrid());
-		if (stacks.types().stream().anyMatch(type -> requester.amountRequired(type) > 0)) {
+		if (stacks.types().stream().anyMatch(type -> stacks.amount(type) > 0 && requester.amountRequired(type) > 0)) {
 
 			// Try items
 			for (Pair<DuctUnit, Byte> source : sources) {
@@ -143,6 +143,9 @@ public class ProcessItem extends Process<ItemStack> {
 	 */
 	private boolean requestFromCrafter(ICrafter<ItemStack> crafter) {
 		for (ItemStack output : crafter.getOutputs()) {
+			if (output.isEmpty())
+				continue;
+
 			ItemType type = new ItemType(output);
 			long amount = requester.amountRequired(type);
 

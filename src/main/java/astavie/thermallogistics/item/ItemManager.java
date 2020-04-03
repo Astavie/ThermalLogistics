@@ -144,13 +144,49 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 					if (attachment instanceof ICrafter) {
 						crafter = (ICrafter<?>) attachment;
 					} else if (attachment instanceof ICrafterContainer) {
-						// TODO
+						// Container!
+						ICrafterContainer<?> container = (ICrafterContainer<?>) attachment;
+						if (container.getCrafters().size() == 1) {
+							crafter = container.getCrafters().get(0);
+						} else if (container.getCrafters().isEmpty()) {
+							if (!world.isRemote) {
+								// Fail
+								player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+								ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.5"));
+							}
+							return EnumActionResult.SUCCESS;
+						} else {
+							if (!world.isRemote) {
+								// Fail
+								player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+								ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.6"));
+							}
+							return EnumActionResult.SUCCESS;
+						}
 					}
 				}
 			} else if (tile instanceof ICrafter) {
 				crafter = (ICrafter<?>) tile;
 			} else if (tile instanceof ICrafterContainer) {
-				// TODO
+				// Container!
+				ICrafterContainer<?> container = (ICrafterContainer<?>) tile;
+				if (container.getCrafters().size() == 1) {
+					crafter = container.getCrafters().get(0);
+				} else if (container.getCrafters().isEmpty()) {
+					if (!world.isRemote) {
+						// Fail
+						player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.5"));
+					}
+					return EnumActionResult.SUCCESS;
+				} else {
+					if (!world.isRemote) {
+						// Fail
+						player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.6"));
+					}
+					return EnumActionResult.SUCCESS;
+				}
 			}
 
 			if (crafter == null)

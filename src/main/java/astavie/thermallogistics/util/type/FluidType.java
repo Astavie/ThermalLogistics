@@ -67,6 +67,11 @@ public class FluidType implements Type<FluidStack> {
 	}
 
 	@Override
+	public boolean isNothing() {
+		return false;
+	}
+
+	@Override
 	public int normalSize() {
 		return Fluid.BUCKET_VOLUME;
 	}

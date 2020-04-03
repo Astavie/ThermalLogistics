@@ -59,6 +59,8 @@ info.logistics.manager.d.1=Unable to link. Please try again.
 info.logistics.manager.d.2=These crafters are already linked.
 info.logistics.manager.d.3=Linked successfully!
 info.logistics.manager.d.4=Link cancelled.
+info.logistics.manager.d.5=Crafter has no recipes.
+info.logistics.manager.d.6=Crafter has more than one recipe, please select one inside.
 
 info.logistics.manager.e.0=Items travelling to this duct
 info.logistics.manager.e.1=%s x %s

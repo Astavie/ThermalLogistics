@@ -85,7 +85,7 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 	@Override
 	public void handleItemSending() {
-		process.update();
+		process.update(false);
 	}
 
 	@Override
@@ -112,14 +112,16 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 	@Override
 	public void onFail(RequesterReference<ItemStack> crafter, Type<ItemStack> type, long amount) {
-		StackList<ItemStack> list = requests.get(crafter);
+		if (requests.containsKey(crafter)) {
+			StackList<ItemStack> list = requests.get(crafter);
 
-		if (list != null) {
-			list.remove(type, amount);
+			if (list != null) {
+				list.remove(type, amount);
 
-			if (list.isEmpty()) {
-				requests.remove(crafter);
-				markDirty();
+				if (list.isEmpty()) {
+					requests.remove(crafter);
+					markDirty();
+				}
 			}
 		}
 	}
@@ -137,6 +139,11 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 	@Override
 	public StackList<ItemStack> getRequestedStacks() {
 		return new ItemList();
+	}
+
+	@Override
+	public StackList<ItemStack> getRequestedStacks(ICrafter<ItemStack> crafter) {
+		return requests.getOrDefault(crafter.createReference(), new ItemList());
 	}
 
 	@Override

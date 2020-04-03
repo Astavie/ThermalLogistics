@@ -71,6 +71,11 @@ public class ItemType implements Type<ItemStack> {
 	}
 
 	@Override
+	public boolean isNothing() {
+		return compare.isEmpty();
+	}
+
+	@Override
 	public int normalSize() {
 		return 1;
 	}

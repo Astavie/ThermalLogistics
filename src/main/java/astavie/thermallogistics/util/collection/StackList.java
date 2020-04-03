@@ -22,10 +22,12 @@ public abstract class StackList<S> {
 	}
 
 	public void add(Type<S> type, long amount) {
-		map.compute(type, (t, p) -> Pair.of(
-				(p == null ? 0L : p.getLeft()) + amount,
-				p == null ? false : p.getRight()
-		));
+		if (!type.isNothing() && amount > 0) {
+			map.compute(type, (t, p) -> Pair.of(
+					(p == null ? 0L : p.getLeft()) + amount,
+					p == null ? false : p.getRight()
+			));
+		}
 	}
 
 	public void addAll(StackList<S> list) {
@@ -38,10 +40,12 @@ public abstract class StackList<S> {
 	}
 
 	public void addCraftable(Type<S> type) {
-		map.compute(type, (t, p) -> Pair.of(
-				p == null ? 0L : p.getLeft(),
-				true
-		));
+		if (!type.isNothing()) {
+			map.compute(type, (t, p) -> Pair.of(
+					p == null ? 0L : p.getLeft(),
+					true
+			));
+		}
 	}
 
 	public long remove(S stack) {
@@ -106,7 +110,7 @@ public abstract class StackList<S> {
 	}
 
 	public Set<Type<S>> types() {
-		return Collections.unmodifiableSet(map.keySet());
+		return Collections.unmodifiableSet(new HashSet<>(map.keySet()));
 	}
 
 	public List<S> stacks() {

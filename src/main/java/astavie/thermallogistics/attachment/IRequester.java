@@ -44,6 +44,11 @@ public interface IRequester<I> {
 	StackList<I> getRequestedStacks();
 
 	/**
+	 * @return The stacks this requester is currently waiting on from the specified crafter
+	 */
+	StackList<I> getRequestedStacks(ICrafter<I> crafter);
+
+	/**
 	 * A requested item isn't available anymore
 	 */
 	void onFail(Type<I> type, long amount);

@@ -1,24 +1,28 @@
 package astavie.thermallogistics.attachment;
 
+import astavie.thermallogistics.process.Process;
+import astavie.thermallogistics.process.*;
 import astavie.thermallogistics.util.RequesterReference;
+import astavie.thermallogistics.util.collection.ItemList;
+import astavie.thermallogistics.util.collection.ListWrapperWrapper;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 import cofh.thermaldynamics.duct.attachments.servo.ServoBase;
+import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
+import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 
-public class Recipe<I> implements ICrafter<I> {
+public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	public final List<RequesterReference<?>> linked = NonNullList.create();
 
@@ -30,6 +34,8 @@ public class Recipe<I> implements ICrafter<I> {
 	public Map<RequesterReference<I>, StackList<I>> requestOutput = new HashMap<>();
 	public StackList<I> leftovers;
 	public Map<RequesterReference<I>, StackList<I>> requestInput = new HashMap<>();
+
+	public Process<I> process;
 
 	// Requests
 	private ServoBase parent;
@@ -61,7 +67,7 @@ public class Recipe<I> implements ICrafter<I> {
 
 	@Override
 	public void link(ICrafter<?> crafter) {
-		// TODO: Check linked
+		checkLinked();
 		RequesterReference<?> reference = crafter.createReference();
 
 		if (!isLinked(reference)) {
@@ -84,7 +90,7 @@ public class Recipe<I> implements ICrafter<I> {
 
 	@Override
 	public void unlink(ICrafter<?> crafter) {
-		// TODO: Check linked
+		checkLinked();
 		RequesterReference<?> reference = crafter.createReference();
 
 		for (RequesterReference<?> link : linked) {
@@ -128,9 +134,167 @@ public class Recipe<I> implements ICrafter<I> {
 		return false; // TODO
 	}
 
+	private void onCancel(Type<I> type, long amount) {
+		// TODO
+	}
+
+	public void check() {
+		checkLinked();
+
+		// Check if requesters cancelled on us without telling
+		for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestOutput.entrySet().iterator(); iterator.hasNext(); ) {
+			Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
+			IRequester<I> requester = entry.getKey().get();
+
+			if (requester == null) {
+				leftovers.addAll(entry.getValue());
+				iterator.remove();
+				continue;
+			}
+
+			StackList<I> stacks = requester.getRequestedStacks(this);
+			for (Type<I> type : entry.getValue().types()) {
+				long dif = entry.getValue().amount(type) - stacks.amount(type);
+				if (dif > 0) {
+					leftovers.add(type, dif);
+					entry.getValue().remove(type, dif);
+					if (entry.getValue().isEmpty())
+						iterator.remove();
+				}
+			}
+		}
+
+		balanceLeftovers();
+	}
+
+	private void balanceLeftovers() {
+		// Get amount of recipes leftover
+		long output = Long.MAX_VALUE;
+
+		StackList<I> co = getCondensedOutputs();
+		for (Type<I> type : co.types()) {
+			output = Math.min(output, leftovers.amount(type) / co.amount(type));
+		}
+
+		if (output == 0) {
+			return;
+		}
+
+		// Get amount of recipes being requested
+		long input = Long.MAX_VALUE;
+
+		StackList<I> ci = getCondensedInputs();
+		for (Type<I> type : ci.types()) {
+			long i = 0;
+
+			for (StackList<I> in : requestInput.values()) {
+				i += in.amount(type);
+			}
+
+			input = Math.min(input, i / ci.amount(type));
+		}
+
+		if (input == 0) {
+			return;
+		}
+
+		// Subtract from leftovers
+		long subtract = Math.min(output, input);
+
+		for (Type<I> type : co.types()) {
+			leftovers.remove(type, co.amount(type) * subtract);
+		}
+
+		// Subtract from requested
+		for (Type<I> type : ci.types()) {
+			long amount = ci.amount(type);
+			for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestInput.entrySet().iterator(); iterator.hasNext() && amount > 0; ) {
+				Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
+				long subtracted = entry.getValue().remove(type, amount);
+
+				if (entry.getValue().isEmpty())
+					iterator.remove();
+
+				amount -= subtracted;
+
+				if (entry.getKey() != null) {
+					IRequester<I> requester = entry.getKey().get();
+					if (requester instanceof ICrafter) {
+						((ICrafter<I>) entry.getKey().get()).cancel(this, type, subtracted);
+					}
+				}
+			}
+		}
+	}
+
+	private StackList<I> getCondensedInputs() {
+		StackList<I> list = supplier.get();
+		for (I stack : inputs)
+			list.add(stack);
+		return list;
+	}
+
+	private StackList<I> getCondensedOutputs() {
+		StackList<I> list = supplier.get();
+		for (I stack : outputs)
+			list.add(stack);
+		return list;
+	}
+
 	@Override
 	public void cancel(IRequester<I> requester, Type<I> type, long amount) {
-		// TODO
+		RequesterReference<I> reference = requester.createReference();
+		if (requestOutput.containsKey(reference)) {
+			StackList<I> list = requestOutput.get(reference);
+
+			if (list != null) {
+				list.remove(type, amount);
+
+				if (list.isEmpty()) {
+					requestOutput.remove(reference);
+					markDirty();
+				}
+			}
+		}
+
+		leftovers.add(type, amount);
+		markDirty();
+	}
+
+	@Override
+	public void onFail(Type<I> type, long amount) {
+		if (requestInput.containsKey(null)) {
+			StackList<I> list = requestOutput.get(null);
+
+			if (list != null) {
+				list.remove(type, amount);
+
+				if (list.isEmpty()) {
+					requestInput.remove(null);
+					markDirty();
+				}
+			}
+		}
+
+		onCancel(type, amount);
+	}
+
+	@Override
+	public void onFail(RequesterReference<I> reference, Type<I> type, long amount) {
+		if (requestInput.containsKey(reference)) {
+			StackList<I> list = requestOutput.get(reference);
+
+			if (list != null) {
+				list.remove(type, amount);
+
+				if (list.isEmpty()) {
+					requestInput.remove(reference);
+					markDirty();
+				}
+			}
+		}
+
+		onCancel(type, amount);
 	}
 
 	@Override
@@ -187,8 +351,88 @@ public class Recipe<I> implements ICrafter<I> {
 	}
 
 	@Override
-	public void onFail(Type<I> type, long amount) {
-		// TODO
+	public StackList<I> getRequestedStacks(ICrafter<I> crafter) {
+		return requestInput.getOrDefault(crafter.createReference(), supplier.get());
+	}
+
+	public void checkLinked() {
+		for (Iterator<RequesterReference<?>> iterator = linked.iterator(); iterator.hasNext(); ) {
+			IRequester<?> requester = iterator.next().get();
+			if (!(requester instanceof ICrafter)) {
+				iterator.remove();
+				markDirty();
+			} else {
+				ICrafter<?> crafter = (ICrafter<?>) requester;
+				if (!crafter.isLinked(createReference())) {
+					iterator.remove();
+					markDirty();
+				}
+			}
+		}
+	}
+
+	@Override
+	public Map<RequesterReference<I>, StackList<I>> getRequests() {
+		Map<RequesterReference<I>, StackList<I>> copy = new HashMap<>();
+
+		for (Map.Entry<RequesterReference<I>, StackList<I>> entry : requestInput.entrySet())
+			copy.put(entry.getKey(), entry.getValue().copy());
+
+		return copy;
+	}
+
+	@Override
+	public void onCrafterSend(ICrafter<I> crafter, Type<I> type, long amount) {
+		requestInput.getOrDefault(crafter.createReference(), supplier.get()).remove(type, amount);
+		markDirty();
+	}
+
+	// NOT APPLICABLE
+
+	@Override
+	public void addRequest(Request<I> request) {
+	}
+
+	@Override
+	public boolean hasWants() {
+		return false;
+	}
+
+	@Override
+	public long amountRequired(Type<I> type) {
+		return 0;
+	}
+
+	public static class Item extends Recipe<ItemStack> implements IProcessRequesterItem {
+
+		private final CrafterItem parent;
+
+		public Item(CrafterItem parent, int index) {
+			super(parent, parent.itemDuct, ItemList::new, index);
+			this.parent = parent;
+			this.process = new ProcessItem(this);
+		}
+
+		@Override
+		public int maxSize() {
+			return parent.getMaxSend();
+		}
+
+		@Override
+		public boolean multiStack() {
+			return ServoItem.multiStack[parent.type];
+		}
+
+		@Override
+		public byte speedBoost() {
+			return parent.getSpeed();
+		}
+
+		@Override
+		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
+			return new ListWrapperWrapper<>(parent.routesWithInsertSideList, r -> Pair.of(r.endPoint, r.getLastSide()));
+		}
+
 	}
 
 }

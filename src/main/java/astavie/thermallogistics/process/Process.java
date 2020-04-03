@@ -24,14 +24,14 @@ public abstract class Process<I> {
 		this.requester = requester;
 	}
 
-	public boolean update() {
+	public boolean update(boolean onlyCheck) {
 		Map<RequesterReference<I>, StackList<I>> requests = requester.getRequests();
 
 		// Update requests
 
 		for (RequesterReference<I> source : requests.keySet()) {
 			if (source == null) {
-				if (updateRetrieval(requests.get(null))) return true;
+				if (!onlyCheck && updateRetrieval(requests.get(null))) return true;
 				continue;
 			}
 
@@ -67,14 +67,14 @@ public abstract class Process<I> {
 			}
 			if (b) return true;
 
-			if (attemptPull(crafter, list)) {
+			if (!onlyCheck && attemptPull(crafter, list)) {
 				return true;
 			}
 		}
 
 		// Add requests
 
-		return requester.hasWants() && updateWants();
+		return !onlyCheck && requester.hasWants() && updateWants();
 	}
 
 	protected abstract boolean updateRetrieval(StackList<I> requests);
@@ -84,7 +84,7 @@ public abstract class Process<I> {
 	protected abstract boolean attemptPull(ICrafter<I> crafter, StackList<I> stacks);
 
 	/**
-	 * Used in terminal: request items
+	 * Used in terminals and crafters: request items
 	 */
 	public List<Request<I>> request(Type<I> type, long amount, @Nullable Function<Type<I>, Long> func) {
 		List<Request<I>> requests = new LinkedList<>();
