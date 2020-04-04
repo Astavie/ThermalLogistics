@@ -8,6 +8,7 @@ import astavie.thermallogistics.container.ContainerTerminalItem;
 import astavie.thermallogistics.process.IProcessRequesterItem;
 import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.process.Source;
+import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.collection.ItemList;
@@ -22,6 +23,7 @@ import cofh.core.util.helpers.ItemHelper;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
+import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.DuctToken;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
@@ -58,6 +60,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -433,6 +436,22 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 			sources.setList(list, ListWrapper.SortType.NORMAL);
 			return sources;
+		}
+
+		@Override
+		public Map<RequesterReference<ItemStack>, StackList<ItemStack>> getRequests() {
+			Map<RequesterReference<ItemStack>, StackList<ItemStack>> requests = super.getRequests();
+
+			if (requests.containsKey(null)) {
+				// Remove traveling items
+				StackList<ItemStack> list = requests.get(null);
+
+				StackMap map = ((GridItem) getDuct().getGrid()).travelingItems.getOrDefault(getDestination(), new StackMap());
+				for (ItemStack item : map.getItems())
+					list.remove(item);
+			}
+
+			return requests;
 		}
 
 	}

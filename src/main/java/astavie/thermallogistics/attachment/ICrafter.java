@@ -38,7 +38,7 @@ public interface ICrafter<I> extends IRequester<I> {
 	 */
 	StackList<I> request(IRequester<I> requester, Type<I> type, Shared<Long> amount);
 
-	boolean requestInternal(IRequester<I> requester, StackList<I> missing, Set<Proposal<I>> proposals, long timeStarted);
+	boolean requestInternal(IRequester<I> requester, StackList<I> missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted);
 
 	void applyProposal(IRequester<I> requester, Proposal<I> proposal);
 

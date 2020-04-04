@@ -1,5 +1,6 @@
 package astavie.thermallogistics.attachment;
 
+import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.*;
 import astavie.thermallogistics.util.RequesterReference;
@@ -12,6 +13,8 @@ import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 import cofh.thermaldynamics.duct.attachments.servo.ServoBase;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
+import cofh.thermaldynamics.duct.item.GridItem;
+import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
 import cofh.thermaldynamics.util.ListWrapper;
 import net.minecraft.item.ItemStack;
@@ -139,6 +142,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	@Override
 	public StackList<I> request(IRequester<I> requester, Type<I> type, Shared<Long> amount) {
+		Snapshot.INSTANCE.clearMutated();
 		StackList<I> missing = supplier.get();
 
 		// First check leftovers
@@ -154,8 +158,10 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			long qtyPerCraft = amountCrafted(type);
 
 			while (amount.get() > 0) {
-				Set<Proposal<I>> proposals = new HashSet<>();
-				if (!requestInternal(requester, missing, proposals, timeStarted)) {
+				long remove = Math.min(amount.get(), qtyPerCraft);
+				Proposal<I> proposal = new Proposal<>(createReference(), type, remove);
+
+				if (!requestInternal(requester, missing, proposal, new HashSet<>(), timeStarted)) {
 					Snapshot.INSTANCE.clearMutated();
 					return null;
 				}
@@ -163,14 +169,10 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 				if (missing.isEmpty()) {
 					// Apply
 					Snapshot.INSTANCE.applyMutated();
-
-					for (Proposal<I> proposal : proposals) {
-						applyProposal(requester, proposal);
-					}
-
-					long remove = Math.min(amount.get(), qtyPerCraft);
-					amount.accept(amount.get() - remove);
 					leftovers.remove(type, remove);
+
+					applyProposal(requester, proposal);
+					amount.accept(amount.get() - remove);
 				}
 			}
 		}
@@ -181,8 +183,37 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	}
 
 	@Override
-	public boolean requestInternal(IRequester<I> requester, StackList<I> missing, Set<Proposal<I>> proposals, long timeStarted) {
-		return false;
+	public boolean requestInternal(IRequester<I> requester, StackList<I> missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted) {
+		if (System.currentTimeMillis() - timeStarted > ThermalLogistics.INSTANCE.calculationTimeout) {
+			return false; // Too complex!
+		}
+
+		StackList<I> inputs = getCondensedInputs();
+		StackList<I> network = Snapshot.INSTANCE.getMutatedStacks(duct.getGrid());
+
+		for (Type<I> type : inputs.types()) {
+			long amount = inputs.amount(type);
+
+			// First check existing items
+			long remaining = network.remove(type, amount);
+			long subtracted = amount - remaining;
+			if (subtracted > 0) {
+				proposal.children.add(new Proposal<>(null, type, subtracted));
+				amount = remaining;
+			}
+
+			// Then check crafters
+			while (amount > 0) {
+				// TODO
+				return false;
+			}
+		}
+
+		// TODO: Linked
+
+		// We did it! Time to register the outputs
+		Snapshot.INSTANCE.getLeftovers(createReference()).addAll(getCondensedOutputs());
+		return true;
 	}
 
 	@Override
@@ -210,10 +241,6 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	@Override
 	public void applyLeftovers(StackList<I> leftovers) {
 		this.leftovers = leftovers;
-	}
-
-	private void onCancel(Type<I> type, long amount) {
-		// TODO
 	}
 
 	public void check() {
@@ -342,26 +369,13 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	@Override
 	public void onFail(Type<I> type, long amount) {
-		if (requestInput.containsKey(null)) {
-			StackList<I> list = requestOutput.get(null);
-
-			if (list != null) {
-				list.remove(type, amount);
-
-				if (list.isEmpty()) {
-					requestInput.remove(null);
-					markDirty();
-				}
-			}
-		}
-
-		onCancel(type, amount);
+		onFail(null, type, amount); // Same thing
 	}
 
 	@Override
 	public void onFail(RequesterReference<I> reference, Type<I> type, long amount) {
 		if (requestInput.containsKey(reference)) {
-			StackList<I> list = requestOutput.get(reference);
+			StackList<I> list = requestInput.get(reference);
 
 			if (list != null) {
 				list.remove(type, amount);
@@ -373,7 +387,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			}
 		}
 
-		onCancel(type, amount);
+		// TODO
 	}
 
 	@Override
@@ -515,6 +529,22 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		@Override
 		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
 			return new ListWrapperWrapper<>(parent.routesWithInsertSideList, r -> Pair.of(r.endPoint, r.getLastSide()));
+		}
+
+		@Override
+		public Map<RequesterReference<ItemStack>, StackList<ItemStack>> getRequests() {
+			Map<RequesterReference<ItemStack>, StackList<ItemStack>> requests = super.getRequests();
+
+			if (requests.containsKey(null)) {
+				// Remove traveling items
+				StackList<ItemStack> list = requests.get(null);
+
+				StackMap map = ((GridItem) getDuct().getGrid()).travelingItems.getOrDefault(getDestination(), new StackMap());
+				for (ItemStack item : map.getItems())
+					list.remove(item);
+			}
+
+			return requests;
 		}
 
 	}

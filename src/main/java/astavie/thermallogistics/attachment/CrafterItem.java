@@ -7,7 +7,10 @@ import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.StackHandler;
+import astavie.thermallogistics.util.collection.EmptyList;
 import astavie.thermallogistics.util.collection.ItemList;
+import astavie.thermallogistics.util.type.ItemType;
+import astavie.thermallogistics.util.type.Type;
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
@@ -18,8 +21,8 @@ import cofh.core.network.PacketTileInfo;
 import cofh.core.util.helpers.BlockHelper;
 import cofh.core.util.helpers.ServerHelper;
 import cofh.thermaldynamics.ThermalDynamics;
-import cofh.thermaldynamics.duct.attachments.filter.IFilterItems;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
+import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.gui.GuiHandler;
 import cofh.thermaldynamics.render.RenderDuct;
@@ -32,11 +35,14 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.items.IItemHandler;
 
+import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
 
@@ -46,22 +52,6 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 	public static final int[] SIZE = {1, 2, 3, 4, 6};
 	public static final int[][] SPLITS = {{1}, {2, 1}, {3, 1}, {4, 2, 1}, {6, 3, 2, 1}};
-	private static final IFilterItems emptyFilter = new IFilterItems() {
-		@Override
-		public boolean matchesFilter(ItemStack item) {
-			return false;
-		}
-
-		@Override
-		public boolean shouldIncRouteItems() {
-			return true;
-		}
-
-		@Override
-		public int getMaxStock() {
-			return 0;
-		}
-	};
 	private final List<Recipe<ItemStack>> recipes = NonNullList.create();
 
 	public CrafterItem(TileGrid tile, byte side, int type) {
@@ -123,22 +113,17 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 	@Override
 	public void tick(int pass) {
-		/*if (pass == 0) {
+		if (pass == 0) {
 			if (itemDuct.tileCache[side] != null && !(itemDuct.tileCache[side] instanceof CacheWrapper)) {
 				itemDuct.tileCache[side] = new CacheWrapper(itemDuct.tileCache[side].tile, this);
 			}
-		}*/
+		}
 		super.tick(pass);
 	}
 
 	@Override
 	public ItemStack insertItem(ItemStack item, boolean simulate) {
 		return super.insertItem(item, simulate); // TODO Send items to requesters
-	}
-
-	@Override
-	public IFilterItems getItemFilter() {
-		return emptyFilter; // No items should be routed to the crafter unless specifically asked
 	}
 
 	@Override
@@ -587,6 +572,86 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	@Override
 	public List<? extends ICrafter<ItemStack>> getCrafters() {
 		return recipes;
+	}
+
+	private void handleInsertedStack(Type<ItemStack> type, long amount) {
+		for (Recipe<ItemStack> recipe : recipes) {
+			amount = recipe.requestInput.getOrDefault(null, EmptyList.getInstance()).remove(type, amount);
+			if (amount == 0) {
+				return;
+			}
+		}
+	}
+
+	private static class CacheWrapper extends DuctUnitItem.Cache {
+
+		private final CrafterItem crafter;
+
+		private CacheWrapper(@Nonnull TileEntity tile, @Nonnull CrafterItem attachment) {
+			super(tile, attachment);
+			this.crafter = attachment;
+		}
+
+		@Override
+		public IItemHandler getItemHandler(int face) {
+			return new Inventory(crafter, super.getItemHandler(EnumFacing.byIndex(face)));
+		}
+
+		@Override
+		public IItemHandler getItemHandler(EnumFacing face) {
+			return new Inventory(crafter, super.getItemHandler(face));
+		}
+
+	}
+
+	private static class Inventory implements IItemHandler {
+
+		private final CrafterItem crafter;
+		private final IItemHandler inv;
+
+		private Inventory(CrafterItem crafter, IItemHandler inv) {
+			this.crafter = crafter;
+			this.inv = inv;
+		}
+
+		@Override
+		public int getSlots() {
+			return inv.getSlots();
+		}
+
+		@Nonnull
+		@Override
+		public ItemStack getStackInSlot(int slot) {
+			return inv.getStackInSlot(slot);
+		}
+
+		@Nonnull
+		@Override
+		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
+			if (simulate) {
+				// This means that only items forced into the crafter will get inserted
+				return stack;
+			}
+
+			ItemStack remainder = inv.insertItem(slot, stack, simulate);
+			if (remainder.getCount() < stack.getCount()) {
+				crafter.handleInsertedStack(new ItemType(stack), stack.getCount() - remainder.getCount());
+			}
+
+			return remainder;
+		}
+
+		@Nonnull
+		@Override
+		public ItemStack extractItem(int slot, int amount, boolean simulate) {
+			return inv.extractItem(slot, amount, simulate);
+		}
+
+		@Override
+		public int getSlotLimit(int slot) {
+			return inv.getSlotLimit(slot);
+		}
+
 	}
 
 }

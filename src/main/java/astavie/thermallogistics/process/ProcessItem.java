@@ -176,15 +176,15 @@ public class ProcessItem extends Process<ItemStack> {
 
 		byte side = crafter.getSide();
 
-		DuctUnitItem.Cache cache = duct.tileCache[side];
+		DuctUnitItem.Cache cache = duct.tileCache[side ^ 1];
 		if (cache == null)
 			return false;
 
-		IItemHandler inv = cache.getItemHandler(side ^ 1);
+		IItemHandler inv = cache.getItemHandler(side);
 		if (inv == null)
 			return false;
 
-		ItemStack extract = extract(duct, side, inv, list::amount, (DuctUnitItem) requester.getDuct(), (byte) (requester.getSide() ^ 1));
+		ItemStack extract = extract(duct, (byte) (side ^ 1), inv, list::amount, (DuctUnitItem) requester.getDuct(), (byte) (requester.getSide() ^ 1));
 		if (!extract.isEmpty()) {
 			crafter.finish(requester, new ItemType(extract), extract.getCount());
 			requester.onCrafterSend(crafter, new ItemType(extract), extract.getCount());

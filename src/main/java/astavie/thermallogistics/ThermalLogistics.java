@@ -62,6 +62,7 @@ public class ThermalLogistics {
 
 	public int refreshDelay;
 	public int syncDelay;
+	public int calculationTimeout;
 
 	public <T extends TileEntity> boolean registerWrapper(Class<T> c, ICrafterWrapper<T> w) {
 		if (registry.containsKey(c))
@@ -89,8 +90,9 @@ public class ThermalLogistics {
 
 		config = new Configuration(event.getSuggestedConfigurationFile());
 
-		refreshDelay = config.getInt("Refresh Delay", Configuration.CATEGORY_GENERAL, 20, 1, 100, "The amount of ticks a terminal item list is cached.");
-		syncDelay = config.getInt("Sync Delay", Configuration.CATEGORY_GENERAL, 20, 1, 100, "The amount of ticks delay between terminal update packets from the server.");
+		refreshDelay = config.getInt("Refresh Delay", Configuration.CATEGORY_GENERAL, 20, 1, 100, "The amount of ticks between caching of the items in a network. The bigger the delay, the less responsive crafters, requesters and terminals will be.");
+		syncDelay = config.getInt("Sync Delay", Configuration.CATEGORY_GENERAL, 20, 1, 100, "The amount of ticks delay between update packets from the server. This includes the terminal items gui and the linked crafters gui.");
+		calculationTimeout = config.getInt("Calculation Timeout", Configuration.CATEGORY_GENERAL, 1000, 10, Integer.MAX_VALUE, "The amount of milliseconds before a crafting calculation gets timed out.");
 
 		config.save();
 	}
