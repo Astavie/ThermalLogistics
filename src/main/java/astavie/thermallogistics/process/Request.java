@@ -1,6 +1,6 @@
 package astavie.thermallogistics.process;
 
-import astavie.thermallogistics.util.collection.StackList;
+import astavie.thermallogistics.util.collection.MissingList;
 import astavie.thermallogistics.util.type.Type;
 import cofh.core.network.PacketBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -12,7 +12,7 @@ public class Request<I> {
 	public final Type<I> type;
 	public final int index;
 
-	public final StackList<I> missing;
+	public final MissingList missing;
 	public final boolean complex;
 
 	public long amount;
@@ -28,7 +28,7 @@ public class Request<I> {
 		this.complex = false;
 	}
 
-	public Request(Type<I> type, long amount, int index, StackList<I> missing, boolean complex) {
+	public Request(Type<I> type, long amount, int index, MissingList missing, boolean complex) {
 		this.type = type;
 		this.amount = amount;
 		this.source = null;
@@ -38,13 +38,13 @@ public class Request<I> {
 		this.complex = complex;
 	}
 
-	public static <I> Request<I> readPacket(PacketBase packet, Function<PacketBase, Type<I>> func, Function<PacketBase, StackList<I>> func2) {
+	public static <I> Request<I> readPacket(PacketBase packet, Function<PacketBase, Type<I>> func) {
 		Type<I> type = func.apply(packet);
 		long amount = packet.getLong();
 		int index = packet.getInt();
 
 		if (packet.getBool()) {
-			return new Request<>(type, amount, index, packet.getBool() ? func2.apply(packet) : null, packet.getBool());
+			return new Request<>(type, amount, index, packet.getBool() ? new MissingList(packet) : null, packet.getBool());
 		} else {
 			return new Request<>(type, amount, Source.readPacket(packet), index);
 		}
@@ -60,7 +60,7 @@ public class Request<I> {
 		if (request.isError()) {
 			packet.addBool(request.missing != null);
 			if (request.missing != null) {
-				request.missing.writePacket(packet);
+				request.missing.write(packet);
 			}
 			packet.addBool(request.complex);
 		} else {

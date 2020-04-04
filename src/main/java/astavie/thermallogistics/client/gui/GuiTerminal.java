@@ -29,6 +29,7 @@ import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 
@@ -245,8 +246,8 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 						tooltip.add(StringHelper.localize("gui.logistics.terminal.complex"));
 					} else {
 						tooltip.add(StringHelper.localize("gui.logistics.terminal.missing"));
-						for (Type<I> type : request.missing.types()) {
-							tooltip.add("§7" + StringHelper.localizeFormat("info.logistics.manager.e.1", request.missing.amount(type), type.getDisplayName()));
+						for (Map.Entry<Type<?>, Long> entry : request.missing.map.entrySet()) {
+							tooltip.add("§7" + StringHelper.localizeFormat("info.logistics.manager.e.1", entry.getValue(), entry.getKey().getDisplayName()));
 						}
 					}
 				}

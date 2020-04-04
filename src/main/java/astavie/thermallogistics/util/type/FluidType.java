@@ -52,6 +52,11 @@ public class FluidType implements Type<FluidStack> {
 	}
 
 	@Override
+	public int getPacketId() {
+		return 1;
+	}
+
+	@Override
 	public NBTTagCompound writeNbt() {
 		return writeNbt(this);
 	}

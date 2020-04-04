@@ -80,7 +80,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 		int size = packet.getInt();
 		for (int i = 0; i < size; i++) {
-			addRequest(Request.readPacket(packet, terminal::readType, this::readStackList));
+			addRequest(Request.readPacket(packet, terminal::readType));
 		}
 	}
 
@@ -260,6 +260,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 		long left = amount;
 
+		a:
 		for (byte side = 0; side < 6; side++) {
 			if (!requesters[side].isEnabled())
 				continue;
@@ -269,7 +270,13 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 			for (Request<I> request : requests) {
 				if (request.isError()) {
-					left += request.amount;
+					if (request.complex) {
+						addRequest(request);
+						left = 0;
+						break a;
+					} else {
+						left += request.amount;
+					}
 				} else {
 					addRequest(request);
 				}
@@ -288,7 +295,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 				List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount, this::createStackList);
 				for (Request<I> request : requests) {
 					if (request.isError()) {
-						if (error == null || request.complex || error.missing.size() < request.missing.size() || (error.missing.size() == 1 && error.missing.amount(type) > 0)) {
+						if (error == null || error.missing.map.size() < request.missing.map.size() || (error.missing.map.size() == 1 && error.missing.map.get(type) > 0)) {
 							error = request;
 						}
 					} else {
@@ -364,12 +371,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		}
 
 		requests.add(request);
-	}
-
-	private StackList<I> readStackList(PacketBase payload) {
-		StackList<I> list = createStackList();
-		list.readPacket(payload);
-		return list;
 	}
 
 	public static abstract class TerminalRequester<I> implements IProcessRequester<I> {

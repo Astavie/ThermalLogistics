@@ -6,10 +6,7 @@ import astavie.thermallogistics.process.*;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.Snapshot;
-import astavie.thermallogistics.util.collection.EmptyList;
-import astavie.thermallogistics.util.collection.ItemList;
-import astavie.thermallogistics.util.collection.ListWrapperWrapper;
-import astavie.thermallogistics.util.collection.StackList;
+import astavie.thermallogistics.util.collection.*;
 import astavie.thermallogistics.util.type.Type;
 import cofh.thermaldynamics.duct.attachments.servo.ServoBase;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
@@ -141,9 +138,9 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	}
 
 	@Override
-	public StackList<I> request(IRequester<I> requester, Type<I> type, Shared<Long> amount) {
+	public MissingList request(IRequester<I> requester, Type<I> type, Shared<Long> amount) {
 		Snapshot.INSTANCE.clearMutated();
-		StackList<I> missing = supplier.get();
+		MissingList missing = new MissingList();
 
 		// First check leftovers
 		long remain = leftovers.remove(type, amount.get());
@@ -161,7 +158,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 				long remove = Math.min(amount.get(), qtyPerCraft);
 				Proposal<I> proposal = new Proposal<>(createReference(), type, remove);
 
-				if (!requestInternal(requester, missing, proposal, new HashSet<>(), timeStarted)) {
+				if (!requestInternal(missing, proposal, new HashSet<>(), timeStarted, true)) {
 					Snapshot.INSTANCE.clearMutated();
 					return null;
 				}
@@ -183,7 +180,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	}
 
 	@Override
-	public boolean requestInternal(IRequester<I> requester, StackList<I> missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted) {
+	public boolean requestInternal(MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean doLinked) {
 		if (System.currentTimeMillis() - timeStarted > ThermalLogistics.INSTANCE.calculationTimeout) {
 			return false; // Too complex!
 		}
@@ -209,10 +206,31 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			}
 		}
 
-		// TODO: Linked
+		if (doLinked) {
+			checkLinked();
+			for (RequesterReference<?> reference : linked) {
+				if (!requestLinked(reference, missing, proposal, used, timeStarted)) {
+					// Complex
+					return false;
+				}
+			}
+		}
 
 		// We did it! Time to register the outputs
 		Snapshot.INSTANCE.getLeftovers(createReference()).addAll(getCondensedOutputs());
+		return true;
+	}
+
+	private <O> boolean requestLinked(RequesterReference<O> reference, MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted) {
+		Proposal<O> linked = new Proposal<>(reference, null, 0);
+		ICrafter<O> crafter = ((ICrafter<O>) reference.get());
+
+		if (!crafter.requestInternal(missing, linked, used, timeStarted, false)) {
+			// Complex
+			return false;
+		}
+
+		proposal.linked.add(linked);
 		return true;
 	}
 
@@ -277,7 +295,9 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		long output = Long.MAX_VALUE;
 
 		StackList<I> co = getCondensedOutputs();
-		for (Type<I> type : co.types()) {
+		if (co.isEmpty()) {
+			output = 0;
+		} else for (Type<I> type : co.types()) {
 			output = Math.min(output, leftovers.amount(type) / co.amount(type));
 		}
 
@@ -289,7 +309,9 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		long input = Long.MAX_VALUE;
 
 		StackList<I> ci = getCondensedInputs();
-		for (Type<I> type : ci.types()) {
+		if (ci.isEmpty()) {
+			input = 0;
+		} else for (Type<I> type : ci.types()) {
 			long i = 0;
 
 			for (StackList<I> in : requestInput.values()) {

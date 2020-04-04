@@ -44,6 +44,10 @@ public class RequesterReference<I> {
 
 	public static NBTTagCompound writeNBT(RequesterReference<?> reference) {
 		NBTTagCompound nbt = new NBTTagCompound();
+		if (reference == null) {
+			return nbt;
+		}
+
 		nbt.setInteger("dim", reference.dim);
 		nbt.setInteger("x", reference.pos.getX());
 		nbt.setInteger("y", reference.pos.getY());
@@ -54,7 +58,11 @@ public class RequesterReference<I> {
 	}
 
 	public static <I> RequesterReference<I> readNBT(NBTTagCompound nbt) {
-		return new RequesterReference<>(nbt.getInteger("dim"), new BlockPos(nbt.getInteger("x"), nbt.getInteger("y"), nbt.getInteger("z")), nbt.getByte("side"), nbt.getInteger("index"));
+		if (nbt.isEmpty()) {
+			return null;
+		} else {
+			return new RequesterReference<>(nbt.getInteger("dim"), new BlockPos(nbt.getInteger("x"), nbt.getInteger("y"), nbt.getInteger("z")), nbt.getByte("side"), nbt.getInteger("index"));
+		}
 	}
 
 	public static void writePacket(PacketBase packet, RequesterReference<?> reference) {

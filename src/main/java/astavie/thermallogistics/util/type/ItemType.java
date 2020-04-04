@@ -56,6 +56,11 @@ public class ItemType implements Type<ItemStack> {
 	}
 
 	@Override
+	public int getPacketId() {
+		return 0;
+	}
+
+	@Override
 	public NBTTagCompound writeNbt() {
 		return writeNbt(this);
 	}

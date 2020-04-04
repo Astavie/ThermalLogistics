@@ -3,6 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.process.Proposal;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.Shared;
+import astavie.thermallogistics.util.collection.MissingList;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 
@@ -36,9 +37,9 @@ public interface ICrafter<I> extends IRequester<I> {
 	/**
 	 * Requests an item. Linked crafters will also be notified.
 	 */
-	StackList<I> request(IRequester<I> requester, Type<I> type, Shared<Long> amount);
+	MissingList request(IRequester<I> requester, Type<I> type, Shared<Long> amount);
 
-	boolean requestInternal(IRequester<I> requester, StackList<I> missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted);
+	boolean requestInternal(MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean doLinked);
 
 	void applyProposal(IRequester<I> requester, Proposal<I> proposal);
 

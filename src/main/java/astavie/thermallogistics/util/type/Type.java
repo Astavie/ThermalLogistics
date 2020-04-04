@@ -8,6 +8,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.List;
+import java.util.function.Function;
 
 public interface Type<I> {
 
@@ -18,6 +19,18 @@ public interface Type<I> {
 	String getDisplayName();
 
 	void writePacket(PacketBase packet);
+
+	static Function<PacketBase, Type<?>> getReadFunction(int id) {
+		if (id == 0) {
+			return ItemType::readPacket;
+		} else if (id == 1) {
+			return FluidType::readPacket;
+		} else {
+			throw new IllegalArgumentException();
+		}
+	}
+
+	int getPacketId();
 
 	NBTTagCompound writeNbt();
 

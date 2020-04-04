@@ -5,6 +5,7 @@ import astavie.thermallogistics.attachment.IRequester;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.Snapshot;
+import astavie.thermallogistics.util.collection.MissingList;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 
@@ -118,7 +119,7 @@ public abstract class Process<I> {
 		// WRAP UP
 
 		if (amount > 0) {
-			StackList<I> list = supplier.get();
+			MissingList list = new MissingList();
 			list.add(type, amount);
 			requests.add(new Request<>(type, amount, 0, list, false));
 		}
@@ -147,7 +148,7 @@ public abstract class Process<I> {
 		// Do the thing
 		long a = amount.get();
 
-		StackList<I> missing = crafter.request(requester, type, amount);
+		MissingList missing = crafter.request(requester, type, amount);
 		if (missing == null) {
 			// Complex
 			requests.add(new Request<>(type, amount.get(), 0, null, true));
