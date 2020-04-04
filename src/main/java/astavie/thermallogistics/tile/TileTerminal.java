@@ -363,7 +363,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 			if (!requests.isEmpty()) {
 				Request<I> last = requests.getLast();
-				if (!last.isError() && last.source.equals(request.source) && last.type.equals(request.type)) {
+				if (!last.isError() && last.type.equals(request.type)) {
 					last.amount += request.amount;
 					return;
 				}

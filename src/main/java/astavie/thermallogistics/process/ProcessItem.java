@@ -22,6 +22,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class ProcessItem extends Process<ItemStack> {
 
@@ -195,18 +196,15 @@ public class ProcessItem extends Process<ItemStack> {
 		return false;
 	}
 
-	/**
-	 * Used in terminal: request from crafters
-	 */
 	@Override
-	protected void requestFromCrafters(List<Request<ItemStack>> requests, Type<ItemStack> type, Shared<Long> amount) {
+	public void findCrafter(Predicate<ICrafter<ItemStack>> predicate) {
 		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
 		for (Pair<DuctUnit, Byte> source : sources) {
 			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
 			byte side = source.getRight();
 
 			Attachment attachment = endPoint.parent.getAttachment(side);
-			if (attachment != null && StackHandler.forEachCrafter(attachment, (ICrafter<ItemStack> c) -> request(requests, c, type, amount))) {
+			if (attachment != null && StackHandler.forEachCrafter(attachment, predicate)) {
 				sources.advanceCursor();
 				break;
 			}
@@ -216,7 +214,7 @@ public class ProcessItem extends Process<ItemStack> {
 				continue;
 			}
 
-			if (StackHandler.forEachCrafter(cache.tile, (ICrafter<ItemStack> c) -> request(requests, c, type, amount))) {
+			if (StackHandler.forEachCrafter(cache.tile, predicate)) {
 				sources.advanceCursor();
 				break;
 			}

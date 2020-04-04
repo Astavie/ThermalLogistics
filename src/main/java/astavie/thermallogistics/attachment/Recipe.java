@@ -151,25 +151,27 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 		// Then craft
 		if (amount.get() > 0) {
+			long left = amount.get();
 			long timeStarted = System.currentTimeMillis();
 			long qtyPerCraft = amountCrafted(type);
 
-			while (amount.get() > 0) {
+			while (left > 0) {
 				long remove = Math.min(amount.get(), qtyPerCraft);
 				Proposal<I> proposal = new Proposal<>(createReference(), type, remove);
 
-				if (!requestInternal(missing, proposal, new HashSet<>(), timeStarted, true)) {
+				if (!requestInternal(type, remove, missing, proposal, new HashSet<>(), timeStarted, true)) {
 					Snapshot.INSTANCE.clearMutated();
 					return null;
 				}
 
+				left -= remove;
+
 				if (missing.isEmpty()) {
 					// Apply
-					Snapshot.INSTANCE.applyMutated();
-					leftovers.remove(type, remove);
-
-					applyProposal(requester, proposal);
 					amount.accept(amount.get() - remove);
+
+					Snapshot.INSTANCE.applyMutated();
+					applyProposal(requester, proposal);
 				}
 			}
 		}
@@ -180,32 +182,55 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	}
 
 	@Override
-	public boolean requestInternal(MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean doLinked) {
+	public boolean requestInternal(Type<I> type, long amount, MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean doLinked) {
 		if (System.currentTimeMillis() - timeStarted > ThermalLogistics.INSTANCE.calculationTimeout) {
 			return false; // Too complex!
+		}
+
+		if (!used.add(this)) {
+			return false; // TODO: Different error for recursive
 		}
 
 		StackList<I> inputs = getCondensedInputs();
 		StackList<I> network = Snapshot.INSTANCE.getMutatedStacks(duct.getGrid());
 
-		for (Type<I> type : inputs.types()) {
-			long amount = inputs.amount(type);
+		for (Type<I> subType : inputs.types()) {
+			long subAmount = inputs.amount(subType);
 
 			// First check existing items
-			long remaining = network.remove(type, amount);
-			long subtracted = amount - remaining;
+			long remaining = network.remove(subType, subAmount);
+			long subtracted = subAmount - remaining;
 			if (subtracted > 0) {
-				proposal.children.add(new Proposal<>(null, type, subtracted));
-				amount = remaining;
+				proposal.children.add(new Proposal<>(null, subType, subtracted));
+				subAmount = remaining;
 			}
 
 			// Then check crafters
-			while (amount > 0) {
-				// TODO
-				return false;
+			if (subAmount > 0) {
+				ICrafter<I> crafter = process.getCrafter(subType);
+				if (crafter != null) {
+					long qtyPerCraft = crafter.amountCrafted(subType);
+
+					while (subAmount > 0) {
+						long remove = Math.min(subAmount, qtyPerCraft);
+						Proposal<I> subProposal = new Proposal<>(crafter.createReference(), subType, remove);
+
+						if (!crafter.requestInternal(subType, remove, missing, subProposal, used, timeStarted, true)) {
+							// Complex!
+							return false;
+						}
+
+						proposal.children.add(subProposal);
+						subAmount -= remove;
+					}
+				} else {
+					// Not enough items
+					missing.add(subType, subAmount);
+				}
 			}
 		}
 
+		// Also activate linked crafters
 		if (doLinked) {
 			checkLinked();
 			for (RequesterReference<?> reference : linked) {
@@ -217,7 +242,13 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		}
 
 		// We did it! Time to register the outputs
-		Snapshot.INSTANCE.getLeftovers(createReference()).addAll(getCondensedOutputs());
+		used.remove(this);
+
+		StackList<I> leftovers = Snapshot.INSTANCE.getLeftovers(createReference());
+		leftovers.addAll(getCondensedOutputs());
+		if (type != null) {
+			leftovers.remove(type, amount);
+		}
 		return true;
 	}
 
@@ -225,7 +256,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		Proposal<O> linked = new Proposal<>(reference, null, 0);
 		ICrafter<O> crafter = ((ICrafter<O>) reference.get());
 
-		if (!crafter.requestInternal(missing, linked, used, timeStarted, false)) {
+		if (!crafter.requestInternal(null, 0, missing, linked, used, timeStarted, false)) {
 			// Complex
 			return false;
 		}

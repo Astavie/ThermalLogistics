@@ -14,6 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public abstract class Process<I> {
@@ -127,24 +128,33 @@ public abstract class Process<I> {
 		return requests;
 	}
 
-	protected abstract void requestFromCrafters(List<Request<I>> requests, Type<I> type, Shared<Long> amount);
+	public abstract void findCrafter(Predicate<ICrafter<I>> predicate);
+
+	public ICrafter<I> getCrafter(Type<I> output) {
+		Shared<ICrafter<I>> shared = new Shared<>();
+
+		findCrafter(crafter -> {
+			if (crafter.getOutputs().types().contains(output)) {
+				shared.accept(crafter);
+				return true;
+			}
+			return false;
+		});
+
+		return shared.get();
+	}
+
+	/**
+	 * Used in terminal: request from crafters
+	 */
+	private void requestFromCrafters(List<Request<I>> requests, Type<I> type, Shared<Long> amount) {
+		request(requests, getCrafter(type), type, amount);
+	}
 
 	/**
 	 * Request item from crafter
 	 */
 	protected boolean request(List<Request<I>> requests, ICrafter<I> crafter, Type<I> type, Shared<Long> amount) {
-		// Check if crafter has correct output
-		boolean b = false;
-		for (Type<I> t : crafter.getOutputs().types()) {
-			if (t.equals(type)) {
-				b = true;
-				break;
-			}
-		}
-		if (!b) {
-			return false;
-		}
-
 		// Do the thing
 		long a = amount.get();
 
