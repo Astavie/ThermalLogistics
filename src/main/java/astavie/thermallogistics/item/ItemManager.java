@@ -210,6 +210,7 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 		if (item.getSubCompound("Link") != null) {
 			RequesterReference<?> other = RequesterReference.readNBT(item.getSubCompound("Link"));
 			if (other.get() instanceof ICrafter && !other.references(crafter)) {
+				crafter.checkLinked();
 				if (crafter.isLinked(other)) {
 					// Fail
 					player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);

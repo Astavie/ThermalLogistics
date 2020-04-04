@@ -260,8 +260,9 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 		long left = amount;
 
-		a:
-		for (byte side = 0; side < 6; side++) {
+		Request<I> lastError = null;
+
+		for (byte side = 0; side < 6 && left > 0; side++) {
 			if (!requesters[side].isEnabled())
 				continue;
 
@@ -271,11 +272,16 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			for (Request<I> request : requests) {
 				if (request.isError()) {
 					if (request.complex) {
+						lastError = null;
 						addRequest(request);
-						left = 0;
-						break a;
 					} else {
-						left += request.amount;
+						if (request.missing.map.size() == 1 && request.missing.map.get(type) > 0) {
+							lastError = request;
+							left += request.amount;
+						} else {
+							lastError = null;
+							addRequest(request);
+						}
 					}
 				} else {
 					addRequest(request);
@@ -283,32 +289,8 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			}
 		}
 
-		if (left > 0) {
-			// Make some errors!
-
-			Request<I> error = null;
-
-			for (byte side = 0; side < 6; side++) {
-				if (!requesters[side].isEnabled())
-					continue;
-
-				List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount, this::createStackList);
-				for (Request<I> request : requests) {
-					if (request.isError()) {
-						if (error == null || error.missing.map.size() < request.missing.map.size() || (error.missing.map.size() == 1 && error.missing.map.get(type) > 0)) {
-							error = request;
-						}
-					} else {
-						throw new IllegalStateException();
-					}
-				}
-			}
-
-			if (error == null) {
-				throw new IllegalStateException();
-			}
-
-			addRequest(error);
+		if (lastError != null) {
+			addRequest(lastError);
 		}
 
 		if (!world.isRemote) {

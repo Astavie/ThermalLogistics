@@ -20,6 +20,8 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	void unlink(ICrafter<?> crafter);
 
+	void checkLinked();
+
 	void link(RequesterReference<?> reference);
 
 	void unlink(RequesterReference<?> reference);

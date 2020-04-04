@@ -209,19 +209,31 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			if (subAmount > 0) {
 				ICrafter<I> crafter = process.getCrafter(subType);
 				if (crafter != null) {
-					long qtyPerCraft = crafter.amountCrafted(subType);
 
-					while (subAmount > 0) {
-						long remove = Math.min(subAmount, qtyPerCraft);
-						Proposal<I> subProposal = new Proposal<>(crafter.createReference(), subType, remove);
+					// First check leftovers
+					StackList<I> leftovers = Snapshot.INSTANCE.getLeftovers(crafter.createReference());
+					long remain = leftovers.remove(subType, subAmount);
+					if (remain < subAmount) {
+						proposal.children.add(new Proposal<>(crafter.createReference(), subType, subAmount - remain));
+						subAmount = remain;
+					}
 
-						if (!crafter.requestInternal(subType, remove, missing, subProposal, used, timeStarted, true)) {
-							// Complex!
-							return false;
+					// Then request crafting
+					if (subAmount > 0) {
+						long qtyPerCraft = crafter.amountCrafted(subType);
+
+						while (subAmount > 0) {
+							long remove = Math.min(subAmount, qtyPerCraft);
+							Proposal<I> subProposal = new Proposal<>(crafter.createReference(), subType, remove);
+
+							if (!crafter.requestInternal(subType, remove, missing, subProposal, used, timeStarted, true)) {
+								// Complex!
+								return false;
+							}
+
+							proposal.children.add(subProposal);
+							subAmount -= remove;
 						}
-
-						proposal.children.add(subProposal);
-						subAmount -= remove;
 					}
 				} else {
 					// Not enough items
@@ -501,6 +513,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		return requestInput.getOrDefault(crafter.createReference(), supplier.get());
 	}
 
+	@Override
 	public void checkLinked() {
 		for (Iterator<RequesterReference<?>> iterator = linked.iterator(); iterator.hasNext(); ) {
 			IRequester<?> requester = iterator.next().get();
@@ -582,6 +595,17 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		@Override
 		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
 			return new ListWrapperWrapper<>(parent.routesWithInsertSideList, r -> Pair.of(r.endPoint, r.getLastSide()));
+		}
+
+		@Override
+		public StackList<ItemStack> getRequestedStacks() {
+			StackList<ItemStack> list = super.getRequestedStacks();
+
+			StackMap map = ((GridItem) getDuct().getGrid()).travelingItems.getOrDefault(getDestination(), new StackMap());
+			for (ItemStack item : map.getItems())
+				list.remove(item);
+
+			return list;
 		}
 
 		@Override

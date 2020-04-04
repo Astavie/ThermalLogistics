@@ -45,6 +45,7 @@ import net.minecraftforge.items.IItemHandler;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemStack> {
 
@@ -388,6 +389,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 					if (tile != null) {
 						ICrafterWrapper<?> wrapper = ThermalLogistics.INSTANCE.getWrapper(tile.getClass());
 						if (wrapper != null) {
+							List<RequesterReference<?>> linked = recipes.get(0).linked;
 							recipes.clear();
 
 							Recipe<ItemStack> recipe = newRecipe(0);
@@ -396,6 +398,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 							wrapper.populateCast(tile, (byte) (side ^ 1), recipe, ItemStack.class);
 
+							recipe.linked.addAll(linked);
 							recipes.add(recipe);
 							markDirty();
 						}
@@ -538,6 +541,8 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			}
 		}
 
+		List<List<RequesterReference<?>>> lists = recipes.stream().map(r -> r.linked).collect(Collectors.toList());
+
 		recipes.clear();
 
 		int recipes = SIZE[type] / split;
@@ -551,6 +556,9 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 				recipe.outputs.add(outputs[i * split + j]);
 			}
 
+			if (i < lists.size()) {
+				recipe.linked.addAll(lists.get(i));
+			}
 			this.recipes.add(recipe);
 		}
 	}

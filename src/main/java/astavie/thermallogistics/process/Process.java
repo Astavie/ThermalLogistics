@@ -148,7 +148,10 @@ public abstract class Process<I> {
 	 * Used in terminal: request from crafters
 	 */
 	private void requestFromCrafters(List<Request<I>> requests, Type<I> type, Shared<Long> amount) {
-		request(requests, getCrafter(type), type, amount);
+		ICrafter<I> crafter = getCrafter(type);
+		if (crafter != null) {
+			request(requests, crafter, type, amount);
+		}
 	}
 
 	/**

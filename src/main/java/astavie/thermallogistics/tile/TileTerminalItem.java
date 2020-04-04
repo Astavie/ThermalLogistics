@@ -439,6 +439,20 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		}
 
 		@Override
+		public StackList<ItemStack> getRequestedStacks() {
+			StackList<ItemStack> list = super.getRequestedStacks();
+
+			DuctUnit<?, ?, ?> duct = getDuct();
+			if (duct != null) {
+				StackMap map = ((GridItem) duct.getGrid()).travelingItems.getOrDefault(getDestination(), new StackMap());
+				for (ItemStack item : map.getItems())
+					list.remove(item);
+			}
+
+			return list;
+		}
+
+		@Override
 		public Map<RequesterReference<ItemStack>, StackList<ItemStack>> getRequests() {
 			Map<RequesterReference<ItemStack>, StackList<ItemStack>> requests = super.getRequests();
 
