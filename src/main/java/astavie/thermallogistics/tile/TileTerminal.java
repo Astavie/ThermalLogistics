@@ -32,7 +32,6 @@ import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -81,7 +80,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 		int size = packet.getInt();
 		for (int i = 0; i < size; i++) {
-			addRequest(Request.readPacket(packet, terminal::readType));
+			addRequest(Request.readPacket(packet, terminal::readType, this::readStackList));
 		}
 	}
 
@@ -265,7 +264,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			if (!requesters[side].isEnabled())
 				continue;
 
-			List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount);
+			List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount, this::createStackList);
 			left = 0;
 
 			for (Request<I> request : requests) {
@@ -277,31 +276,32 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			}
 		}
 
-		// MAKE SOME ERRORS!
-
 		if (left > 0) {
-			Request<I> error = new Request<>(type, left, 0, new LinkedList<>());
+			// Make some errors!
+
+			Request<I> error = null;
 
 			for (byte side = 0; side < 6; side++) {
 				if (!requesters[side].isEnabled())
 					continue;
 
-				List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount);
+				List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount, this::createStackList);
 				for (Request<I> request : requests) {
 					if (request.isError()) {
-						for (List<Pair<Type<I>, Long>> list : request.error)
-							if (!error.error.contains(list))
-								error.error.add(list);
+						if (error == null || error.missing.size() < request.missing.size() || (error.missing.size() == 1 && error.missing.amount(type) > 0)) {
+							error = request;
+						}
 					} else {
-						// This shouldn't happen...
 						throw new IllegalStateException();
 					}
 				}
 			}
 
-			if (!error.error.isEmpty()) {
-				addRequest(error);
+			if (error == null) {
+				throw new IllegalStateException();
 			}
+
+			addRequest(error);
 		}
 
 		if (!world.isRemote) {
@@ -364,6 +364,12 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		}
 
 		requests.add(request);
+	}
+
+	private StackList<I> readStackList(PacketBase payload) {
+		StackList<I> list = createStackList();
+		list.readPacket(payload);
+		return list;
 	}
 
 	public static abstract class TerminalRequester<I> implements IProcessRequester<I> {

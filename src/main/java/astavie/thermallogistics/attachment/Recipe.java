@@ -3,6 +3,7 @@ package astavie.thermallogistics.attachment;
 import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.*;
 import astavie.thermallogistics.util.RequesterReference;
+import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.collection.ListWrapperWrapper;
 import astavie.thermallogistics.util.collection.StackList;
@@ -125,12 +126,21 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	}
 
 	@Override
-	public Collection<I> getOutputs() {
-		return outputs;
+	public StackList<I> getOutputs() {
+		return getCondensedOutputs();
 	}
 
 	@Override
-	public boolean request(IRequester<I> requester, Type<I> type, long amount) {
+	public StackList<I> request(IRequester<I> requester, Type<I> type, Shared<Long> amount) {
+		// TODO TEST
+		amount.accept(0L);
+		StackList<I> list = supplier.get();
+		list.add(type, 1000);
+		return list;
+	}
+
+	@Override
+	public boolean requestInternal(IRequester<I> requester, StackList<I> missing) {
 		return false; // TODO
 	}
 
@@ -401,6 +411,11 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	@Override
 	public long amountRequired(Type<I> type) {
 		return 0;
+	}
+
+	@Override
+	public StackList<I> getLeftovers() {
+		return leftovers;
 	}
 
 	public static class Item extends Recipe<ItemStack> implements IProcessRequesterItem {

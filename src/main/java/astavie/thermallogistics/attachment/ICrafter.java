@@ -1,6 +1,8 @@
 package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.util.RequesterReference;
+import astavie.thermallogistics.util.Shared;
+import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 
 import java.util.Collection;
@@ -21,12 +23,16 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	boolean isEnabled();
 
-	Collection<I> getOutputs();
+	StackList<I> getOutputs();
+
+	StackList<I> getLeftovers();
 
 	/**
 	 * Requests an item. Linked crafters will also be notified.
 	 */
-	boolean request(IRequester<I> requester, Type<I> type, long amount);
+	StackList<I> request(IRequester<I> requester, Type<I> type, Shared<Long> amount);
+
+	boolean requestInternal(IRequester<I> requester, StackList<I> missing);
 
 	/**
 	 * A requester doesn't need this crafter anymore

@@ -142,12 +142,11 @@ public class ProcessItem extends Process<ItemStack> {
 	 * Used in requester: request from crafter
 	 */
 	private boolean requestFromCrafter(ICrafter<ItemStack> crafter) {
-		for (ItemStack output : crafter.getOutputs()) {
-			if (output.isEmpty())
-				continue;
-
-			ItemType type = new ItemType(output);
+		for (Type<ItemStack> type : crafter.getOutputs().types()) {
 			long amount = requester.amountRequired(type);
+
+			if (amount == 0)
+				continue;
 
 			// TODO: Check if item fits
 
@@ -200,18 +199,14 @@ public class ProcessItem extends Process<ItemStack> {
 	 * Used in terminal: request from crafters
 	 */
 	@Override
-	protected long requestFromCrafters(List<Request<ItemStack>> requests, Type<ItemStack> type, long amount) {
-		// TODO: Add error
-
-		Shared<Long> shared = new Shared<>(amount);
-
+	protected void requestFromCrafters(List<Request<ItemStack>> requests, Type<ItemStack> type, Shared<Long> amount) {
 		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
 		for (Pair<DuctUnit, Byte> source : sources) {
 			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
 			byte side = source.getRight();
 
 			Attachment attachment = endPoint.parent.getAttachment(side);
-			if (attachment != null && StackHandler.forEachCrafter(attachment, (ICrafter<ItemStack> c) -> request(requests, c, type, shared))) {
+			if (attachment != null && StackHandler.forEachCrafter(attachment, (ICrafter<ItemStack> c) -> request(requests, c, type, amount))) {
 				sources.advanceCursor();
 				break;
 			}
@@ -221,13 +216,11 @@ public class ProcessItem extends Process<ItemStack> {
 				continue;
 			}
 
-			if (StackHandler.forEachCrafter(cache.tile, (ICrafter<ItemStack> c) -> request(requests, c, type, shared))) {
+			if (StackHandler.forEachCrafter(cache.tile, (ICrafter<ItemStack> c) -> request(requests, c, type, amount))) {
 				sources.advanceCursor();
 				break;
 			}
 		}
-
-		return shared.get();
 	}
 
 	private ItemStack extract(DuctUnitItem duct, byte side, IItemHandler inv, Function<Type<ItemStack>, Long> required, DuctUnitItem end, byte endSide) {

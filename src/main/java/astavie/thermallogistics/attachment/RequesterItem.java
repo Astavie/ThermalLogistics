@@ -239,9 +239,11 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 	@Override
 	public void addRequest(Request<ItemStack> request) {
-		requests.computeIfAbsent(request.source.crafter, c -> new ItemList());
-		requests.get(request.source.crafter).add(request.type, request.amount);
-		markDirty();
+		if (!request.isError()) {
+			requests.computeIfAbsent(request.source.crafter, c -> new ItemList());
+			requests.get(request.source.crafter).add(request.type, request.amount);
+			markDirty();
+		}
 	}
 
 	public void markDirty() {

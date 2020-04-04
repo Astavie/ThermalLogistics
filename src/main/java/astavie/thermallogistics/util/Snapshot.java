@@ -1,7 +1,9 @@
 package astavie.thermallogistics.util;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.IRequester;
+import astavie.thermallogistics.util.collection.EmptyList;
 import astavie.thermallogistics.util.collection.FluidList;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.collection.StackList;
@@ -41,7 +43,17 @@ public class Snapshot {
 	private Map<GridItem, ItemList> items = new HashMap<>();
 	private Map<GridFluid, FluidList> fluids = new HashMap<>();
 
+	private Map<GridItem, ItemList> itemsMutated = new HashMap<>();
+	private Map<GridFluid, FluidList> fluidsMutated = new HashMap<>();
+	private Map<RequesterReference<?>, StackList<?>> leftovers = new HashMap<>();
+
 	private Snapshot() {
+	}
+
+	public void clearMutated() {
+		itemsMutated.clear();
+		fluidsMutated.clear();
+		leftovers.clear();
 	}
 
 	/*
@@ -306,6 +318,49 @@ public class Snapshot {
 	public FluidList getFluids(GridFluid grid) {
 		refresh(grid);
 		return fluids.getOrDefault(grid, new FluidList());
+	}
+
+	// Auto-crafting
+
+	public <I> StackList<I> getMutatedStacks(MultiBlockGrid<?> grid) {
+		if (grid instanceof GridItem)
+			//noinspection unchecked
+			return (StackList<I>) getMutatedItems((GridItem) grid);
+		else if (grid instanceof GridFluid)
+			//noinspection unchecked
+			return (StackList<I>) getMutatedFluids((GridFluid) grid);
+		return null;
+	}
+
+	public ItemList getMutatedItems(GridItem grid) {
+		itemsMutated.computeIfAbsent(grid, g -> {
+			ItemList itemList = new ItemList();
+			itemList.addAll(getItems(grid));
+			return itemList;
+		});
+		return itemsMutated.get(grid);
+	}
+
+	public FluidList getMutatedFluids(GridFluid grid) {
+		fluidsMutated.computeIfAbsent(grid, g -> {
+			FluidList itemList = new FluidList();
+			itemList.addAll(getFluids(grid));
+			return itemList;
+		});
+		return fluidsMutated.get(grid);
+	}
+
+	public <I> StackList<I> getLeftovers(RequesterReference<I> reference) {
+		leftovers.computeIfAbsent(reference, ref -> {
+			IRequester<I> requester = reference.get();
+			if (requester instanceof ICrafter) {
+				return ((ICrafter<I>) requester).getLeftovers();
+			}
+			return new EmptyList<>();
+		});
+
+		//noinspection unchecked
+		return (StackList<I>) leftovers.get(reference);
 	}
 
 }

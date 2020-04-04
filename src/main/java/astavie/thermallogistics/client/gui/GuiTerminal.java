@@ -25,7 +25,6 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Loader;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
@@ -242,12 +241,13 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 				tooltip.addAll(request.type.getTooltip(this));
 				if (request.isError()) {
 					tooltip.add("");
-					tooltip.add(StringHelper.localize("gui.logistics.terminal.missing"));
-					for (List<Pair<Type<I>, Long>> list : request.error) {
-						if (request.error.get(0) != list)
-							tooltip.add(StringHelper.localize("gui.logistics.terminal.or"));
-						for (Pair<Type<I>, Long> pair : list)
-							tooltip.add("§7" + StringHelper.localizeFormat("info.logistics.manager.e.1", pair.getRight(), pair.getLeft().getDisplayName()));
+					if (request.complex) {
+						tooltip.add(StringHelper.localize("gui.logistics.terminal.complex"));
+					} else {
+						tooltip.add(StringHelper.localize("gui.logistics.terminal.missing"));
+						for (Type<I> type : request.missing.types()) {
+							tooltip.add("§7" + StringHelper.localizeFormat("info.logistics.manager.e.1", request.missing.amount(type), type.getDisplayName()));
+						}
 					}
 				}
 				tooltip.add("");
@@ -319,7 +319,11 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 					if (mouseButton == 1) {
 						amount.get().setText("");
 					} else {
-						amount.get().setText(Long.toString(Math.min(StringHelper.isShiftKeyDown() ? selected.maxSize() : selected.normalSize(), filter.get(slot).getMiddle())));
+						if (filter.get(slot).getRight()) {
+							amount.get().setText(Long.toString(StringHelper.isShiftKeyDown() ? selected.maxSize() : selected.normalSize()));
+						} else {
+							amount.get().setText(Long.toString(Math.min(StringHelper.isShiftKeyDown() ? selected.maxSize() : selected.normalSize(), filter.get(slot).getMiddle())));
+						}
 					}
 
 					Overlay overlay = new Overlay(this, posX * 18 + 7, posY * 18 + 17, 81, 18);

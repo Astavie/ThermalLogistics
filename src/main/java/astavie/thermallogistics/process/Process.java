@@ -7,14 +7,13 @@ import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public abstract class Process<I> {
 
@@ -84,9 +83,9 @@ public abstract class Process<I> {
 	protected abstract boolean attemptPull(ICrafter<I> crafter, StackList<I> stacks);
 
 	/**
-	 * Used in terminals and crafters: request items
+	 * Used in terminals: request items
 	 */
-	public List<Request<I>> request(Type<I> type, long amount, @Nullable Function<Type<I>, Long> func) {
+	public List<Request<I>> request(Type<I> type, long amount, @Nullable Function<Type<I>, Long> func, Supplier<StackList<I>> supplier) {
 		List<Request<I>> requests = new LinkedList<>();
 
 		// CHECK FOR STACKS
@@ -111,39 +110,55 @@ public abstract class Process<I> {
 		// CHECK FOR CRAFTERS
 
 		if (amount > 0) {
-			amount = requestFromCrafters(requests, type, amount);
+			Shared<Long> shared = new Shared<>(amount);
+			requestFromCrafters(requests, type, shared);
+			amount = shared.get();
 		}
 
 		// WRAP UP
 
 		if (amount > 0) {
-			requests.add(new Request<>(type, amount, 0, Collections.singletonList(Collections.singletonList(Pair.of(type, amount)))));
+			StackList<I> list = supplier.get();
+			list.add(type, amount);
+			requests.add(new Request<>(type, amount, 0, list, false));
 		}
 
 		return requests;
 	}
 
-	protected abstract long requestFromCrafters(List<Request<I>> requests, Type<I> type, long amount);
+	protected abstract void requestFromCrafters(List<Request<I>> requests, Type<I> type, Shared<Long> amount);
 
 	/**
 	 * Request item from crafter
 	 */
 	protected boolean request(List<Request<I>> requests, ICrafter<I> crafter, Type<I> type, Shared<Long> amount) {
-		long max = amount.get();
-
-		// Request one by one TODO: Come up with a better system
-		for (int i = 1; i <= max; i++) {
-			if (crafter.request(requester, type, 1)) {
-				amount.accept(max - i);
-			} else {
-				if (i > 1) {
-					requests.add(new Request<>(type, i - 1, new Source<>(requester.getSide(), crafter.createReference()), 0));
-				}
+		// Check if crafter has correct output
+		boolean b = false;
+		for (Type<I> t : crafter.getOutputs().types()) {
+			if (t.equals(type)) {
+				b = true;
 				break;
 			}
 		}
+		if (!b) {
+			return false;
+		}
 
-		return amount.get() == 0;
+		// Do the thing
+		long a = amount.get();
+
+		StackList<I> missing = crafter.request(requester, type, amount);
+
+		if (amount.get() > 0) {
+			requests.add(new Request<>(type, amount.get(), new Source<>(requester.getSide(), crafter.createReference()), 0));
+		}
+
+		if (!missing.isEmpty()) {
+			requests.add(new Request<>(type, a - amount.get(), 0, missing, false));
+		}
+
+		amount.accept(0L);
+		return true;
 	}
 
 }

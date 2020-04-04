@@ -8,6 +8,7 @@ import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.client.gui.element.ElementSlotFluid;
 import astavie.thermallogistics.client.gui.element.ElementSlotItem;
 import astavie.thermallogistics.util.collection.StackList;
+import astavie.thermallogistics.util.type.Type;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.network.PacketBase;
@@ -132,8 +133,8 @@ public class StackHandler {
 		if (object instanceof ICrafter) {
 			if (((ICrafter) object).isEnabled())
 				//noinspection unchecked
-				for (I stack : ((ICrafter<I>) object).getOutputs())
-					list.addCraftable(list.getType(stack));
+				for (Type<I> type : ((ICrafter<I>) object).getOutputs().types())
+					list.addCraftable(type);
 		} else if (object instanceof ICrafterContainer) {
 			for (ICrafter<?> crafter : ((ICrafterContainer<?>) object).getCrafters())
 				addCraftable(list, crafter);
