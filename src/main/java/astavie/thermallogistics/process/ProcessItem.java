@@ -143,7 +143,7 @@ public class ProcessItem extends Process<ItemStack> {
 	 */
 	private boolean requestFromCrafter(ICrafter<ItemStack> crafter) {
 		for (Type<ItemStack> type : crafter.getOutputs().types()) {
-			long amount = requester.amountRequired(type);
+			long amount = Math.min(requester.amountRequired(type), ((IProcessRequesterItem) requester).maxSize());
 
 			if (amount == 0)
 				continue;

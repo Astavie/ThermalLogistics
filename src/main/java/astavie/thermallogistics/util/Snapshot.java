@@ -56,39 +56,18 @@ public class Snapshot {
 		leftovers.clear();
 	}
 
-	/*
+	public void applyMutated() {
+		items = itemsMutated;
+		fluids = fluidsMutated;
 
-	private Snapshot real;
+		for (Map.Entry<RequesterReference<?>, StackList<?>> entry : leftovers.entrySet()) {
+			applyLeftover(entry.getKey(), entry.getValue());
+		}
 
-	public void startExperiment() {
-		real = copy();
+		itemsMutated = new HashMap<>();
+		fluidsMutated = new HashMap<>();
+		leftovers = new HashMap<>();
 	}
-
-	public void endExperiment() {
-		real = real.real;
-	}
-
-	public void cancelExperiment() {
-		items = real.items;
-		fluids = real.fluids;
-
-		real = real.real;
-	}
-
-	private Snapshot copy() {
-		Snapshot copy = new Snapshot();
-
-		for (Map.Entry<GridItem, ItemList> entry : items.entrySet())
-			copy.items.put(entry.getKey(), entry.getValue().copy());
-		for (Map.Entry<GridFluid, FluidList> entry : fluids.entrySet())
-			copy.fluids.put(entry.getKey(), entry.getValue().copy());
-
-		copy.real = real;
-
-		return copy;
-	}
-
-	*/
 
 	private void refresh(World world) {
 		if (globalTick < world.getTotalWorldTime() + ThermalLogistics.INSTANCE.refreshDelay) {
@@ -356,11 +335,16 @@ public class Snapshot {
 			if (requester instanceof ICrafter) {
 				return ((ICrafter<I>) requester).getLeftovers();
 			}
-			return new EmptyList<>();
+			return EmptyList.getInstance();
 		});
 
 		//noinspection unchecked
 		return (StackList<I>) leftovers.get(reference);
+	}
+
+	private <I> void applyLeftover(RequesterReference<I> reference, StackList<?> list) {
+		//noinspection unchecked
+		((ICrafter<I>) reference.get()).applyLeftovers((StackList<I>) list);
 	}
 
 }

@@ -44,7 +44,7 @@ public class Request<I> {
 		int index = packet.getInt();
 
 		if (packet.getBool()) {
-			return new Request<>(type, amount, index, func2.apply(packet), packet.getBool());
+			return new Request<>(type, amount, index, packet.getBool() ? func2.apply(packet) : null, packet.getBool());
 		} else {
 			return new Request<>(type, amount, Source.readPacket(packet), index);
 		}
@@ -58,7 +58,10 @@ public class Request<I> {
 		packet.addBool(request.isError());
 
 		if (request.isError()) {
-			request.missing.writePacket(packet);
+			packet.addBool(request.missing != null);
+			if (request.missing != null) {
+				request.missing.writePacket(packet);
+			}
 			packet.addBool(request.complex);
 		} else {
 			if (request.source != null) {
@@ -89,7 +92,7 @@ public class Request<I> {
 	}
 
 	public boolean isError() {
-		return missing != null;
+		return missing != null || complex;
 	}
 
 }

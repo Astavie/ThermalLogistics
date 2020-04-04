@@ -4,6 +4,8 @@ import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.*;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.Shared;
+import astavie.thermallogistics.util.Snapshot;
+import astavie.thermallogistics.util.collection.EmptyList;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.collection.ListWrapperWrapper;
 import astavie.thermallogistics.util.collection.StackList;
@@ -51,9 +53,8 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		this.index = index;
 	}
 
-	public void onDisable() {
-		requestInput.clear();
-		leftovers.clear();
+	private static <I> void applyLinkedProposal(Proposal<I> linked) {
+		((ICrafter<I>) linked.me.get()).applyProposal(null, linked);
 	}
 
 	@Override
@@ -130,18 +131,85 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		return getCondensedOutputs();
 	}
 
-	@Override
-	public StackList<I> request(IRequester<I> requester, Type<I> type, Shared<Long> amount) {
-		// TODO TEST
-		amount.accept(0L);
-		StackList<I> list = supplier.get();
-		list.add(type, 1000);
-		return list;
+	public void onDisable() {
+		requestOutput.clear();
+		requestInput.clear();
+		leftovers.clear();
 	}
 
 	@Override
-	public boolean requestInternal(IRequester<I> requester, StackList<I> missing) {
-		return false; // TODO
+	public StackList<I> request(IRequester<I> requester, Type<I> type, Shared<Long> amount) {
+		StackList<I> missing = supplier.get();
+
+		// First check leftovers
+		long remain = leftovers.remove(type, amount.get());
+		if (remain < amount.get()) {
+			applyProposal(requester, new Proposal<>(createReference(), type, amount.get() - remain));
+			amount.accept(remain);
+		}
+
+		// Then craft
+		if (amount.get() > 0) {
+			long timeStarted = System.currentTimeMillis();
+			long qtyPerCraft = amountCrafted(type);
+
+			while (amount.get() > 0) {
+				Set<Proposal<I>> proposals = new HashSet<>();
+				if (!requestInternal(requester, missing, proposals, timeStarted)) {
+					Snapshot.INSTANCE.clearMutated();
+					return null;
+				}
+
+				if (missing.isEmpty()) {
+					// Apply
+					Snapshot.INSTANCE.applyMutated();
+
+					for (Proposal<I> proposal : proposals) {
+						applyProposal(requester, proposal);
+					}
+
+					long remove = Math.min(amount.get(), qtyPerCraft);
+					amount.accept(amount.get() - remove);
+					leftovers.remove(type, remove);
+				}
+			}
+		}
+
+		// Return
+		Snapshot.INSTANCE.clearMutated();
+		return missing;
+	}
+
+	@Override
+	public boolean requestInternal(IRequester<I> requester, StackList<I> missing, Set<Proposal<I>> proposals, long timeStarted) {
+		return false;
+	}
+
+	@Override
+	public void applyProposal(IRequester<I> requester, Proposal<I> proposal) {
+		if (requester != null) {
+			RequesterReference<I> reference = requester.createReference();
+			requestOutput.computeIfAbsent(reference, r -> supplier.get());
+			requestOutput.get(reference).add(proposal.type, proposal.amount);
+		}
+
+		for (Proposal<I> child : proposal.children) {
+			requestInput.computeIfAbsent(child.me, r -> supplier.get());
+			requestInput.get(child.me).add(child.type, child.amount);
+
+			if (child.me != null) {
+				((ICrafter<I>) child.me.get()).applyProposal(this, child);
+			}
+		}
+
+		for (Proposal<?> linked : proposal.linked) {
+			applyLinkedProposal(linked);
+		}
+	}
+
+	@Override
+	public void applyLeftovers(StackList<I> leftovers) {
+		this.leftovers = leftovers;
 	}
 
 	private void onCancel(Type<I> type, long amount) {
@@ -220,12 +288,13 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			long amount = ci.amount(type);
 			for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestInput.entrySet().iterator(); iterator.hasNext() && amount > 0; ) {
 				Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
-				long subtracted = entry.getValue().remove(type, amount);
+				long remain = entry.getValue().remove(type, amount);
+				long subtracted = amount - remain;
 
 				if (entry.getValue().isEmpty())
 					iterator.remove();
 
-				amount -= subtracted;
+				amount = remain;
 
 				if (entry.getKey() != null) {
 					IRequester<I> requester = entry.getKey().get();
@@ -309,12 +378,12 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	@Override
 	public long reserved(IRequester<I> requester, Type<I> type) {
-		return requestOutput.get(requester.createReference()).amount(type);
+		return requestOutput.getOrDefault(requester.createReference(), EmptyList.getInstance()).amount(type);
 	}
 
 	@Override
 	public void finish(IRequester<I> requester, Type<I> type, long amount) {
-		requestOutput.get(requester.createReference()).remove(type, amount);
+		requestOutput.getOrDefault(requester.createReference(), EmptyList.getInstance()).remove(type, amount);
 		markDirty();
 	}
 

@@ -1,11 +1,13 @@
 package astavie.thermallogistics.attachment;
 
+import astavie.thermallogistics.process.Proposal;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 
 import java.util.Collection;
+import java.util.Set;
 
 public interface ICrafter<I> extends IRequester<I> {
 
@@ -27,12 +29,20 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	StackList<I> getLeftovers();
 
+	default long amountCrafted(Type<I> type) {
+		return getOutputs().amount(type);
+	}
+
 	/**
 	 * Requests an item. Linked crafters will also be notified.
 	 */
 	StackList<I> request(IRequester<I> requester, Type<I> type, Shared<Long> amount);
 
-	boolean requestInternal(IRequester<I> requester, StackList<I> missing);
+	boolean requestInternal(IRequester<I> requester, StackList<I> missing, Set<Proposal<I>> proposals, long timeStarted);
+
+	void applyProposal(IRequester<I> requester, Proposal<I> proposal);
+
+	void applyLeftovers(StackList<I> leftovers);
 
 	/**
 	 * A requester doesn't need this crafter anymore

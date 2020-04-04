@@ -4,9 +4,18 @@ import astavie.thermallogistics.util.type.Type;
 import cofh.core.network.PacketBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class EmptyList<I> extends StackList<I> {
+
+	public static final EmptyList<?> LIST = new EmptyList<>();
+
+	private EmptyList() {
+	}
+
+	public static <I> EmptyList<I> getInstance() {
+		//noinspection unchecked
+		return (EmptyList<I>) LIST;
+	}
 
 	@Override
 	public Type<I> getType(I stack) {
@@ -40,16 +49,6 @@ public class EmptyList<I> extends StackList<I> {
 
 	@Override
 	public void addCraftable(Type<I> type) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public long remove(Type<I> type, long count) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public Pair<Type<I>, Long> remove(int index) {
 		throw new UnsupportedOperationException();
 	}
 

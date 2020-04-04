@@ -288,7 +288,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 				List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount, this::createStackList);
 				for (Request<I> request : requests) {
 					if (request.isError()) {
-						if (error == null || error.missing.size() < request.missing.size() || (error.missing.size() == 1 && error.missing.amount(type) > 0)) {
+						if (error == null || request.complex || error.missing.size() < request.missing.size() || (error.missing.size() == 1 && error.missing.amount(type) > 0)) {
 							error = request;
 						}
 					} else {

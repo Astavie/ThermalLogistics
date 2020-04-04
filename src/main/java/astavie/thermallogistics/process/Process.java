@@ -148,13 +148,17 @@ public abstract class Process<I> {
 		long a = amount.get();
 
 		StackList<I> missing = crafter.request(requester, type, amount);
+		if (missing == null) {
+			// Complex
+			requests.add(new Request<>(type, amount.get(), 0, null, true));
+		} else {
+			if (amount.get() < a) {
+				requests.add(new Request<>(type, a - amount.get(), new Source<>(requester.getSide(), crafter.createReference()), 0));
+			}
 
-		if (amount.get() > 0) {
-			requests.add(new Request<>(type, amount.get(), new Source<>(requester.getSide(), crafter.createReference()), 0));
-		}
-
-		if (!missing.isEmpty()) {
-			requests.add(new Request<>(type, a - amount.get(), 0, missing, false));
+			if (!missing.isEmpty()) {
+				requests.add(new Request<>(type, amount.get(), 0, missing, false));
+			}
 		}
 
 		amount.accept(0L);
