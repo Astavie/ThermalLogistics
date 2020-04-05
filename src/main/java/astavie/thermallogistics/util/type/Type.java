@@ -42,6 +42,8 @@ public interface Type<I> {
 
 	boolean isNothing();
 
+	boolean isIdentical(Type<I> other, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt);
+
 	@SideOnly(Side.CLIENT)
 	default List<String> getTooltip(GuiContainerCore gui) {
 		return StackHandler.getTooltip(gui, getAsStack());

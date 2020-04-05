@@ -25,6 +25,7 @@ import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import net.minecraftforge.items.IItemHandler;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 public class Snapshot {
 
@@ -329,11 +330,13 @@ public class Snapshot {
 		return fluidsMutated.get(grid);
 	}
 
-	public <I> StackList<I> getLeftovers(RequesterReference<I> reference) {
+	public <I> StackList<I> getLeftovers(RequesterReference<I> reference, Supplier<StackList<I>> supplier) {
 		leftovers.computeIfAbsent(reference, ref -> {
 			IRequester<I> requester = reference.get();
 			if (requester instanceof ICrafter) {
-				return ((ICrafter<I>) requester).getLeftovers();
+				StackList<I> list = supplier.get();
+				list.addAll(((ICrafter<I>) requester).getLeftovers());
+				return list;
 			}
 			return EmptyList.getInstance();
 		});

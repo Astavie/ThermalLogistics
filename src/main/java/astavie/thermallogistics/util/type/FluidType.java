@@ -77,6 +77,11 @@ public class FluidType implements Type<FluidStack> {
 	}
 
 	@Override
+	public boolean isIdentical(Type<FluidStack> other, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt) {
+		return compare.getFluid() == other.getAsStack().getFluid() && (ignoreNbt || FluidStack.areFluidStackTagsEqual(compare, other.getAsStack()));
+	}
+
+	@Override
 	public int normalSize() {
 		return Fluid.BUCKET_VOLUME;
 	}

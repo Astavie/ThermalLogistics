@@ -2,10 +2,14 @@ package astavie.thermallogistics.util.type;
 
 import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.ItemHelper;
+import com.google.common.primitives.Ints;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.oredict.OreDictionary;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.util.Collections;
 
 public class ItemType implements Type<ItemStack> {
 
@@ -78,6 +82,19 @@ public class ItemType implements Type<ItemStack> {
 	@Override
 	public boolean isNothing() {
 		return compare.isEmpty();
+	}
+
+	@Override
+	public boolean isIdentical(Type<ItemStack> other, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt) {
+		if (!ignoreMod && compare.getItem().getRegistryName().getNamespace().equals(other.getAsStack().getItem().getRegistryName().getNamespace()))
+			return true; // Same mod
+		if (!ignoreOreDict && !Collections.disjoint(Ints.asList(OreDictionary.getOreIDs(compare)), Ints.asList(OreDictionary.getOreIDs(other.getAsStack()))))
+			return true; // Same oredict
+
+		// Same item
+		return compare.getItem() == other.getAsStack().getItem() &&
+				(ignoreMetadata || compare.getMetadata() == other.getAsStack().getMetadata()) &&
+				(ignoreNbt || ItemStack.areItemStackTagsEqual(compare, other.getAsStack()));
 	}
 
 	@Override

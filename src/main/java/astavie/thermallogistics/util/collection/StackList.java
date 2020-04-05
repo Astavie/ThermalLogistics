@@ -70,6 +70,18 @@ public abstract class StackList<S> {
 		}
 	}
 
+	public long remove(Type<S> type, long count, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt) {
+		for (Type<S> compare : map.keySet()) {
+			if (type.isIdentical(compare, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
+				count = remove(compare, count);
+				if (count == 0) {
+					return 0;
+				}
+			}
+		}
+		return count;
+	}
+
 	public Pair<Type<S>, Long> remove(int index) {
 		Iterator<Map.Entry<Type<S>, Pair<Long, Boolean>>> iterator = map.entrySet().iterator();
 		for (int i = 0; i < index; i++)

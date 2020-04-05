@@ -275,7 +275,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 						lastError = null;
 						addRequest(request);
 					} else {
-						if (request.missing.map.size() == 1 && request.missing.map.get(type) > 0) {
+						if (request.missing.map.size() == 1 && request.missing.map.containsKey(type)) {
 							lastError = request;
 							left += request.amount;
 						} else {

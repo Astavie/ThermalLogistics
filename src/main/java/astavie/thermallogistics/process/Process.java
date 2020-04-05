@@ -8,6 +8,7 @@ import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.collection.MissingList;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.LinkedList;
@@ -137,6 +138,22 @@ public abstract class Process<I> {
 			if (crafter.getOutputs().types().contains(output)) {
 				shared.accept(crafter);
 				return true;
+			}
+			return false;
+		});
+
+		return shared.get();
+	}
+
+	public Pair<ICrafter<I>, Type<I>> getCrafter(Type<I> output, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt) {
+		Shared<Pair<ICrafter<I>, Type<I>>> shared = new Shared<>();
+
+		findCrafter(crafter -> {
+			for (Type<I> type : crafter.getOutputs().types()) {
+				if (type.isIdentical(output, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
+					shared.accept(Pair.of(crafter, type));
+					return true;
+				}
 			}
 			return false;
 		});

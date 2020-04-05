@@ -194,39 +194,60 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		StackList<I> inputs = getCondensedInputs();
 		StackList<I> network = Snapshot.INSTANCE.getMutatedStacks(duct.getGrid());
 
+		boolean ignoreMod = parent.filter.getFlag(4);
+		boolean ignoreOreDict = parent.filter.getFlag(3);
+		boolean ignoreMetadata = parent.filter.getFlag(1);
+		boolean ignoreNbt = parent.filter.getFlag(2);
+
 		for (Type<I> subType : inputs.types()) {
 			long subAmount = inputs.amount(subType);
 
 			// First check existing items
-			long remaining = network.remove(subType, subAmount);
-			long subtracted = subAmount - remaining;
-			if (subtracted > 0) {
-				proposal.children.add(new Proposal<>(null, subType, subtracted));
-				subAmount = remaining;
+			for (Type<I> compare : network.types()) {
+				if (compare.isIdentical(subType, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
+					long remaining = network.remove(compare, subAmount);
+
+					if (remaining < subAmount) {
+						proposal.children.add(new Proposal<>(null, compare, subAmount - remaining));
+						subAmount = remaining;
+
+						if (subAmount == 0) {
+							break;
+						}
+					}
+				}
 			}
 
 			// Then check crafters
 			if (subAmount > 0) {
-				ICrafter<I> crafter = process.getCrafter(subType);
-				if (crafter != null) {
+				Pair<ICrafter<I>, Type<I>> pair = process.getCrafter(subType, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
+
+				if (pair != null) {
+					ICrafter<I> crafter = pair.getLeft();
+					Type<I> compare = pair.getRight();
 
 					// First check leftovers
-					StackList<I> leftovers = Snapshot.INSTANCE.getLeftovers(crafter.createReference());
-					long remain = leftovers.remove(subType, subAmount);
+					StackList<I> leftovers = Snapshot.INSTANCE.getLeftovers(crafter.createReference(), supplier);
+					long remain = leftovers.remove(compare, subAmount);
+
 					if (remain < subAmount) {
-						proposal.children.add(new Proposal<>(crafter.createReference(), subType, subAmount - remain));
+						proposal.children.add(new Proposal<>(crafter.createReference(), compare, subAmount - remain));
 						subAmount = remain;
+
+						if (subAmount == 0) {
+							break;
+						}
 					}
 
-					// Then request crafting
+					// Then craft
 					if (subAmount > 0) {
-						long qtyPerCraft = crafter.amountCrafted(subType);
+						long qtyPerCraft = crafter.amountCrafted(compare);
 
 						while (subAmount > 0) {
 							long remove = Math.min(subAmount, qtyPerCraft);
-							Proposal<I> subProposal = new Proposal<>(crafter.createReference(), subType, remove);
+							Proposal<I> subProposal = new Proposal<>(crafter.createReference(), compare, remove);
 
-							if (!crafter.requestInternal(subType, remove, missing, subProposal, used, timeStarted, true)) {
+							if (!crafter.requestInternal(compare, remove, missing, subProposal, used, timeStarted, true)) {
 								// Complex!
 								return false;
 							}
@@ -256,7 +277,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		// We did it! Time to register the outputs
 		used.remove(this);
 
-		StackList<I> leftovers = Snapshot.INSTANCE.getLeftovers(createReference());
+		StackList<I> leftovers = Snapshot.INSTANCE.getLeftovers(createReference(), supplier);
 		leftovers.addAll(getCondensedOutputs());
 		if (type != null) {
 			leftovers.remove(type, amount);
