@@ -1,6 +1,5 @@
 package astavie.thermallogistics.attachment;
 
-import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.*;
 import astavie.thermallogistics.util.RequesterReference;
@@ -184,9 +183,9 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	@Override
 	public boolean requestInternal(Type<I> type, long amount, MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean doLinked) {
-		if (System.currentTimeMillis() - timeStarted > ThermalLogistics.INSTANCE.calculationTimeout) {
-			return false; // Too complex!
-		}
+		//if (System.currentTimeMillis() - timeStarted > ThermalLogistics.INSTANCE.calculationTimeout) {
+		//	return false; // Too complex!
+		//}
 
 		if (!used.add(this)) {
 			return false; // TODO: Different error for recursive

@@ -57,7 +57,7 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 	@Override
 	public void onModeChange(EntityPlayer player, ItemStack stack) {
 		stack.removeSubCompound("Link");
-		player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_LEVER_CLICK, SoundCategory.PLAYERS, 0.6F, 0.4F + 0.2F * getMode(stack));
+		player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_LEVER_CLICK, SoundCategory.PLAYERS, 0.4F, 0.4F + 0.2F * getMode(stack));
 		ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.c." + getMode(stack)));
 	}
 

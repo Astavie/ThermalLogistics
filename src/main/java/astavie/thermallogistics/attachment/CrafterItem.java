@@ -165,7 +165,19 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			}
 		}
 
-		return super.insertItem(item, simulate);
+		ItemStack remain = super.insertItem(item, simulate);
+
+		if (!simulate) {
+			long sent = item.getCount() - remain.getCount();
+			for (Recipe<ItemStack> recipe : recipes) {
+				sent = recipe.leftovers.remove(type, sent);
+				if (sent == 0) {
+					break;
+				}
+			}
+		}
+
+		return remain;
 	}
 
 	@Override
