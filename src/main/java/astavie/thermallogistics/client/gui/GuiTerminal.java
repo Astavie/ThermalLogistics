@@ -16,6 +16,7 @@ import cofh.core.gui.element.listbox.SliderVertical;
 import cofh.core.gui.element.tab.TabBase;
 import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
+import cofh.core.util.helpers.ChatHelper;
 import cofh.core.util.helpers.MathHelper;
 import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
@@ -24,6 +25,7 @@ import net.minecraft.inventory.Container;
 import net.minecraft.inventory.Slot;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.Loader;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -305,7 +307,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 
 	@Override
 	protected void mouseClicked(int mX, int mY, int mouseButton) throws IOException {
-		if ((mouseButton == 0 || mouseButton == 1) && requester().getHasStack() && !withinOverlay(mX - guiLeft, mY - guiTop)) {
+		if ((mouseButton == 0 || mouseButton == 1) && !withinOverlay(mX - guiLeft, mY - guiTop)) {
 			int mouseX = mX - guiLeft - 7;
 			int mouseY = mY - guiTop - 17;
 
@@ -315,23 +317,28 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 
 				int slot = slider.getValue() * 9 + posX + posY * 9;
 				if (slot < filter.size()) {
-					selected = filter.get(slot).getLeft();
+					if (requester().getHasStack()) {
+						selected = filter.get(slot).getLeft();
 
-					if (mouseButton == 1) {
-						amount.get().setText("");
-					} else {
-						if (filter.get(slot).getRight()) {
-							amount.get().setText(Long.toString(StringHelper.isShiftKeyDown() ? selected.maxSize() : selected.normalSize()));
+						if (mouseButton == 1) {
+							amount.get().setText("");
 						} else {
-							amount.get().setText(Long.toString(Math.min(StringHelper.isShiftKeyDown() ? selected.maxSize() : selected.normalSize(), filter.get(slot).getMiddle())));
+							if (filter.get(slot).getRight()) {
+								amount.get().setText(Long.toString(StringHelper.isShiftKeyDown() ? selected.maxSize() : selected.normalSize()));
+							} else {
+								amount.get().setText(Long.toString(Math.min(StringHelper.isShiftKeyDown() ? selected.maxSize() : selected.normalSize(), filter.get(slot).getMiddle())));
+							}
 						}
+
+						Overlay overlay = new Overlay(this, posX * 18 + 7, posY * 18 + 17, 81, 18);
+						overlay.elements.add(new ElementStack(this, 0, 0, selected, false));
+						overlay.elements.add(amount.get());
+
+						setOverlay(overlay);
+					} else {
+						ChatHelper.sendIndexedChatMessageToPlayer(mc.player, new TextComponentTranslation("info.logistics.terminal.requester"));
+						setOverlay(null);
 					}
-
-					Overlay overlay = new Overlay(this, posX * 18 + 7, posY * 18 + 17, 81, 18);
-					overlay.elements.add(new ElementStack(this, 0, 0, selected, false));
-					overlay.elements.add(amount.get());
-
-					setOverlay(overlay);
 				} else {
 					setOverlay(null);
 				}
@@ -339,7 +346,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 				return;
 			} else if (mouseButton == 1 && mouseX >= 18 && mouseX < 9 * 18 && mouseY >= bar - 17 && mouseY < bar + 1) {
 				int pos = tile.requests.size() - mouseX / 18;
-				if (pos >= 0) {
+				if (pos >= 0 && pos < tile.requests.size()) {
 					Request<?> request = tile.requests.remove(pos);
 					int start = request.index;
 					int end = tile.requests.size() <= pos ? Integer.MAX_VALUE : tile.requests.get(pos).index;

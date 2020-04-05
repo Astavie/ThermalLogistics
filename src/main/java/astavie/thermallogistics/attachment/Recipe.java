@@ -327,7 +327,11 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	public void check() {
 		checkLinked();
+		checkOutput();
+		balanceLeftovers();
+	}
 
+	public void checkOutput() {
 		// Check if requesters cancelled on us without telling
 		for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestOutput.entrySet().iterator(); iterator.hasNext(); ) {
 			Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
@@ -350,8 +354,6 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 				}
 			}
 		}
-
-		balanceLeftovers();
 	}
 
 	private void balanceLeftovers() {

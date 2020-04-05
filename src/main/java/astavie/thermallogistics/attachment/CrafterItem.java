@@ -6,9 +6,11 @@ import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.util.RequesterReference;
+import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.collection.EmptyList;
 import astavie.thermallogistics.util.collection.ItemList;
+import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.ItemType;
 import astavie.thermallogistics.util.type.Type;
 import codechicken.lib.render.CCRenderState;
@@ -21,6 +23,7 @@ import cofh.core.network.PacketTileInfo;
 import cofh.core.util.helpers.BlockHelper;
 import cofh.core.util.helpers.ServerHelper;
 import cofh.thermaldynamics.ThermalDynamics;
+import cofh.thermaldynamics.duct.attachments.filter.IFilterItems;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
@@ -55,6 +58,25 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	public static final int[][] SPLITS = {{1}, {2, 1}, {3, 1}, {4, 2, 1}, {6, 3, 2, 1}};
 	private final List<Recipe<ItemStack>> recipes = NonNullList.create();
 
+	private final IFilterItems filter = new IFilterItems() {
+		@Override
+		public boolean matchesFilter(ItemStack item) {
+			// Very hacky solution, I know...
+			checkCache();
+			return true;
+		}
+
+		@Override
+		public boolean shouldIncRouteItems() {
+			return true;
+		}
+
+		@Override
+		public int getMaxStock() {
+			return Integer.MAX_VALUE;
+		}
+	};
+
 	public CrafterItem(TileGrid tile, byte side, int type) {
 		super(tile, side, type);
 
@@ -71,6 +93,11 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 	private Recipe<ItemStack> newRecipe(int index) {
 		return new Recipe.Item(this, index);
+	}
+
+	@Override
+	public IFilterItems getItemFilter() {
+		return filter;
 	}
 
 	@Override
@@ -115,16 +142,43 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	@Override
 	public void tick(int pass) {
 		if (pass == 0) {
-			if (itemDuct.tileCache[side] != null && !(itemDuct.tileCache[side] instanceof CacheWrapper)) {
-				itemDuct.tileCache[side] = new CacheWrapper(itemDuct.tileCache[side].tile, this);
-			}
+			checkCache();
 		}
 		super.tick(pass);
 	}
 
+	private void checkCache() {
+		// Very hacky solution, I know...
+		if (itemDuct.tileCache[side] != null && !(itemDuct.tileCache[side] instanceof CacheWrapper)) {
+			itemDuct.tileCache[side] = new CacheWrapper(itemDuct.tileCache[side].tile, this);
+		}
+	}
+
 	@Override
 	public ItemStack insertItem(ItemStack item, boolean simulate) {
-		return super.insertItem(item, simulate); // TODO Send items to requesters
+		long remain = item.getCount();
+
+		ItemStack i = super.insertItem(item, true);
+		remain -= i.getCount();
+
+		Type<ItemStack> type = new ItemType(item);
+
+		if (simulate) {
+			Snapshot.INSTANCE.clearMutated();
+		}
+
+		for (Recipe<ItemStack> recipe : recipes) {
+			StackList<ItemStack> leftovers = simulate ? Snapshot.INSTANCE.getLeftovers(recipe.createReference(), ItemList::new) : recipe.leftovers;
+			remain = leftovers.remove(type, remain);
+		}
+
+		if (simulate) {
+			Snapshot.INSTANCE.clearMutated();
+		} else {
+			super.insertItem(type.withAmount(item.getCount() - i.getCount() - (int) remain), false);
+		}
+
+		return type.withAmount((int) remain + i.getCount());
 	}
 
 	@Override
