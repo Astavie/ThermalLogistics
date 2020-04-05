@@ -132,9 +132,6 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			button.setToolTip("info.logistics.import");
 			addElement(button);
 		}
-
-		// TODO TEST
-		// addElement(new ElementButton(this, 80, 20, "link", 116, 0, 116, 16, 16, 16, ICON_PATH));
 	}
 
 	private void setButtons() {

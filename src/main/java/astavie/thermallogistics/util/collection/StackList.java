@@ -113,6 +113,16 @@ public abstract class StackList<S> {
 		return amount(getType(stack));
 	}
 
+	public long amount(Type<S> type, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt) {
+		long count = 0;
+		for (Type<S> compare : map.keySet()) {
+			if (type.isIdentical(compare, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
+				count += amount(compare);
+			}
+		}
+		return count;
+	}
+
 	public boolean craftable(Type<S> type) {
 		return map.getOrDefault(type, Pair.of(0L, false)).getRight();
 	}

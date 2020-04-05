@@ -440,7 +440,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 		@Override
 		public StackList<ItemStack> getRequestedStacks() {
-			StackList<ItemStack> list = super.getRequestedStacks();
+			StackList<ItemStack> list = super.getRequestedStacks().copy();
 
 			DuctUnit<?, ?, ?> duct = getDuct();
 			if (duct != null) {

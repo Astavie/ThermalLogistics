@@ -374,6 +374,11 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		// Get amount of recipes being requested
 		long input = Long.MAX_VALUE;
 
+		boolean ignoreMod = parent.filter.getFlag(4);
+		boolean ignoreOreDict = parent.filter.getFlag(3);
+		boolean ignoreMetadata = parent.filter.getFlag(1);
+		boolean ignoreNbt = parent.filter.getFlag(2);
+
 		StackList<I> ci = getCondensedInputs();
 		if (ci.isEmpty()) {
 			input = 0;
@@ -381,7 +386,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			long i = 0;
 
 			for (StackList<I> in : requestInput.values()) {
-				i += in.amount(type);
+				i += in.amount(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
 			}
 
 			input = Math.min(input, i / ci.amount(type));
@@ -403,18 +408,29 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			long amount = ci.amount(type);
 			for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestInput.entrySet().iterator(); iterator.hasNext() && amount > 0; ) {
 				Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
-				long remain = entry.getValue().remove(type, amount);
-				long subtracted = amount - remain;
 
-				if (entry.getValue().isEmpty())
-					iterator.remove();
+				for (Type<I> compare : entry.getValue().types()) {
+					if (compare.isIdentical(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
+						long remain = entry.getValue().remove(compare, amount);
+						long subtracted = amount - remain;
 
-				amount = remain;
+						if (subtracted > 0) {
+							if (entry.getValue().isEmpty())
+								iterator.remove();
 
-				if (entry.getKey() != null) {
-					IRequester<I> requester = entry.getKey().get();
-					if (requester instanceof ICrafter) {
-						((ICrafter<I>) entry.getKey().get()).cancel(this, type, subtracted);
+							amount = remain;
+
+							if (entry.getKey() != null) {
+								IRequester<I> requester = entry.getKey().get();
+								if (requester instanceof ICrafter) {
+									((ICrafter<I>) entry.getKey().get()).cancel(this, compare, subtracted);
+								}
+							}
+
+							if (amount == 0) {
+								break;
+							}
+						}
 					}
 				}
 			}
@@ -442,17 +458,20 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			StackList<I> list = requestOutput.get(reference);
 
 			if (list != null) {
-				list.remove(type, amount);
+				amount -= list.remove(type, amount);
 
 				if (list.isEmpty()) {
 					requestOutput.remove(reference);
 					markDirty();
 				}
+
+				leftovers.add(type, amount);
+				markDirty();
 			}
 		}
 
-		leftovers.add(type, amount);
-		markDirty();
+		// TODO: Maybe this is too performance-heavy ?
+		balanceLeftovers();
 	}
 
 	@Override
@@ -475,7 +494,85 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			}
 		}
 
-		// TODO
+		boolean ignoreMod = parent.filter.getFlag(4);
+		boolean ignoreOreDict = parent.filter.getFlag(3);
+		boolean ignoreMetadata = parent.filter.getFlag(1);
+		boolean ignoreNbt = parent.filter.getFlag(2);
+
+		// Get amount of recipes affected
+		StackList<I> inputs = getCondensedInputs();
+		long recipes = ((amount - 1) / inputs.amount(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) + 1;
+
+		// First cancel the rest of the recipe
+		for (Type<I> in : inputs.types()) {
+			long count = inputs.amount(in) * recipes;
+
+			if (in.isIdentical(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
+				count -= amount;
+				if (count == 0)
+					continue;
+			}
+
+			for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestInput.entrySet().iterator(); iterator.hasNext() && count > 0; ) {
+				Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
+
+				for (Type<I> compare : entry.getValue().types()) {
+					if (compare.isIdentical(in, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
+						long remain = entry.getValue().remove(compare, count);
+						long removed = count - remain;
+
+						if (removed > 0) {
+							if (entry.getValue().isEmpty()) {
+								iterator.remove();
+							}
+
+							count = remain;
+
+							if (entry.getKey() != null && entry.getKey().get() instanceof ICrafter) {
+								((ICrafter<I>) entry.getKey().get()).cancel(this, compare, removed);
+							}
+
+							if (count == 0) {
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Then fail the output
+		StackList<I> outputs = getCondensedOutputs();
+
+		for (Type<I> out : outputs.types()) {
+			long count = outputs.amount(out) * recipes;
+
+			// First check leftovers
+			count = leftovers.remove(out, count);
+
+			if (count == 0) {
+				continue;
+			}
+
+			// Then fail
+			for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestOutput.entrySet().iterator(); iterator.hasNext() && count > 0; ) {
+				Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
+				long remain = entry.getValue().remove(out, count);
+				long removed = count - remain;
+
+				if (removed > 0) {
+					if (entry.getValue().isEmpty()) {
+						iterator.remove();
+					}
+
+					count = remain;
+
+					if (entry.getKey().get() != null) {
+						entry.getKey().get().onFail(createReference(), out, removed);
+					}
+				}
+			}
+		}
 	}
 
 	@Override
@@ -565,7 +662,12 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	@Override
 	public void onCrafterSend(ICrafter<I> crafter, Type<I> type, long amount) {
-		requestInput.getOrDefault(crafter.createReference(), supplier.get()).remove(type, amount);
+		long remain = requestInput.getOrDefault(crafter.createReference(), supplier.get()).remove(type, amount);
+		long subtracted = amount - remain;
+
+		requestInput.computeIfAbsent(null, n -> supplier.get());
+		requestInput.get(null).add(type, subtracted);
+
 		markDirty();
 	}
 
@@ -622,7 +724,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 		@Override
 		public StackList<ItemStack> getRequestedStacks() {
-			StackList<ItemStack> list = super.getRequestedStacks();
+			StackList<ItemStack> list = super.getRequestedStacks().copy();
 
 			StackMap map = ((GridItem) getDuct().getGrid()).travelingItems.getOrDefault(getDestination(), new StackMap());
 			for (ItemStack item : map.getItems())

@@ -463,20 +463,22 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 		public void onFail(Type<I> type, long amount) {
 			Source<I> source = new Source<>(side);
 
-			long remove = terminal.amountRequested(source, type);
+			long remove = Math.min(terminal.amountRequested(source, type), amount);
 			terminal.removeRequested(source, type, remove);
 
-			terminal.request(type, amount);
+			// TODO: Other error than "complex" for failure
+			terminal.addRequest(new Request<>(type, remove, 0, null, true));
 		}
 
 		@Override
 		public void onFail(RequesterReference<I> crafter, Type<I> type, long amount) {
 			Source<I> source = new Source<>(side, crafter);
 
-			long remove = terminal.amountRequested(source, type);
+			long remove = Math.min(terminal.amountRequested(source, type), amount);
 			terminal.removeRequested(source, type, remove);
 
-			terminal.request(type, amount);
+			// TODO: Other error than "complex" for failure
+			terminal.addRequest(new Request<>(type, remove, 0, null, true));
 		}
 
 		@Override

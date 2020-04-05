@@ -53,4 +53,9 @@ public interface IRequester<I> {
 	 */
 	void onFail(Type<I> type, long amount);
 
+	/**
+	 * A request has failed and an item is not able to be crafted
+	 */
+	void onFail(RequesterReference<I> reference, Type<I> type, long amount);
+
 }

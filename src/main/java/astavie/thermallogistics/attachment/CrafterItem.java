@@ -6,7 +6,6 @@ import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.util.RequesterReference;
-import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.collection.EmptyList;
 import astavie.thermallogistics.util.collection.ItemList;
@@ -58,7 +57,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	public static final int[][] SPLITS = {{1}, {2, 1}, {3, 1}, {4, 2, 1}, {6, 3, 2, 1}};
 	private final List<Recipe<ItemStack>> recipes = NonNullList.create();
 
-	private final IFilterItems filter = new IFilterItems() {
+	private final IFilterItems filter2 = new IFilterItems() {
 		@Override
 		public boolean matchesFilter(ItemStack item) {
 			// Very hacky solution, I know...
@@ -97,7 +96,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 	@Override
 	public IFilterItems getItemFilter() {
-		return filter;
+		return filter2;
 	}
 
 	@Override
@@ -156,29 +155,17 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 	@Override
 	public ItemStack insertItem(ItemStack item, boolean simulate) {
-		long remain = item.getCount();
-
-		ItemStack i = super.insertItem(item, true);
-		remain -= i.getCount();
-
 		Type<ItemStack> type = new ItemType(item);
 
-		if (simulate) {
-			Snapshot.INSTANCE.clearMutated();
-		}
-
 		for (Recipe<ItemStack> recipe : recipes) {
-			StackList<ItemStack> leftovers = simulate ? Snapshot.INSTANCE.getLeftovers(recipe.createReference(), ItemList::new) : recipe.leftovers;
-			remain = leftovers.remove(type, remain);
+			for (StackList<ItemStack> list : recipe.requestOutput.values()) {
+				if (list.amount(type) > 0) {
+					return item;
+				}
+			}
 		}
 
-		if (simulate) {
-			Snapshot.INSTANCE.clearMutated();
-		} else {
-			super.insertItem(type.withAmount(item.getCount() - i.getCount() - (int) remain), false);
-		}
-
-		return type.withAmount((int) remain + i.getCount());
+		return super.insertItem(item, simulate);
 	}
 
 	@Override
@@ -636,6 +623,17 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 		return recipes;
 	}
 
+	@Override
+	public void handleStuffedItems() {
+		// TODO
+		super.handleStuffedItems();
+	}
+
+	@Override
+	public void stuffItem(ItemStack item) {
+		super.stuffItem(item);
+	}
+
 	private void handleInsertedStack(Type<ItemStack> type, long amount) {
 		for (Recipe<ItemStack> recipe : recipes) {
 			amount = recipe.requestInput.getOrDefault(null, EmptyList.getInstance()).remove(type, amount);
@@ -695,12 +693,26 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 				return stack;
 			}
 
-			ItemStack remainder = inv.insertItem(slot, stack, simulate);
-			if (remainder.getCount() < stack.getCount()) {
-				crafter.handleInsertedStack(new ItemType(stack), stack.getCount() - remainder.getCount());
+			long required = 0;
+
+			Type<ItemStack> type = new ItemType(stack);
+			for (Recipe<ItemStack> recipe : crafter.recipes) {
+				required += recipe.requestInput.getOrDefault(null, EmptyList.getInstance()).amount(type);
 			}
 
-			return remainder;
+			if (required == 0) {
+				return stack;
+			}
+
+			long insert = Math.min(stack.getCount(), required);
+			ItemStack remain = inv.insertItem(slot, type.withAmount((int) insert), false);
+
+			long inserted = insert - remain.getCount();
+			if (inserted > 0) {
+				crafter.handleInsertedStack(type, inserted);
+			}
+
+			return type.withAmount(stack.getCount() - (int) inserted);
 		}
 
 		@Nonnull
