@@ -148,6 +148,7 @@ public class StackHandler {
 			NBTTagCompound tag = new NBTTagCompound();
 			tag.setTag("reference", RequesterReference.writeNBT(entry.getKey()));
 			tag.setTag("stacks", entry.getValue().writeNbt());
+			list.appendTag(tag);
 		}
 
 		return list;

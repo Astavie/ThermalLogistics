@@ -34,6 +34,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	public List<I> inputs = NonNullList.create();
 	public List<I> outputs = NonNullList.create();
+
 	public Map<RequesterReference<I>, StackList<I>> requestOutput = new HashMap<>();
 	public StackList<I> leftovers;
 	public Map<RequesterReference<I>, StackList<I>> requestInput = new HashMap<>();
@@ -318,11 +319,14 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		for (Proposal<?> linked : proposal.linked) {
 			applyLinkedProposal(linked);
 		}
+
+		markDirty();
 	}
 
 	@Override
 	public void applyLeftovers(StackList<I> leftovers) {
 		this.leftovers = leftovers;
+		markDirty();
 	}
 
 	public void check() {
@@ -485,13 +489,18 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			StackList<I> list = requestInput.get(reference);
 
 			if (list != null) {
-				list.remove(type, amount);
+				long remain = list.remove(type, amount);
+				amount -= remain;
+				markDirty();
 
 				if (list.isEmpty()) {
 					requestInput.remove(reference);
-					markDirty();
 				}
 			}
+		}
+
+		if (amount == 0) {
+			return;
 		}
 
 		boolean ignoreMod = parent.filter.getFlag(4);
