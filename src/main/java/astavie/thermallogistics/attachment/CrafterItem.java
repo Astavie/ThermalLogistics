@@ -25,6 +25,7 @@ import cofh.thermaldynamics.ThermalDynamics;
 import cofh.thermaldynamics.duct.attachments.filter.IFilterItems;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
+import cofh.thermaldynamics.duct.item.TravelingItem;
 import cofh.thermaldynamics.duct.tiles.TileGrid;
 import cofh.thermaldynamics.gui.GuiHandler;
 import cofh.thermaldynamics.render.RenderDuct;
@@ -178,6 +179,14 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 		}
 
 		return remain;
+	}
+
+	@Override
+	public TravelingItem getRouteForItem(ItemStack item) {
+		if (!verifyCache()) {
+			return null;
+		}
+		return DistributorItem.findRouteForItem(item, routesWithInsertSideList.iterator(), itemDuct, side, getMaxRange(), getSpeed());
 	}
 
 	@Override
@@ -640,17 +649,6 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 		return recipes;
 	}
 
-	@Override
-	public void handleStuffedItems() {
-		// TODO
-		super.handleStuffedItems();
-	}
-
-	@Override
-	public void stuffItem(ItemStack item) {
-		super.stuffItem(item);
-	}
-
 	private void handleInsertedStack(Type<ItemStack> type, long amount) {
 		for (Recipe<ItemStack> recipe : recipes) {
 			amount = recipe.requestInput.getOrDefault(null, EmptyList.getInstance()).remove(type, amount);
@@ -706,8 +704,13 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
 			if (simulate) {
-				// This means that only items forced into the crafter will get inserted
-				return stack;
+				if (StackHandler.SIM) {
+					return inv.insertItem(slot, stack, simulate);
+				} else {
+					// This means that only items forced into the crafter will get inserted
+					// Hacky solution, I know...
+					return stack;
+				}
 			}
 
 			long required = 0;

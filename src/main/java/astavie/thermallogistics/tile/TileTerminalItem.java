@@ -11,6 +11,7 @@ import astavie.thermallogistics.process.Source;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.Snapshot;
+import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.ItemType;
@@ -385,8 +386,13 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
 			if (simulate) {
-				// Hacky solution, I know...
-				return stack;
+				if (StackHandler.SIM) {
+					return super.insertItem(slot, stack, simulate);
+				} else {
+					// This means that only items forced into the terminal will get inserted
+					// Hacky solution, I know...
+					return stack;
+				}
 			}
 
 			ItemStack remainder = super.insertItem(slot, stack, simulate);

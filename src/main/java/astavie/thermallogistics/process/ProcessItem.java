@@ -144,14 +144,21 @@ public class ProcessItem extends Process<ItemStack> {
 	 */
 	private boolean requestFromCrafter(ICrafter<ItemStack> crafter) {
 		for (Type<ItemStack> type : crafter.getOutputs().types()) {
-			long amount = Math.min(requester.amountRequired(type), ((IProcessRequesterItem) requester).maxSize());
+			int amount = (int) Math.min(requester.amountRequired(type), ((IProcessRequesterItem) requester).maxSize());
 
 			if (amount == 0)
 				continue;
 
-			// TODO: Check if item fits
+			/*
 
-			Shared<Long> shared = new Shared<>(amount);
+			int left = StackHandler.canRouteItem((DuctUnitItem) requester.getDuct(), type.withAmount(amount), (byte) (requester.getSide() ^ 1), requester);
+			amount -= left;
+			if (amount == 0)
+				continue;
+
+			*/
+
+			Shared<Long> shared = new Shared<>((long) amount);
 
 			List<Request<ItemStack>> requests = new LinkedList<>();
 			request(requests, crafter, type, shared);
@@ -239,8 +246,11 @@ public class ProcessItem extends Process<ItemStack> {
 				continue;
 
 			item = type.withAmount((int) Math.min(maxPull, req));
+			int left = StackHandler.canRouteItem((DuctUnitItem) requester.getDuct(), item, (byte) (requester.getSide() ^ 1), requester);
+			item.shrink(left);
 
-			// TODO: Check if item fits
+			if (item.isEmpty())
+				continue;
 
 			maxPull = item.getCount();
 			item = inv.extractItem(slot, maxPull, false);

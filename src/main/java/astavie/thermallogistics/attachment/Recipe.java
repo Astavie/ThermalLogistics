@@ -137,6 +137,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		requestOutput.clear();
 		requestInput.clear();
 		leftovers.clear();
+		missing.clear();
 	}
 
 	@Override
@@ -292,11 +293,20 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	public boolean updateMissing() {
 		boolean done = false;
 
+		List<Request<I>> requests = new LinkedList<>();
+
 		for (Type<I> type : missing.types()) {
-			long requested = process.request(type, missing.amount(type));
+			long requested = process.request(type, missing.amount(type), requests);
 			if (requested > 0) {
 				done = true;
 				missing.remove(type, requested);
+			}
+		}
+
+		for (Request<I> request : requests) {
+			if (!request.isError()) {
+				requestInput.computeIfAbsent(request.source.crafter, r -> supplier.get());
+				requestInput.get(request.source.crafter).add(request.type, request.amount);
 			}
 		}
 

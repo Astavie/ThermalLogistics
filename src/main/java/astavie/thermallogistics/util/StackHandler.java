@@ -7,28 +7,39 @@ import astavie.thermallogistics.attachment.IRequesterContainer;
 import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.client.gui.element.ElementSlotFluid;
 import astavie.thermallogistics.client.gui.element.ElementSlotItem;
+import astavie.thermallogistics.process.IProcessRequester;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.network.PacketBase;
+import cofh.core.util.helpers.InventoryHelper;
+import cofh.core.util.helpers.ItemHelper;
 import cofh.core.util.helpers.RenderHelper;
 import cofh.core.util.helpers.StringHelper;
+import cofh.thermaldynamics.duct.item.DuctUnitItem;
+import cofh.thermaldynamics.duct.item.SimulatedInv;
+import cofh.thermaldynamics.duct.item.StackMap;
+import gnu.trove.iterator.TObjectIntIterator;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.items.IItemHandler;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class StackHandler {
+
+	public static boolean SIM = false;
 
 	@SideOnly(Side.CLIENT)
 	public static void render(GuiContainerCore gui, int x, int y, Object item, boolean count) {
@@ -167,6 +178,116 @@ public class StackHandler {
 		}
 
 		return request;
+	}
+
+	// PARTIALLY COPIED FROM DuctUnitItem
+
+	public static int canRouteItem(DuctUnitItem duct, ItemStack stack, byte side, IProcessRequester<ItemStack> requester) {
+		if (duct.getGrid() == null) {
+			return stack.getCount();
+		}
+
+		int stackSizeLeft = stack.getCount();
+		ItemStack curItem;
+
+		curItem = stack.copy();
+		curItem.setCount(Math.min(duct.getMoveStackSize(side), curItem.getCount()));
+
+		if (curItem.getCount() > 0) {
+			stackSizeLeft = simTransferI(duct, side, requester, curItem.copy());
+			stackSizeLeft = (stack.getCount() - curItem.getCount()) + stackSizeLeft;
+		}
+
+		return stackSizeLeft;
+	}
+
+	private static int simTransferI(DuctUnitItem duct, byte side, IProcessRequester<ItemStack> requester, ItemStack stack) {
+		SIM = true;
+		ItemStack itemStack = simTransfer(duct, side, requester, stack);
+		SIM = false;
+		return itemStack.isEmpty() ? 0 : itemStack.getCount();
+	}
+
+	private static ItemStack simTransfer(DuctUnitItem duct, byte side, IProcessRequester<ItemStack> requester, ItemStack stack) {
+		EnumFacing face = EnumFacing.VALUES[side];
+
+		if (stack.isEmpty()) {
+			return ItemStack.EMPTY;
+		}
+
+		DuctUnitItem.Cache cache = duct.tileCache[side];
+
+		if (duct.getGrid() == null || cache == null) {
+			return stack;
+		}
+
+		boolean routeItems = cache.filter.shouldIncRouteItems();
+		int maxStock = cache.filter.getMaxStock();
+
+		IItemHandler itemHandler = cache.getItemHandler(side ^ 1);
+		if (!routeItems) {
+			return DuctUnitItem.simulateInsertItemStackIntoInventory(itemHandler, stack, side ^ 1, maxStock);
+		}
+
+		// Start own code
+
+		StackMap travelingItems = new StackMap();
+		StackMap map = duct.getGrid().travelingItems.get(duct.pos().offset(face));
+		if (map != null)
+			for (ItemStack s : map.getItems())
+				travelingItems.addItemstack(s, side);
+
+		for (StackList<ItemStack> list : requester.getRequests().values()) {
+			for (Type<ItemStack> type : list.types()) {
+				long amount = list.amount(type);
+				while (amount > 0) {
+					int remove = (int) Math.min(amount, type.maxSize());
+					travelingItems.addItemstack(type.withAmount(remove), side);
+					amount -= remove;
+				}
+			}
+		}
+
+		// End own code
+
+		if (travelingItems == null || travelingItems.isEmpty()) {
+			return DuctUnitItem.simulateInsertItemStackIntoInventory(itemHandler, stack, side ^ 1, maxStock);
+		}
+		if (travelingItems.size() == 1) {
+			if (ItemHelper.itemsIdentical(stack, travelingItems.getItems().next())) {
+				stack.grow(travelingItems.getItems().next().getCount());
+				return DuctUnitItem.simulateInsertItemStackIntoInventory(itemHandler, stack, side ^ 1, maxStock);
+			}
+		} else {
+			int s = 0;
+			for (ItemStack travelingItem : travelingItems.getItems()) {
+				if (!ItemHelper.itemsIdentical(stack, travelingItem)) {
+					s = -1;
+					break;
+				} else {
+					s += travelingItem.getCount();
+				}
+			}
+			if (s >= 0) {
+				stack.grow(s);
+				return DuctUnitItem.simulateInsertItemStackIntoInventory(itemHandler, stack, side ^ 1, maxStock);
+			}
+		}
+		SimulatedInv simulatedInv = SimulatedInv.wrapHandler(itemHandler);
+
+		for (TObjectIntIterator<StackMap.ItemEntry> iterator = travelingItems.iterator(); iterator.hasNext(); ) {
+			iterator.advance();
+
+			StackMap.ItemEntry itemEntry = iterator.key();
+
+			if (itemEntry.side != side && (cache.areEquivalentHandlers(itemHandler, itemEntry.side))) {
+				continue;
+			}
+			if (!InventoryHelper.insertStackIntoInventory(simulatedInv, itemEntry.toItemStack(iterator.value()), false).isEmpty() && ItemHelper.itemsIdentical(stack, itemEntry.toItemStack(iterator.value()))) {
+				return stack;
+			}
+		}
+		return DuctUnitItem.simulateInsertItemStackIntoInventory(simulatedInv, stack, side ^ 1, maxStock);
 	}
 
 	// TODO OLD CODE, MAYBE REPLACE THEM AT SOME POINT
