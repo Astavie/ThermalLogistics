@@ -131,7 +131,7 @@ public abstract class Process<I> {
 	/**
 	 * Used in crafters: request missing items
 	 */
-	public long request(Type<I> type, long amount, List<Request<I>> requests) {
+	public long request(Type<I> type, long amount, List<Request<I>> requests, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt) {
 		long requested = 0;
 
 		// CHECK FOR STACKS
@@ -154,15 +154,15 @@ public abstract class Process<I> {
 		if (amount > 0) {
 			Shared<Long> shared = new Shared<>(amount);
 
-			ICrafter<I> crafter = getCrafter(type);
+			Pair<ICrafter<I>, Type<I>> crafter = getCrafter(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
 			if (crafter != null) {
-				crafter.request(requester, type, shared, true);
-			}
+				crafter.getLeft().request(requester, crafter.getRight(), shared, true);
 
-			long a = amount - shared.get();
-			if (a > 0) {
-				requests.add(new Request<>(type, removed, new Source<>(requester.getSide(), crafter.createReference()), 0));
-				requested += a;
+				long a = amount - shared.get();
+				if (a > 0) {
+					requests.add(new Request<>(crafter.getRight(), a, new Source<>(requester.getSide(), crafter.getLeft().createReference()), 0));
+					requested += a;
+				}
 			}
 		}
 

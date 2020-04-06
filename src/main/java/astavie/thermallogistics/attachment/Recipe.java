@@ -295,11 +295,17 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 		List<Request<I>> requests = new LinkedList<>();
 
+		boolean ignoreMod = parent.filter.getFlag(4);
+		boolean ignoreOreDict = parent.filter.getFlag(3);
+		boolean ignoreMetadata = parent.filter.getFlag(1);
+		boolean ignoreNbt = parent.filter.getFlag(2);
+
 		for (Type<I> type : missing.types()) {
-			long requested = process.request(type, missing.amount(type), requests);
+			long requested = process.request(type, missing.amount(type), requests, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
 			if (requested > 0) {
 				done = true;
 				missing.remove(type, requested);
+				markDirty();
 			}
 		}
 
@@ -475,6 +481,8 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 				}
 			}
 		}
+
+		markDirty();
 	}
 
 	private StackList<I> getCondensedInputs() {
