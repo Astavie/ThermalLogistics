@@ -117,14 +117,9 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 	}
 
 	private void removeRequest(Request<I> request) {
-		if (!request.isError()) {
-			if (request.source.isCrafter()) {
-				IRequester<I> requester = requesters[request.source.side];
-				((ICrafter<I>) request.source.crafter.get()).cancel(requester, request.type, request.amount);
-			} else {
-				Snapshot.INSTANCE.<I>getStacks(getDuct(request.source.side).getGrid()).add(request.type, request.amount);
-				terminal.add(request.type, request.amount);
-			}
+		if (!request.isError() && request.source.isCrafter()) {
+			IRequester<I> requester = requesters[request.source.side];
+			((ICrafter<I>) request.source.crafter.get()).cancel(requester, request.type, request.amount);
 		}
 	}
 
@@ -266,7 +261,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			if (!requesters[side].isEnabled())
 				continue;
 
-			List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount, this::createStackList);
+			List<Request<I>> requests = requesters[side].process.request(type, left, terminal::amount);
 			left = 0;
 
 			for (Request<I> request : requests) {
@@ -324,9 +319,6 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 			if (amount == 0)
 				return;
 		}
-
-		// This shouldn't happen...
-		throw new IllegalStateException();
 	}
 
 	public abstract void updateTerminal();

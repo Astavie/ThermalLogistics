@@ -188,6 +188,9 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 		boolean onlyCheck = false;
 		for (Recipe<ItemStack> recipe : recipes) {
+			if (!onlyCheck) {
+				onlyCheck = recipe.updateMissing();
+			}
 			if (recipe.process.update(onlyCheck)) {
 				onlyCheck = true;
 			}
@@ -237,6 +240,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			nbt.setTag("requestInput", StackHandler.writeRequestMap(recipe.requestInput));
 			nbt.setTag("requestOutput", StackHandler.writeRequestMap(recipe.requestOutput));
 			nbt.setTag("leftovers", recipe.leftovers.writeNbt());
+			nbt.setTag("missing", recipe.missing.writeNbt());
 			nbt.setBoolean("enabled", recipe.enabled);
 			recipes.appendTag(nbt);
 		}
@@ -327,6 +331,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 				recipe.requestInput = StackHandler.readRequestMap(nbt.getTagList("requestInput", Constants.NBT.TAG_COMPOUND), ItemList::new);
 				recipe.requestOutput = StackHandler.readRequestMap(nbt.getTagList("requestOutput", Constants.NBT.TAG_COMPOUND), ItemList::new);
 				recipe.leftovers.readNbt(nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND));
+				recipe.missing.readNbt(nbt.getTagList("missing", Constants.NBT.TAG_COMPOUND));
 				recipe.enabled = nbt.getBoolean("enabled");
 				this.recipes.add(recipe);
 			}

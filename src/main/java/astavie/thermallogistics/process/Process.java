@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 public abstract class Process<I> {
 
@@ -88,7 +87,7 @@ public abstract class Process<I> {
 	/**
 	 * Used in terminals: request items
 	 */
-	public List<Request<I>> request(Type<I> type, long amount, @Nullable Function<Type<I>, Long> func, Supplier<StackList<I>> supplier) {
+	public List<Request<I>> request(Type<I> type, long amount, @Nullable Function<Type<I>, Long> func) {
 		List<Request<I>> requests = new LinkedList<>();
 
 		// CHECK FOR STACKS
@@ -127,6 +126,41 @@ public abstract class Process<I> {
 		}
 
 		return requests;
+	}
+
+	/**
+	 * Used in crafters: request missing items
+	 */
+	public long request(Type<I> type, long amount) {
+		long requested = 0;
+
+		// CHECK FOR STACKS
+
+		StackList<I> stacks = Snapshot.INSTANCE.getStacks(requester.getDuct().getGrid());
+		long am = stacks.amount(type);
+
+		long removed = Math.min(am, amount);
+		if (removed > 0) {
+			stacks.remove(type, removed);
+			amount -= removed;
+
+			requested += removed;
+		}
+
+		// CHECK FOR CRAFTERS
+
+		if (amount > 0) {
+			Shared<Long> shared = new Shared<>(amount);
+
+			ICrafter<I> crafter = getCrafter(type);
+			if (crafter != null) {
+				crafter.request(requester, type, shared, true);
+			}
+
+			requested += amount - shared.get();
+		}
+
+		return requested;
 	}
 
 	public abstract void findCrafter(Predicate<ICrafter<I>> predicate);
@@ -178,18 +212,18 @@ public abstract class Process<I> {
 		// Do the thing
 		long a = amount.get();
 
-		MissingList missing = crafter.request(requester, type, amount);
+		MissingList missing = crafter.request(requester, type, amount, false);
+
+		if (amount.get() < a) {
+			requests.add(new Request<>(type, a - amount.get(), new Source<>(requester.getSide(), crafter.createReference()), 0));
+		}
+
 		if (missing == null) {
 			// Complex
 			requests.add(new Request<>(type, amount.get(), 0, null, true));
-		} else {
-			if (amount.get() < a) {
-				requests.add(new Request<>(type, a - amount.get(), new Source<>(requester.getSide(), crafter.createReference()), 0));
-			}
-
-			if (!missing.isEmpty()) {
-				requests.add(new Request<>(type, amount.get(), 0, missing, false));
-			}
+		} else if (!missing.isEmpty()) {
+			// Missing
+			requests.add(new Request<>(type, amount.get(), 0, missing, false));
 		}
 
 		amount.accept(0L);

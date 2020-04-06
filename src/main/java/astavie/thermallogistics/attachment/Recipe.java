@@ -36,6 +36,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	public Map<RequesterReference<I>, StackList<I>> requestOutput = new HashMap<>();
 	public StackList<I> leftovers;
+	public StackList<I> missing;
 	public Map<RequesterReference<I>, StackList<I>> requestInput = new HashMap<>();
 
 	public Process<I> process;
@@ -50,6 +51,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		this.duct = duct;
 		this.supplier = supplier;
 		this.leftovers = supplier.get();
+		this.missing = supplier.get();
 		this.index = index;
 	}
 
@@ -138,7 +140,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	}
 
 	@Override
-	public MissingList request(IRequester<I> requester, Type<I> type, Shared<Long> amount) {
+	public MissingList request(IRequester<I> requester, Type<I> type, Shared<Long> amount, boolean applyMissing) {
 		Snapshot.INSTANCE.clearMutated();
 		MissingList missing = new MissingList();
 
@@ -166,7 +168,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 				left -= remove;
 
-				if (missing.isEmpty()) {
+				if (applyMissing || missing.isEmpty()) {
 					// Apply
 					amount.accept(amount.get() - remove);
 
@@ -183,6 +185,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	@Override
 	public boolean requestInternal(Type<I> type, long amount, MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean doLinked) {
+		// TODO: Uncomment this
 		//if (System.currentTimeMillis() - timeStarted > ThermalLogistics.INSTANCE.calculationTimeout) {
 		//	return false; // Too complex!
 		//}
@@ -258,6 +261,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 					}
 				} else {
 					// Not enough items
+					proposal.children.add(new Proposal<>(null, subType, subAmount, true));
 					missing.add(subType, subAmount);
 				}
 			}
@@ -285,6 +289,20 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		return true;
 	}
 
+	public boolean updateMissing() {
+		boolean done = false;
+
+		for (Type<I> type : missing.types()) {
+			long requested = process.request(type, missing.amount(type));
+			if (requested > 0) {
+				done = true;
+				missing.remove(type, requested);
+			}
+		}
+
+		return done;
+	}
+
 	private <O> boolean requestLinked(RequesterReference<O> reference, MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted) {
 		Proposal<O> linked = new Proposal<>(reference, null, 0);
 		ICrafter<O> crafter = ((ICrafter<O>) reference.get());
@@ -307,8 +325,12 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		}
 
 		for (Proposal<I> child : proposal.children) {
-			requestInput.computeIfAbsent(child.me, r -> supplier.get());
-			requestInput.get(child.me).add(child.type, child.amount);
+			if (child.missing) {
+				missing.add(child.type, child.amount);
+			} else {
+				requestInput.computeIfAbsent(child.me, r -> supplier.get());
+				requestInput.get(child.me).add(child.type, child.amount);
+			}
 
 			if (child.me != null) {
 				((ICrafter<I>) child.me.get()).applyProposal(this, child);
@@ -386,9 +408,9 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		if (ci.isEmpty()) {
 			input = 0;
 		} else for (Type<I> type : ci.types()) {
-			long i = 0;
+			long i = missing.amount(type);
 
-			for (StackList<I> in : requestInput.values()) {
+			for (StackList<I> in : getRequests().values()) { // getRequests() so traveling items are removed
 				i += in.amount(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
 			}
 
@@ -408,7 +430,12 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 		// Subtract from requested
 		for (Type<I> type : ci.types()) {
-			long amount = ci.amount(type);
+			long amount = ci.amount(type) * subtract;
+
+			amount = missing.remove(type, amount);
+			if (amount == 0)
+				continue;
+
 			for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestInput.entrySet().iterator(); iterator.hasNext() && amount > 0; ) {
 				Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
 
@@ -507,78 +534,10 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		boolean ignoreMetadata = parent.filter.getFlag(1);
 		boolean ignoreNbt = parent.filter.getFlag(2);
 
-		// Get amount of recipes affected
-		StackList<I> inputs = getCondensedInputs();
-		long recipes = ((amount - 1) / inputs.amount(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) + 1;
-
-		// First cancel the rest of the recipe
-		for (Type<I> in : inputs.types()) {
-			long count = inputs.amount(in) * recipes;
-
-			if (in.isIdentical(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
-				count -= amount;
-				if (count == 0)
-					continue;
-			}
-
-			for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestInput.entrySet().iterator(); iterator.hasNext() && count > 0; ) {
-				Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
-
-				for (Type<I> compare : entry.getValue().types()) {
-					if (compare.isIdentical(in, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
-						long remain = entry.getValue().remove(compare, count);
-						long removed = count - remain;
-
-						if (removed > 0) {
-							if (entry.getValue().isEmpty()) {
-								iterator.remove();
-							}
-
-							count = remain;
-
-							if (entry.getKey() != null && entry.getKey().get() instanceof ICrafter) {
-								((ICrafter<I>) entry.getKey().get()).cancel(this, compare, removed);
-							}
-
-							if (count == 0) {
-								break;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		// Then fail the output
-		StackList<I> outputs = getCondensedOutputs();
-
-		for (Type<I> out : outputs.types()) {
-			long count = outputs.amount(out) * recipes;
-
-			// First check leftovers
-			count = leftovers.remove(out, count);
-
-			if (count == 0) {
-				continue;
-			}
-
-			// Then fail
-			for (Iterator<Map.Entry<RequesterReference<I>, StackList<I>>> iterator = requestOutput.entrySet().iterator(); iterator.hasNext() && count > 0; ) {
-				Map.Entry<RequesterReference<I>, StackList<I>> entry = iterator.next();
-				long remain = entry.getValue().remove(out, count);
-				long removed = count - remain;
-
-				if (removed > 0) {
-					if (entry.getValue().isEmpty()) {
-						iterator.remove();
-					}
-
-					count = remain;
-
-					if (entry.getKey().get() != null) {
-						entry.getKey().get().onFail(createReference(), out, removed);
-					}
-				}
+		for (Type<I> t : getCondensedInputs().types()) {
+			if (t.isIdentical(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) { // Revert missing back to input type
+				missing.add(t, amount);
+				break;
 			}
 		}
 	}

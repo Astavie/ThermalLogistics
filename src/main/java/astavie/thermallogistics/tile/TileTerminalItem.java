@@ -384,22 +384,22 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		@Nonnull
 		@Override
 		public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-			ItemType type = new ItemType(stack);
-
-			ItemStack insert = ItemHelper.cloneStack(stack, (int) Math.min(stack.getCount(), tile.amountRequested(new Source<>(side), type)));
-			if (insert.isEmpty())
+			if (simulate) {
+				// Hacky solution, I know...
 				return stack;
+			}
 
-			ItemStack remainder = super.insertItem(slot, insert, simulate);
+			ItemStack remainder = super.insertItem(slot, stack, simulate);
+
 			if (!simulate) {
-				int amount = insert.getCount() - remainder.getCount();
+				int amount = stack.getCount() - remainder.getCount();
 				if (amount > 0) {
-					tile.removeRequested(new Source<>(side), type, amount);
+					tile.removeRequested(new Source<>(side), new ItemType(stack), amount);
 					PacketHandler.sendToAllAround(tile.getSyncPacket(), tile);
 				}
 			}
 
-			return ItemHelper.cloneStack(stack, stack.getCount() - insert.getCount() + remainder.getCount());
+			return remainder;
 		}
 
 	}

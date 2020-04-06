@@ -39,7 +39,7 @@ public interface ICrafter<I> extends IRequester<I> {
 	/**
 	 * Requests an item. Linked crafters will also be notified.
 	 */
-	MissingList request(IRequester<I> requester, Type<I> type, Shared<Long> amount);
+	MissingList request(IRequester<I> requester, Type<I> type, Shared<Long> amount, boolean applyMissing);
 
 	boolean requestInternal(Type<I> type, long amount, MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean doLinked);
 
