@@ -46,7 +46,7 @@ info.logistics.manager.a.1=Используйте на двух создател
 info.logistics.manager.a.2=Взаимодействует с сервоприводами.
 
 info.logistics.manager.b.0=§eНажмите (%s), чтобы включить связывание.§r
-info.logistics.manager.b.1=§eНажмите (%s), чтобы включить мониторинг.§r
+info.logistics.manager.b.2=§eНажмите (%s), чтобы включить мониторинг.§r
 
 info.logistics.manager.c.0=Мониторинг включен
 info.logistics.manager.c.1=Связывание включено

@@ -47,6 +47,10 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	void applyLeftovers(StackList<I> leftovers);
 
+	long getLeftoverRecipes();
+
+	void removeRecipes(long amount);
+
 	/**
 	 * A requester doesn't need this crafter anymore
 	 */

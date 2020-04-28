@@ -1,5 +1,6 @@
 package astavie.thermallogistics.attachment;
 
+import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.process.Process;
 import astavie.thermallogistics.process.*;
 import astavie.thermallogistics.util.RequesterReference;
@@ -186,13 +187,12 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	@Override
 	public boolean requestInternal(Type<I> type, long amount, MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean doLinked) {
-		// TODO: Uncomment this
-		//if (System.currentTimeMillis() - timeStarted > ThermalLogistics.INSTANCE.calculationTimeout) {
-		//	return false; // Too complex!
-		//}
+		if (System.currentTimeMillis() - timeStarted > ThermalLogistics.INSTANCE.calculationTimeout) {
+			return false; // Too complex!
+		}
 
 		if (!used.add(this)) {
-			return false; // TODO: Different error for recursive
+			return false; // This shouldn't happen though...
 		}
 
 		StackList<I> inputs = getCondensedInputs();
@@ -226,7 +226,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			if (subAmount > 0) {
 				Pair<ICrafter<I>, Type<I>> pair = process.getCrafter(subType, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
 
-				if (pair != null) {
+				if (pair != null && !used.contains(pair.getLeft())) {
 					ICrafter<I> crafter = pair.getLeft();
 					Type<I> compare = pair.getRight();
 
@@ -397,19 +397,18 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		}
 	}
 
-	private void balanceLeftovers() {
+	@Override
+	public long getLeftoverRecipes() {
 		// Get amount of recipes leftover
 		long output = Long.MAX_VALUE;
 
 		StackList<I> co = getCondensedOutputs();
-		if (co.isEmpty()) {
-			output = 0;
-		} else for (Type<I> type : co.types()) {
+		for (Type<I> type : co.types()) {
 			output = Math.min(output, leftovers.amount(type) / co.amount(type));
 		}
 
 		if (output == 0) {
-			return;
+			return 0;
 		}
 
 		// Get amount of recipes being requested
@@ -421,9 +420,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		boolean ignoreNbt = parent.filter.getFlag(2);
 
 		StackList<I> ci = getCondensedInputs();
-		if (ci.isEmpty()) {
-			input = 0;
-		} else for (Type<I> type : ci.types()) {
+		for (Type<I> type : ci.types()) {
 			long i = missing.amount(type);
 
 			for (StackList<I> in : getRequests().values()) { // getRequests() so traveling items are removed
@@ -434,11 +431,41 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		}
 
 		if (input == 0) {
-			return;
+			return 0;
 		}
 
 		// Subtract from leftovers
-		long subtract = Math.min(output, input);
+		return Math.min(output, input);
+	}
+
+	private void balanceLeftovers() {
+		// Get amount of leftover recipes
+		long subtract = getLeftoverRecipes();
+		if (subtract == 0)
+			return;
+
+		for (RequesterReference<?> reference : linked) {
+			subtract = Math.min(subtract, ((ICrafter<?>) reference.get()).getLeftoverRecipes());
+			if (subtract == 0)
+				return;
+		}
+
+		// Remove leftover recipes
+		removeRecipes(subtract);
+		for (RequesterReference<?> reference : linked) {
+			((ICrafter<?>) reference.get()).removeRecipes(subtract);
+		}
+	}
+
+	@Override
+	public void removeRecipes(long subtract) {
+		StackList<I> co = getCondensedOutputs();
+		StackList<I> ci = getCondensedInputs();
+
+		boolean ignoreMod = parent.filter.getFlag(4);
+		boolean ignoreOreDict = parent.filter.getFlag(3);
+		boolean ignoreMetadata = parent.filter.getFlag(1);
+		boolean ignoreNbt = parent.filter.getFlag(2);
 
 		for (Type<I> type : co.types()) {
 			leftovers.remove(type, co.amount(type) * subtract);
@@ -519,6 +546,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		}
 
 		// TODO: Maybe this is too performance-heavy ?
+		checkLinked();
 		balanceLeftovers();
 	}
 

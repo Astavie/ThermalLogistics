@@ -97,6 +97,10 @@ public class RequesterReference<I> {
 		return get(FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(dim));
 	}
 
+	public IRequesterContainer<I> getContainer() {
+		return getContainer(FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(dim));
+	}
+
 	@SuppressWarnings("unchecked")
 	public IRequester<I> get(World world) {
 		if (world.provider.getDimension() != dim)
@@ -127,6 +131,27 @@ public class RequesterReference<I> {
 		}
 
 		return cache;
+	}
+
+	@SuppressWarnings("unchecked")
+	public IRequesterContainer<I> getContainer(World world) {
+		if (world.provider.getDimension() != dim)
+			return null;
+
+		TileEntity tile = world.getTileEntity(pos);
+
+		try {
+			if (tile instanceof IRequesterContainer) {
+				return (IRequesterContainer<I>) tile;
+			} else if (tile instanceof TileGrid) {
+				Attachment attachment = ((TileGrid) tile).getAttachment(side);
+				if (attachment instanceof IRequesterContainer)
+					return (IRequesterContainer<I>) attachment;
+			}
+		} catch (ClassCastException ignore) {
+		}
+
+		return null;
 	}
 
 	public boolean references(IRequester<?> requester) {

@@ -3,6 +3,7 @@ package astavie.thermallogistics.item;
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.ICrafterContainer;
+import astavie.thermallogistics.attachment.IRequesterContainer;
 import astavie.thermallogistics.util.RequesterReference;
 import cofh.api.item.IMultiModeItem;
 import cofh.core.item.ItemCore;
@@ -62,6 +63,11 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 	}
 
 	@Override
+	public int getNumModes(ItemStack stack) {
+		return 3;
+	}
+
+	@Override
 	public void addInformation(ItemStack stack, @Nullable World world, List<String> tooltip, ITooltipFlag flagIn) {
 		if (stack.hasTagCompound()) {
 			NBTTagCompound link = stack.getSubCompound("Link");
@@ -90,114 +96,164 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 	public EnumActionResult onItemUseFirst(EntityPlayer player, World world, BlockPos pos, EnumFacing side, float hitX, float hitY, float hitZ, EnumHand hand) {
 		ItemStack item = player.getHeldItem(hand);
 
-		if (getMode(item) == 0) {
-			TileEntity tile = world.getTileEntity(pos);
-			if (tile instanceof TileGrid) {
-				TileGrid grid = (TileGrid) tile;
-				byte face = -1;
+		TileEntity tile = world.getTileEntity(pos);
 
-				RayTraceResult target = RayTracer.retraceBlock(world, player, pos);
-				if (target != null) {
-					int s = -1;
-					int subHit = target.subHit;
+		switch (getMode(item)) {
+			case 0:
+				if (tile instanceof TileGrid) {
+					TileGrid grid = (TileGrid) tile;
+					byte face = -1;
 
-					if (subHit < 6)
-						s = subHit;
-					else if (subHit >= 14 && subHit < 20)
-						s = subHit - 14;
+					RayTraceResult target = RayTracer.retraceBlock(world, player, pos);
+					if (target != null) {
+						int s = -1;
+						int subHit = target.subHit;
 
-					if (s != -1)
-						face = (byte) s;
+						if (subHit < 6)
+							s = subHit;
+						else if (subHit >= 14 && subHit < 20)
+							s = subHit - 14;
+
+						if (s != -1)
+							face = (byte) s;
+					}
+
+					if (face == -1)
+						return EnumActionResult.PASS;
+
+					DuctUnitItem duct = grid.getDuct(DuctToken.ITEMS);
+					if (duct == null)
+						return EnumActionResult.PASS;
+
+					if (world.isRemote)
+						return EnumActionResult.SUCCESS;
+
+					StackMap map = duct.getGrid().travelingItems.get(duct.pos().offset(EnumFacing.VALUES[face]));
+					if (map == null || map.isEmpty()) {
+						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.e.2"));
+					} else {
+						List<ITextComponent> list = new ArrayList<>();
+						list.add(new TextComponentTranslation("info.logistics.manager.e.0"));
+						for (ItemStack stack : map.getItems())
+							list.add(new TextComponentTranslation("info.logistics.manager.e.1", stack.getCount(), stack.getTextComponent()));
+						ChatHelper.sendIndexedChatMessagesToPlayer(player, list);
+					}
+
+					return EnumActionResult.SUCCESS;
+				}
+				break;
+			case 1:
+				ICrafter<?> crafter = null;
+
+				if (tile instanceof TileGrid) {
+					RayTraceResult raytrace = RayTracer.retraceBlock(world, player, pos);
+					if (raytrace != null && raytrace.subHit >= 14 && raytrace.subHit < 20) {
+						Attachment attachment = ((TileGrid) tile).getAttachment(raytrace.subHit - 14);
+						if (attachment instanceof ICrafter) {
+							crafter = (ICrafter<?>) attachment;
+						} else if (attachment instanceof ICrafterContainer) {
+							// Container!
+							ICrafterContainer<?> container = (ICrafterContainer<?>) attachment;
+							if (container.getCrafters().size() == 1) {
+								crafter = container.getCrafters().get(0);
+							} else if (container.getCrafters().isEmpty()) {
+								if (!world.isRemote) {
+									// Fail
+									player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+									ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.5"));
+								}
+								return EnumActionResult.SUCCESS;
+							} else {
+								if (!world.isRemote) {
+									// Fail
+									player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+									ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.6"));
+								}
+								return EnumActionResult.SUCCESS;
+							}
+						}
+					}
+				} else if (tile instanceof ICrafter) {
+					crafter = (ICrafter<?>) tile;
+				} else if (tile instanceof ICrafterContainer) {
+					// Container!
+					ICrafterContainer<?> container = (ICrafterContainer<?>) tile;
+					if (container.getCrafters().size() == 1) {
+						crafter = container.getCrafters().get(0);
+					} else if (container.getCrafters().isEmpty()) {
+						if (!world.isRemote) {
+							// Fail
+							player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+							ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.5"));
+						}
+						return EnumActionResult.SUCCESS;
+					} else {
+						if (!world.isRemote) {
+							// Fail
+							player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+							ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.6"));
+						}
+						return EnumActionResult.SUCCESS;
+					}
 				}
 
-				if (face == -1)
-					return EnumActionResult.PASS;
-
-				DuctUnitItem duct = grid.getDuct(DuctToken.ITEMS);
-				if (duct == null)
+				if (crafter == null)
 					return EnumActionResult.PASS;
 
 				if (world.isRemote)
 					return EnumActionResult.SUCCESS;
 
-				StackMap map = duct.getGrid().travelingItems.get(duct.pos().offset(EnumFacing.VALUES[face]));
-				if (map == null || map.isEmpty()) {
-					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.e.2"));
-				} else {
-					List<ITextComponent> list = new ArrayList<>();
-					list.add(new TextComponentTranslation("info.logistics.manager.e.0"));
-					for (ItemStack stack : map.getItems())
-						list.add(new TextComponentTranslation("info.logistics.manager.e.1", stack.getCount(), stack.getTextComponent()));
-					ChatHelper.sendIndexedChatMessagesToPlayer(player, list);
-				}
+				link(player, item, crafter);
 
 				return EnumActionResult.SUCCESS;
-			}
-		} else {
-			ICrafter<?> crafter = null;
+			case 2:
+				ICrafterContainer<?> container = null;
 
-			TileEntity tile = world.getTileEntity(pos);
-			if (tile instanceof TileGrid) {
-				RayTraceResult raytrace = RayTracer.retraceBlock(world, player, pos);
-				if (raytrace != null && raytrace.subHit >= 14 && raytrace.subHit < 20) {
-					Attachment attachment = ((TileGrid) tile).getAttachment(raytrace.subHit - 14);
-					if (attachment instanceof ICrafter) {
-						crafter = (ICrafter<?>) attachment;
-					} else if (attachment instanceof ICrafterContainer) {
-						// Container!
-						ICrafterContainer<?> container = (ICrafterContainer<?>) attachment;
-						if (container.getCrafters().size() == 1) {
-							crafter = container.getCrafters().get(0);
-						} else if (container.getCrafters().isEmpty()) {
-							if (!world.isRemote) {
-								// Fail
-								player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
-								ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.5"));
+				if (tile instanceof TileGrid) {
+					RayTraceResult raytrace = RayTracer.retraceBlock(world, player, pos);
+					if (raytrace != null && raytrace.subHit >= 14 && raytrace.subHit < 20) {
+						Attachment attachment = ((TileGrid) tile).getAttachment(raytrace.subHit - 14);
+						if (attachment instanceof ICrafter) {
+							// TODO: Add message here
+						} else if (attachment instanceof ICrafterContainer) {
+							// Container!
+							container = (ICrafterContainer<?>) attachment;
+
+							if (container.getCrafters().isEmpty()) {
+								if (!world.isRemote) {
+									// Fail
+									player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+									ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.5"));
+								}
+								return EnumActionResult.SUCCESS;
 							}
-							return EnumActionResult.SUCCESS;
-						} else {
-							if (!world.isRemote) {
-								// Fail
-								player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
-								ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.6"));
-							}
-							return EnumActionResult.SUCCESS;
 						}
 					}
-				}
-			} else if (tile instanceof ICrafter) {
-				crafter = (ICrafter<?>) tile;
-			} else if (tile instanceof ICrafterContainer) {
-				// Container!
-				ICrafterContainer<?> container = (ICrafterContainer<?>) tile;
-				if (container.getCrafters().size() == 1) {
-					crafter = container.getCrafters().get(0);
-				} else if (container.getCrafters().isEmpty()) {
-					if (!world.isRemote) {
-						// Fail
-						player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
-						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.5"));
-					}
-					return EnumActionResult.SUCCESS;
-				} else {
-					if (!world.isRemote) {
-						// Fail
-						player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
-						ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.6"));
-					}
-					return EnumActionResult.SUCCESS;
-				}
-			}
+				} else if (tile instanceof ICrafter) {
+					// TODO: Add message here
+				} else if (tile instanceof ICrafterContainer) {
+					// Container!
+					container = (ICrafterContainer<?>) tile;
 
-			if (crafter == null)
-				return EnumActionResult.PASS;
+					if (container.getCrafters().isEmpty()) {
+						if (!world.isRemote) {
+							// Fail
+							player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+							ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.5"));
+						}
+						return EnumActionResult.SUCCESS;
+					}
+				}
 
-			if (world.isRemote)
+				if (container == null)
+					return EnumActionResult.PASS;
+
+				if (world.isRemote)
+					return EnumActionResult.SUCCESS;
+
+				link(player, item, container);
+
 				return EnumActionResult.SUCCESS;
-
-			link(player, item, crafter);
-
-			return EnumActionResult.SUCCESS;
 		}
 		return EnumActionResult.PASS;
 	}
@@ -235,6 +291,39 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 		} else {
 			item.getTagCompound().setTag("Link", RequesterReference.writeNBT(crafter.createReference()));
 			item.getTagCompound().setTag("VisualLink", crafter.getIcon().writeToNBT(new NBTTagCompound()));
+			ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.0"));
+		}
+	}
+
+	public void link(EntityPlayer player, ItemStack item, ICrafterContainer<?> crafter) {
+		if (!item.hasTagCompound()) {
+			item.setTagCompound(new NBTTagCompound());
+		}
+
+		if (item.getSubCompound("Link") != null) {
+			IRequesterContainer<?> other = RequesterReference.readNBT(item.getSubCompound("Link")).getContainer();
+
+			if (other instanceof ICrafterContainer) {
+				ICrafterContainer<?> second = (ICrafterContainer<?>) other;
+				int size = Math.min(crafter.getCrafters().size(), second.getCrafters().size());
+
+				for (int i = 0; i < size; i++) {
+					crafter.getCrafters().get(i).checkLinked();
+					crafter.getCrafters().get(i).link(second.getCrafters().get(i));
+				}
+
+				// Success
+				player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_ARROW_HIT_PLAYER, SoundCategory.PLAYERS, 0.4F, 0.45F);
+				ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.3"));
+			} else {
+				// Fail
+				player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
+				ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.1"));
+			}
+			item.getTagCompound().removeTag("Link");
+		} else {
+			item.getTagCompound().setTag("Link", RequesterReference.writeNBT(crafter.getCrafters().get(0).createReference()));
+			item.getTagCompound().setTag("VisualLink", crafter.getCrafters().get(0).getIcon().writeToNBT(new NBTTagCompound()));
 			ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.0"));
 		}
 	}

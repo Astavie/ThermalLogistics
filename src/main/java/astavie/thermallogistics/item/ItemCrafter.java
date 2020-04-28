@@ -80,9 +80,8 @@ public class ItemCrafter extends ItemAttachmentLogistics {
 		// Items
 		tooltip.add(StringHelper.YELLOW + StringHelper.localize("info.cofh.items") + StringHelper.END);
 
-		// TODO
-		// tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterItem.SIZE[type] * 2));
-		// tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterItem.SIZE[type]));
+		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.inputs", CrafterItem.SIZE[type] * 2));
+		tooltip.add("  " + StringHelper.localizeFormat("info.logistics.outputs", CrafterItem.SIZE[type]));
 
 		tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.extractRate") + ": " + StringHelper.WHITE + ((ServoItem.tickDelays[type] % 20) == 0 ? Integer.toString(ServoItem.tickDelays[type] / 20) : Float.toString(ServoItem.tickDelays[type] / 20F)) + "s" + StringHelper.END);
 		tooltip.add("  " + StringHelper.localize("info.thermaldynamics.servo.maxStackSize") + ": " + StringHelper.WHITE + ServoItem.maxSize[type] + StringHelper.END);
