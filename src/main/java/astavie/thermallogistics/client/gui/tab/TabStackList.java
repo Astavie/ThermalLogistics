@@ -295,8 +295,4 @@ public class TabStackList<I> extends TabBase {
 		return StringHelper.localize("info.logistics.tab." + (input ? "input" : "output"));
 	}
 
-	private String getNetworkName() {
-		return StringHelper.localize("info.logistics.tab." + (input ? "input" : "output") + ".network");
-	}
-
 }

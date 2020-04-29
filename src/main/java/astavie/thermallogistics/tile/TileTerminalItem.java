@@ -162,18 +162,18 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				ForgeHooks.setCraftingPlayer(null);
 
 				for (ItemStack stack : ret) {
-					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory), stack, false);
+					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory), stack.copy(), false);
 					if (!item.isEmpty())
 						player.inventory.placeItemBackInInventory(world, item);
 				}
 
 				// Add item
 				if (shift) {
-					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory), craft, false);
+					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory), craft.copy(), false);
 					if (!item.isEmpty())
 						player.inventory.placeItemBackInInventory(world, item);
 				} else {
-					player.inventory.setItemStack(hand.isEmpty() ? craft : ItemHelper.cloneStack(hand, hand.getCount() + craft.getCount()));
+					player.inventory.setItemStack(hand.isEmpty() ? craft.copy() : ItemHelper.cloneStack(hand, hand.getCount() + craft.getCount()));
 					((EntityPlayerMP) player).updateHeldItem();
 				}
 			} while (shift);
