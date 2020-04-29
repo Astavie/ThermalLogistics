@@ -35,10 +35,10 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	public List<I> inputs = NonNullList.create();
 	public List<I> outputs = NonNullList.create();
 
-	public Map<RequesterReference<I>, StackList<I>> requestOutput = new HashMap<>();
+	public Map<RequesterReference<I>, StackList<I>> requestOutput = new LinkedHashMap<>();
 	public StackList<I> leftovers;
 	public StackList<I> missing;
-	public Map<RequesterReference<I>, StackList<I>> requestInput = new HashMap<>();
+	public Map<RequesterReference<I>, StackList<I>> requestInput = new LinkedHashMap<>();
 
 	public Process<I> process;
 

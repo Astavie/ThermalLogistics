@@ -135,6 +135,10 @@ public abstract class StackList<S> {
 		return Collections.unmodifiableSet(new HashSet<>(map.keySet()));
 	}
 
+	public Iterator<Type<S>> getTypeIterator() {
+		return map.keySet().iterator();
+	}
+
 	public List<S> stacks() {
 		return map.entrySet().stream().map(e -> e.getKey().withAmount(Math.toIntExact(e.getValue().getLeft()))).collect(Collectors.toList());
 	}

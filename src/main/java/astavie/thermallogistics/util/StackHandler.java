@@ -156,17 +156,19 @@ public class StackHandler {
 		NBTTagList list = new NBTTagList();
 
 		for (Map.Entry<RequesterReference<I>, StackList<I>> entry : map.entrySet()) {
-			NBTTagCompound tag = new NBTTagCompound();
-			tag.setTag("reference", RequesterReference.writeNBT(entry.getKey()));
-			tag.setTag("stacks", entry.getValue().writeNbt());
-			list.appendTag(tag);
+			if (!entry.getValue().isEmpty()) {
+				NBTTagCompound tag = new NBTTagCompound();
+				tag.setTag("reference", RequesterReference.writeNBT(entry.getKey()));
+				tag.setTag("stacks", entry.getValue().writeNbt());
+				list.appendTag(tag);
+			}
 		}
 
 		return list;
 	}
 
 	public static <I> Map<RequesterReference<I>, StackList<I>> readRequestMap(NBTTagList list, Supplier<StackList<I>> supplier) {
-		Map<RequesterReference<I>, StackList<I>> request = new HashMap<>();
+		Map<RequesterReference<I>, StackList<I>> request = new LinkedHashMap<>();
 
 		for (int i = 0; i < list.tagCount(); i++) {
 			NBTTagCompound tag = list.getCompoundTagAt(i);
@@ -175,6 +177,33 @@ public class StackHandler {
 			stackList.readNbt(tag.getTagList("stacks", Constants.NBT.TAG_COMPOUND));
 
 			request.put(RequesterReference.readNBT(tag.getCompoundTag("reference")), stackList);
+		}
+
+		return request;
+	}
+
+	public static <I> void writeRequestMap(Map<RequesterReference<I>, StackList<I>> map, PacketBase packet) {
+		packet.addInt(map.size());
+
+		for (Map.Entry<RequesterReference<I>, StackList<I>> entry : map.entrySet()) {
+			RequesterReference.writePacket(packet, entry.getKey());
+			entry.getValue().writePacket(packet);
+		}
+	}
+
+	public static <I> Map<RequesterReference<I>, StackList<I>> readRequestMap(PacketBase packet, Supplier<StackList<I>> supplier) {
+		Map<RequesterReference<I>, StackList<I>> request = new LinkedHashMap<>();
+
+		int size = packet.getInt();
+		for (int i = 0; i < size; i++) {
+			RequesterReference<I> reference = RequesterReference.readPacket(packet);
+
+			StackList<I> list = supplier.get();
+			list.readPacket(packet);
+
+			if (!list.isEmpty()) {
+				request.put(reference, list);
+			}
 		}
 
 		return request;

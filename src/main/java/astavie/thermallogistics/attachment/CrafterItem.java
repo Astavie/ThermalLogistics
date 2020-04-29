@@ -48,6 +48,7 @@ import net.minecraftforge.items.IItemHandler;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemStack> {
@@ -523,14 +524,24 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 							break;
 						}
 
+						Recipe<ItemStack> recipe = recipes.get(i);
+
+						// Linked
 						int linked = payload.getInt();
-						Recipe<?> recipe = recipes.get(i);
 
 						recipe.linked.clear();
 
 						for (int j = 0; j < linked; j++) {
 							recipe.linked.add(RequesterReference.readPacket(payload));
 						}
+
+						// Input
+						recipe.requestInput = StackHandler.readRequestMap(payload, ItemList::new);
+						recipe.missing.readPacket(payload);
+
+						// Output
+						recipe.requestOutput = StackHandler.readRequestMap(payload, ItemList::new);
+						recipe.leftovers.readPacket(payload);
 					}
 				}
 			}
@@ -572,10 +583,20 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 		packet.addInt(recipes.size());
 		for (Recipe<ItemStack> recipe : recipes) {
+
+			// Linked
 			packet.addInt(recipe.linked.size());
 			for (RequesterReference<?> reference : recipe.linked) {
 				RequesterReference.writePacket(packet, reference);
 			}
+
+			// Input
+			StackHandler.writeRequestMap(recipe.requestInput, packet);
+			recipe.missing.writePacket(packet);
+
+			// Output
+			StackHandler.writeRequestMap(recipe.requestOutput, packet);
+			recipe.leftovers.writePacket(packet);
 		}
 	}
 
@@ -647,6 +668,16 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	@Override
 	public List<? extends ICrafter<ItemStack>> getCrafters() {
 		return recipes;
+	}
+
+	@Override
+	public List<Recipe<ItemStack>> getRecipes() {
+		return recipes;
+	}
+
+	@Override
+	public Supplier<StackList<ItemStack>> getSupplier() {
+		return ItemList::new;
 	}
 
 	private void handleInsertedStack(Type<ItemStack> type, long amount) {

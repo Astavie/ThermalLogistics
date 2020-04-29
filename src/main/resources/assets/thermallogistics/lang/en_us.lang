@@ -42,8 +42,10 @@ info.logistics.unlinked.1=Click on with a Network Manager to start linking
 
 info.logistics.tab.link=Linked Crafters
 info.logistics.tab.fluid=Add Fluid
-info.logistics.tab.request=Requests
 info.logistics.tab.crafting=Crafting
+info.logistics.tab.input=Inputs
+info.logistics.tab.output=Outputs
+info.logistics.tab.missing=Missing Stacks
 
 info.logistics.manager.a.0=Use on a servo to monitor the system.
 info.logistics.manager.a.1=Use on two crafters to link them.

@@ -7,6 +7,7 @@ import astavie.thermallogistics.attachment.Recipe;
 import astavie.thermallogistics.client.gui.element.ElementButtonLinks;
 import astavie.thermallogistics.client.gui.element.ElementSlot;
 import astavie.thermallogistics.client.gui.tab.TabFluid;
+import astavie.thermallogistics.client.gui.tab.TabStackList;
 import astavie.thermallogistics.compat.ICrafterWrapper;
 import astavie.thermallogistics.container.ContainerCrafter;
 import astavie.thermallogistics.util.StackHandler;
@@ -89,6 +90,9 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 		//if (attachment instanceof CrafterFluid) TODO
 		//	addTab(tab = new TabFluid(this, this));
+
+		addTab(new TabStackList<>(this, crafter, true));
+		addTab(new TabStackList<>(this, crafter, false));
 
 		int[] flagNums = new int[attachment.filter.validFlags().length - 1];
 		System.arraycopy(attachment.filter.validFlags(), 1, flagNums, 0, flagNums.length);

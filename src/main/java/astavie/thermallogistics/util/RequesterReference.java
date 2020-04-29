@@ -23,7 +23,6 @@ public class RequesterReference<I> {
 	private long tick;
 	private IRequester<I> cache;
 
-	// TODO: Maybe remove this?
 	private ItemStack icon = ItemStack.EMPTY;
 	private ItemStack tile = ItemStack.EMPTY;
 
@@ -66,22 +65,30 @@ public class RequesterReference<I> {
 	}
 
 	public static void writePacket(PacketBase packet, RequesterReference<?> reference) {
-		packet.addInt(reference.dim);
-		packet.addCoords(reference.pos.getX(), reference.pos.getY(), reference.pos.getZ());
-		packet.addByte(reference.side);
-		packet.addInt(reference.index);
+		packet.addBool(reference == null);
 
-		IRequester<?> requester = reference.get();
-		packet.addItemStack(requester.getIcon());
-		packet.addItemStack(requester.getTileIcon());
+		if (reference != null) {
+			packet.addInt(reference.dim);
+			packet.addCoords(reference.pos.getX(), reference.pos.getY(), reference.pos.getZ());
+			packet.addByte(reference.side);
+			packet.addInt(reference.index);
+
+			IRequester<?> requester = reference.get();
+			packet.addItemStack(requester.getIcon());
+			packet.addItemStack(requester.getTileIcon());
+		}
 	}
 
 	public static <I> RequesterReference<I> readPacket(PacketBase packet) {
-		RequesterReference<I> reference = new RequesterReference<>(packet.getInt(), packet.getCoords(), packet.getByte(), packet.getInt());
-		reference.icon = packet.getItemStack();
-		reference.tile = packet.getItemStack();
+		if (packet.getBool()) {
+			return null;
+		} else {
+			RequesterReference<I> reference = new RequesterReference<>(packet.getInt(), packet.getCoords(), packet.getByte(), packet.getInt());
+			reference.icon = packet.getItemStack();
+			reference.tile = packet.getItemStack();
 
-		return reference;
+			return reference;
+		}
 	}
 
 	public boolean isLoaded() {
