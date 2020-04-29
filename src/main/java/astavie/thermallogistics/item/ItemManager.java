@@ -43,6 +43,7 @@ import net.minecraftforge.client.model.ModelLoader;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class ItemManager extends ItemCore implements IMultiModeItem, IInitializer, IModelRegister {
@@ -57,9 +58,17 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 
 	@Override
 	public void onModeChange(EntityPlayer player, ItemStack stack) {
-		stack.removeSubCompound("Link");
+		List<ITextComponent> messages = new LinkedList<>();
+
+		if (stack.getSubCompound("Link") != null) {
+			messages.add(new TextComponentTranslation("info.logistics.manager.d.4"));
+			stack.removeSubCompound("Link");
+		}
+
 		player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_LEVER_CLICK, SoundCategory.PLAYERS, 0.4F, 0.4F + 0.2F * getMode(stack));
-		ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.c." + getMode(stack)));
+
+		messages.add(new TextComponentTranslation("info.logistics.manager.c." + getMode(stack)));
+		ChatHelper.sendIndexedChatMessagesToPlayer(player, messages);
 	}
 
 	@Override
@@ -259,6 +268,14 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 	}
 
 	public void link(EntityPlayer player, ItemStack item, ICrafter<?> crafter) {
+		List<ITextComponent> messages = new LinkedList<>();
+
+		if (getMode(item) != 1) {
+			item.removeSubCompound("Link");
+			setMode(item, 1);
+			messages.add(new TextComponentTranslation("info.logistics.manager.c.1"));
+		}
+
 		if (!item.hasTagCompound()) {
 			item.setTagCompound(new NBTTagCompound());
 		}
@@ -270,29 +287,31 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 				if (crafter.isLinked(other)) {
 					// Fail
 					player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
-					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.2"));
+					messages.add(new TextComponentTranslation("info.logistics.manager.d.2"));
 				} else {
 					// Success
 					crafter.link((ICrafter<?>) other.get());
 
 					player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_ARROW_HIT_PLAYER, SoundCategory.PLAYERS, 0.4F, 0.45F);
-					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.3"));
+					messages.add(new TextComponentTranslation("info.logistics.manager.d.3"));
 				}
 			} else {
 				// Fail
 				player.world.playSound(null, player.getPosition(), SoundEvents.BLOCK_STONE_STEP, SoundCategory.PLAYERS, 0.8F, 0.5F);
 				if (other.references(crafter)) {
-					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.4"));
+					messages.add(new TextComponentTranslation("info.logistics.manager.d.4"));
 				} else {
-					ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.1"));
+					messages.add(new TextComponentTranslation("info.logistics.manager.d.1"));
 				}
 			}
 			item.getTagCompound().removeTag("Link");
 		} else {
 			item.getTagCompound().setTag("Link", RequesterReference.writeNBT(crafter.createReference()));
 			item.getTagCompound().setTag("VisualLink", crafter.getIcon().writeToNBT(new NBTTagCompound()));
-			ChatHelper.sendIndexedChatMessageToPlayer(player, new TextComponentTranslation("info.logistics.manager.d.0"));
+			messages.add(new TextComponentTranslation("info.logistics.manager.d.0"));
 		}
+
+		ChatHelper.sendIndexedChatMessagesToPlayer(player, messages);
 	}
 
 	public void link(EntityPlayer player, ItemStack item, ICrafterContainer<?> crafter) {
