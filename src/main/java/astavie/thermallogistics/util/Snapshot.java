@@ -25,7 +25,6 @@ import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import net.minecraftforge.items.IItemHandler;
 
 import java.util.*;
-import java.util.function.Supplier;
 
 public class Snapshot {
 
@@ -46,7 +45,7 @@ public class Snapshot {
 
 	private Map<GridItem, ItemList> itemsMutated = new HashMap<>();
 	private Map<GridFluid, FluidList> fluidsMutated = new HashMap<>();
-	private Map<RequesterReference<?>, StackList<?>> leftovers = new HashMap<>();
+	private Map<RequesterReference<?>, StackList<?>> leftoversMutated = new HashMap<>();
 
 	private Snapshot() {
 	}
@@ -54,20 +53,20 @@ public class Snapshot {
 	public void clearMutated() {
 		itemsMutated.clear();
 		fluidsMutated.clear();
-		leftovers.clear();
+		leftoversMutated.clear();
 	}
 
 	public void applyMutated() {
 		items = itemsMutated;
 		fluids = fluidsMutated;
 
-		for (Map.Entry<RequesterReference<?>, StackList<?>> entry : leftovers.entrySet()) {
+		for (Map.Entry<RequesterReference<?>, StackList<?>> entry : leftoversMutated.entrySet()) {
 			applyLeftover(entry.getKey(), entry.getValue());
 		}
 
 		itemsMutated = new HashMap<>();
 		fluidsMutated = new HashMap<>();
-		leftovers = new HashMap<>();
+		leftoversMutated = new HashMap<>();
 	}
 
 	private void refresh(World world) {
@@ -330,19 +329,17 @@ public class Snapshot {
 		return fluidsMutated.get(grid);
 	}
 
-	public <I> StackList<I> getLeftovers(RequesterReference<I> reference, Supplier<StackList<I>> supplier) {
-		leftovers.computeIfAbsent(reference, ref -> {
+	public <I> StackList<I> getLeftovers(RequesterReference<I> reference) {
+		leftoversMutated.computeIfAbsent(reference, ref -> {
 			IRequester<I> requester = reference.get();
 			if (requester instanceof ICrafter) {
-				StackList<I> list = supplier.get();
-				list.addAll(((ICrafter<I>) requester).getLeftovers());
-				return list;
+				return ((ICrafter<I>) requester).getLeftovers().copy();
 			}
 			return EmptyList.getInstance();
 		});
 
 		//noinspection unchecked
-		return (StackList<I>) leftovers.get(reference);
+		return (StackList<I>) leftoversMutated.get(reference);
 	}
 
 	private <I> void applyLeftover(RequesterReference<I> reference, StackList<?> list) {

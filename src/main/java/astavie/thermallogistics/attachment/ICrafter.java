@@ -2,7 +2,6 @@ package astavie.thermallogistics.attachment;
 
 import astavie.thermallogistics.process.Proposal;
 import astavie.thermallogistics.util.RequesterReference;
-import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.collection.MissingList;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
@@ -35,11 +34,6 @@ public interface ICrafter<I> extends IRequester<I> {
 	default long amountCrafted(Type<I> type) {
 		return getOutputs().amount(type);
 	}
-
-	/**
-	 * Requests an item. Linked crafters will also be notified.
-	 */
-	MissingList request(IRequester<I> requester, Type<I> type, Shared<Long> amount, boolean applyMissing);
 
 	boolean requestInternal(Type<I> type, long amount, MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean doLinked);
 

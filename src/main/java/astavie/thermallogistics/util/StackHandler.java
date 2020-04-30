@@ -266,6 +266,7 @@ public class StackHandler {
 			for (ItemStack s : map.getItems())
 				travelingItems.addItemstack(s, side);
 
+		/*
 		for (StackList<ItemStack> list : requester.getRequests().values()) {
 			for (Type<ItemStack> type : list.types()) {
 				long amount = list.amount(type);
@@ -276,6 +277,7 @@ public class StackHandler {
 				}
 			}
 		}
+		*/
 
 		// End own code
 

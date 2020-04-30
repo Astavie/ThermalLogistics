@@ -1,7 +1,6 @@
 package astavie.thermallogistics.process;
 
 import astavie.thermallogistics.attachment.ICrafter;
-import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.collection.ItemList;
@@ -109,59 +108,13 @@ public class ProcessItem extends Process<ItemStack> {
 		} else {
 
 			// Try crafters
-
-			for (Pair<DuctUnit, Byte> source : sources) {
-				DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
-				byte side = source.getRight();
-
-				Attachment attachment = endPoint.parent.getAttachment(side);
-				if (attachment != null) {
-					if (StackHandler.forEachCrafter(attachment, this::requestFromCrafter)) {
-						sources.advanceCursor();
-						break;
-					}
-					if (!attachment.canSend())
-						continue;
-				}
-
-				DuctUnitItem.Cache cache = endPoint.tileCache[side];
-				if (cache == null)
-					continue;
-
-				if (StackHandler.forEachCrafter(cache.tile, this::requestFromCrafter)) {
-					sources.advanceCursor();
-					break;
-				}
-			}
-
-		}
-
-		return false;
-	}
-
-	/**
-	 * Used in requester: request from crafter
-	 */
-	private boolean requestFromCrafter(ICrafter<ItemStack> crafter) {
-		for (Type<ItemStack> type : crafter.getOutputs().types()) {
-			int amount = (int) Math.min(requester.amountRequired(type), ((IProcessRequesterItem) requester).maxSize());
-
-			if (amount == 0)
-				continue;
-
-			/*
-
-			int left = StackHandler.canRouteItem((DuctUnitItem) requester.getDuct(), type.withAmount(amount), (byte) (requester.getSide() ^ 1), requester);
-			amount -= left;
-			if (amount == 0)
-				continue;
-
-			*/
-
-			Shared<Long> shared = new Shared<>((long) amount);
+			Proposal<ItemStack> proposal = new Proposal<>(null, null, 0);
+			requestFirstRequester(proposal, type -> Math.min(requester.amountRequired(type), ((IProcessRequesterItem) requester).maxSize()), false);
 
 			List<Request<ItemStack>> requests = new LinkedList<>();
-			request(requests, crafter, type, shared);
+			for (Proposal<ItemStack> prop : proposal.children) {
+				requests.add(new Request<>(prop.type, prop.amount, new Source<>(requester.getSide(), prop.me), 0));
+			}
 
 			if (requests.size() > 0) {
 				for (Request<ItemStack> request : requests) {
@@ -169,7 +122,9 @@ public class ProcessItem extends Process<ItemStack> {
 				}
 				return true;
 			}
+
 		}
+
 		return false;
 	}
 
@@ -204,7 +159,7 @@ public class ProcessItem extends Process<ItemStack> {
 	}
 
 	@Override
-	public void findCrafter(Predicate<ICrafter<ItemStack>> predicate) {
+	public void findCrafter(Predicate<ICrafter<ItemStack>> predicate, boolean advanceCursor) {
 		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
 		for (Pair<DuctUnit, Byte> source : sources) {
 			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
@@ -212,18 +167,30 @@ public class ProcessItem extends Process<ItemStack> {
 
 			Attachment attachment = endPoint.parent.getAttachment(side);
 			if (attachment != null && StackHandler.forEachCrafter(attachment, predicate)) {
-				sources.advanceCursor();
+				if (advanceCursor) {
+					sources.advanceCursor();
+				}
 				break;
 			}
 
 			DuctUnitItem.Cache cache = endPoint.tileCache[side];
 			if (cache == null) {
+				if (advanceCursor) {
+					sources.advanceCursor();
+				}
 				continue;
 			}
 
 			if (StackHandler.forEachCrafter(cache.tile, predicate)) {
-				sources.advanceCursor();
+				if (advanceCursor) {
+					sources.advanceCursor();
+				}
 				break;
+			}
+
+			if (advanceCursor) {
+				// Always advance the cursor so Round-Robin works well
+				sources.advanceCursor();
 			}
 		}
 	}

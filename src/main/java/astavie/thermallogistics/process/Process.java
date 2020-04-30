@@ -9,11 +9,10 @@ import astavie.thermallogistics.util.collection.MissingList;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nullable;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -113,7 +112,7 @@ public abstract class Process<I> {
 
 		if (amount > 0) {
 			Shared<Long> shared = new Shared<>(amount);
-			requestFromCrafters(requests, type, shared);
+			requestFromCrafters(requests, type, shared, true, true, false, false, false);
 			amount = shared.get();
 		}
 
@@ -153,23 +152,14 @@ public abstract class Process<I> {
 
 		if (amount > 0) {
 			Shared<Long> shared = new Shared<>(amount);
-
-			Pair<ICrafter<I>, Type<I>> crafter = getCrafter(type, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
-			if (crafter != null) {
-				crafter.getLeft().request(requester, crafter.getRight(), shared, true);
-
-				long a = amount - shared.get();
-				if (a > 0) {
-					requests.add(new Request<>(crafter.getRight(), a, new Source<>(requester.getSide(), crafter.getLeft().createReference()), 0));
-					requested += a;
-				}
-			}
+			requestFromCrafters(requests, type, shared, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt, true);
+			requested += amount - shared.get();
 		}
 
 		return requested;
 	}
 
-	public abstract void findCrafter(Predicate<ICrafter<I>> predicate);
+	public abstract void findCrafter(Predicate<ICrafter<I>> predicate, boolean advanceCursor);
 
 	public ICrafter<I> getCrafter(Type<I> output) {
 		Shared<ICrafter<I>> shared = new Shared<>();
@@ -180,15 +170,17 @@ public abstract class Process<I> {
 				return true;
 			}
 			return false;
-		});
+		}, true);
 
 		return shared.get();
 	}
 
-	public Pair<ICrafter<I>, Type<I>> getCrafter(Type<I> output, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt) {
+	public Pair<ICrafter<I>, Type<I>> getCrafter(Type<I> output, Set<ICrafter<?>> used, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt) {
 		Shared<Pair<ICrafter<I>, Type<I>>> shared = new Shared<>();
 
 		findCrafter(crafter -> {
+			if (used.contains(crafter))
+				return false;
 			for (Type<I> type : crafter.getOutputs().types()) {
 				if (type.isIdentical(output, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
 					shared.accept(Pair.of(crafter, type));
@@ -196,7 +188,63 @@ public abstract class Process<I> {
 				}
 			}
 			return false;
-		});
+		}, true);
+
+		return shared.get();
+	}
+
+	public Triple<ICrafter<I>, Type<I>, Long> getCrafter(Set<ICrafter<?>> used, Function<Type<I>, Long> amountRequired) {
+		Shared<Triple<ICrafter<I>, Type<I>, Long>> shared = new Shared<>();
+
+		findCrafter(crafter -> {
+			if (used.contains(crafter))
+				return false;
+			for (Type<I> type : crafter.getOutputs().types()) {
+				long a = amountRequired.apply(type);
+				if (a > 0) {
+					shared.accept(Triple.of(crafter, type, a));
+					return true;
+				}
+			}
+			return false;
+		}, true);
+
+		return shared.get();
+	}
+
+	public Pair<ICrafter<I>, Type<I>> getCrafterWithLeftovers(Type<I> output, Set<ICrafter<?>> used, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt) {
+		Shared<Pair<ICrafter<I>, Type<I>>> shared = new Shared<>();
+
+		findCrafter(crafter -> {
+			if (used.contains(crafter))
+				return false;
+			for (Type<I> type : Snapshot.INSTANCE.getLeftovers(crafter.createReference()).types()) {
+				if (type.isIdentical(output, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
+					shared.accept(Pair.of(crafter, type));
+					return true;
+				}
+			}
+			return false;
+		}, false);
+
+		return shared.get();
+	}
+
+	public Triple<ICrafter<I>, Type<I>, Long> getCrafterWithLeftovers(Set<ICrafter<?>> used, Function<Type<I>, Long> amountRequired) {
+		Shared<Triple<ICrafter<I>, Type<I>, Long>> shared = new Shared<>();
+
+		findCrafter(crafter -> {
+			if (used.contains(crafter))
+				return false;
+			for (Type<I> type : Snapshot.INSTANCE.getLeftovers(crafter.createReference()).types()) {
+				long a = amountRequired.apply(type);
+				if (a > 0) {
+					shared.accept(Triple.of(crafter, type, a));
+					return true;
+				}
+			}
+			return false;
+		}, false);
 
 		return shared.get();
 	}
@@ -204,35 +252,259 @@ public abstract class Process<I> {
 	/**
 	 * Used in terminal: request from crafters
 	 */
-	private void requestFromCrafters(List<Request<I>> requests, Type<I> type, Shared<Long> amount) {
-		ICrafter<I> crafter = getCrafter(type);
-		if (crafter != null) {
-			request(requests, crafter, type, amount);
-		}
-	}
-
-	/**
-	 * Request item from crafter
-	 */
-	protected boolean request(List<Request<I>> requests, ICrafter<I> crafter, Type<I> type, Shared<Long> amount) {
+	private void requestFromCrafters(List<Request<I>> requests, Type<I> type, Shared<Long> amount, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt, boolean applyMissing) {
 		// Do the thing
 		long a = amount.get();
 
-		MissingList missing = crafter.request(requester, type, amount, false);
+		MissingList missing = new MissingList();
+		Proposal<I> proposal = new Proposal<>(null, null, 0);
 
-		if (amount.get() < a) {
-			requests.add(new Request<>(type, a - amount.get(), new Source<>(requester.getSide(), crafter.createReference()), 0));
-		}
-
-		if (missing == null) {
+		if (!requestFirst(missing, proposal, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt, type, a, applyMissing)) {
 			// Complex
-			requests.add(new Request<>(type, amount.get(), 0, null, true));
-		} else if (!missing.isEmpty()) {
-			// Missing
-			requests.add(new Request<>(type, amount.get(), 0, missing, false));
+			missing = null;
 		}
 
-		amount.accept(0L);
+		for (Proposal<I> prop : proposal.children) {
+			requests.add(new Request<>(prop.type, prop.amount, new Source<>(requester.getSide(), prop.me), 0));
+			a -= prop.amount;
+		}
+
+		if (!applyMissing) {
+			if (missing == null) {
+				// Complex
+				requests.add(new Request<>(type, a, 0, null, true));
+			} else if (!missing.isEmpty()) {
+				// Missing
+				requests.add(new Request<>(type, a, 0, missing, false));
+			}
+
+			amount.accept(0L);
+		} else {
+			amount.accept(a);
+		}
+	}
+
+	public boolean requestInternal(MissingList missing, Proposal<I> proposal, Set<ICrafter<?>> used, long timeStarted, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt, Type<I> subType, long subAmount) {
+		StackList<I> network = Snapshot.INSTANCE.getMutatedStacks(requester.getDuct().getGrid());
+
+		// First check existing items
+		for (Type<I> compare : network.types()) {
+			if (compare.isIdentical(subType, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt)) {
+				long remaining = network.remove(compare, subAmount);
+
+				if (remaining < subAmount) {
+					proposal.children.add(new Proposal<>(null, compare, subAmount - remaining));
+					subAmount = remaining;
+
+					if (subAmount == 0) {
+						return true;
+					}
+				}
+			}
+		}
+
+		// Then check leftovers
+		if (subAmount > 0) {
+			Pair<ICrafter<I>, Type<I>> pair = getCrafterWithLeftovers(subType, used, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
+
+			if (pair != null) {
+				ICrafter<I> crafter = pair.getLeft();
+				Type<I> compare = pair.getRight();
+
+				// Request leftover
+				StackList<I> leftovers = Snapshot.INSTANCE.getLeftovers(crafter.createReference());
+				long remain = leftovers.remove(compare, subAmount);
+
+				if (remain < subAmount) {
+					proposal.children.add(new Proposal<>(crafter.createReference(), compare, subAmount - remain));
+					subAmount = remain;
+
+					if (subAmount == 0) {
+						return true;
+					}
+				}
+			}
+		}
+
+		// Then check crafters
+		if (subAmount > 0) {
+			Pair<ICrafter<I>, Type<I>> pair = getCrafter(subType, used, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
+
+			if (pair != null) {
+				ICrafter<I> crafter = pair.getLeft();
+				Type<I> compare = pair.getRight();
+
+				// Craft
+				long qtyPerCraft = crafter.amountCrafted(compare);
+
+				while (subAmount > 0) {
+					long remove = Math.min(subAmount, qtyPerCraft);
+					Proposal<I> subProposal = new Proposal<>(crafter.createReference(), compare, remove);
+
+					if (!crafter.requestInternal(compare, remove, missing, subProposal, used, timeStarted, true)) {
+						// Complex!
+						return false;
+					}
+
+					proposal.children.add(subProposal);
+					subAmount -= remove;
+				}
+			} else {
+				// Not enough items
+				proposal.children.add(new Proposal<>(null, subType, subAmount, true));
+				missing.add(subType, subAmount);
+			}
+		}
+
+		return true;
+	}
+
+	// TODO: Merge these bottom two
+
+	private boolean requestFirst(MissingList missing, Proposal<I> proposal, boolean ignoreMod, boolean ignoreOreDict, boolean ignoreMetadata, boolean ignoreNbt, Type<I> subType, long subAmount, boolean applyMissing) {
+		Set<ICrafter<?>> used = new HashSet<>();
+
+		Snapshot.INSTANCE.clearMutated();
+
+		// First check leftovers
+		if (subAmount > 0) {
+			Pair<ICrafter<I>, Type<I>> pair = getCrafterWithLeftovers(subType, used, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
+
+			if (pair != null) {
+				ICrafter<I> crafter = pair.getLeft();
+				Type<I> compare = pair.getRight();
+
+				// Request leftover
+				StackList<I> leftovers = Snapshot.INSTANCE.getLeftovers(crafter.createReference());
+				long remain = leftovers.remove(compare, subAmount);
+
+				if (remain < subAmount) {
+					Proposal<I> subProposal = new Proposal<>(crafter.createReference(), compare, subAmount - remain);
+
+					proposal.children.add(subProposal);
+					subAmount = remain;
+
+					Snapshot.INSTANCE.applyMutated();
+					crafter.applyProposal(requester, subProposal);
+
+					if (subAmount == 0) {
+						return true;
+					}
+				}
+			}
+		}
+
+		// Then check crafters
+		if (subAmount > 0) {
+			Pair<ICrafter<I>, Type<I>> pair = getCrafter(subType, used, ignoreMod, ignoreOreDict, ignoreMetadata, ignoreNbt);
+
+			if (pair != null) {
+				ICrafter<I> crafter = pair.getLeft();
+				Type<I> compare = pair.getRight();
+
+				// Craft
+				long qtyPerCraft = crafter.amountCrafted(compare);
+
+				while (subAmount > 0) {
+					long remove = Math.min(subAmount, qtyPerCraft);
+					Proposal<I> subProposal = new Proposal<>(crafter.createReference(), compare, remove);
+
+					if (!crafter.requestInternal(compare, remove, missing, subProposal, used, System.currentTimeMillis(), true)) {
+						// Complex!
+						Snapshot.INSTANCE.clearMutated();
+						return false;
+					}
+
+					subAmount -= remove;
+
+					if (applyMissing || missing.isEmpty()) {
+						proposal.children.add(subProposal);
+
+						Snapshot.INSTANCE.applyMutated();
+						crafter.applyProposal(requester, subProposal);
+					}
+				}
+			} else {
+				// Not enough items
+				missing.add(subType, subAmount);
+			}
+		}
+
+		Snapshot.INSTANCE.clearMutated();
+		return true;
+	}
+
+	protected boolean requestFirstRequester(Proposal<I> proposal, Function<Type<I>, Long> amountRequired, boolean applyMissing) {
+		MissingList missing = new MissingList();
+		Set<ICrafter<?>> used = new HashSet<>();
+
+		Snapshot.INSTANCE.clearMutated();
+
+		// First check leftovers
+		{
+			Triple<ICrafter<I>, Type<I>, Long> pair = getCrafterWithLeftovers(used, amountRequired);
+
+			if (pair != null) {
+				long subAmount = pair.getRight();
+
+				ICrafter<I> crafter = pair.getLeft();
+				Type<I> compare = pair.getMiddle();
+
+				// Request leftover
+				StackList<I> leftovers = Snapshot.INSTANCE.getLeftovers(crafter.createReference());
+				long remain = leftovers.remove(compare, subAmount);
+
+				if (remain < subAmount) {
+					Proposal<I> subProposal = new Proposal<>(crafter.createReference(), compare, subAmount - remain);
+
+					proposal.children.add(subProposal);
+
+					Snapshot.INSTANCE.applyMutated();
+					crafter.applyProposal(requester, subProposal);
+
+					return true;
+				}
+			}
+		}
+
+		// Then check crafters
+		{
+			Triple<ICrafter<I>, Type<I>, Long> pair = getCrafter(used, amountRequired);
+
+			if (pair != null) {
+				long subAmount = pair.getRight();
+
+				ICrafter<I> crafter = pair.getLeft();
+				Type<I> compare = pair.getMiddle();
+
+				// Craft
+				long qtyPerCraft = crafter.amountCrafted(compare);
+
+				while (subAmount > 0) {
+					long remove = Math.min(subAmount, qtyPerCraft);
+					Proposal<I> subProposal = new Proposal<>(crafter.createReference(), compare, remove);
+
+					if (!crafter.requestInternal(compare, remove, missing, subProposal, used, System.currentTimeMillis(), true)) {
+						// Complex!
+						Snapshot.INSTANCE.clearMutated();
+						return false;
+					}
+
+					subAmount -= remove;
+
+					if (applyMissing || missing.isEmpty()) {
+						proposal.children.add(subProposal);
+
+						Snapshot.INSTANCE.applyMutated();
+						crafter.applyProposal(requester, subProposal);
+					} else {
+						break;
+					}
+				}
+			}
+		}
+
+		Snapshot.INSTANCE.clearMutated();
 		return true;
 	}
 
