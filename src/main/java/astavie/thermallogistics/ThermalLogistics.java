@@ -1,9 +1,6 @@
 package astavie.thermallogistics;
 
-import astavie.thermallogistics.attachment.CrafterItem;
-import astavie.thermallogistics.attachment.DistributorFluid;
-import astavie.thermallogistics.attachment.DistributorItem;
-import astavie.thermallogistics.attachment.RequesterItem;
+import astavie.thermallogistics.attachment.*;
 import astavie.thermallogistics.block.BlockTerminalItem;
 import astavie.thermallogistics.compat.CompatTE;
 import astavie.thermallogistics.compat.ICrafterWrapper;
@@ -81,6 +78,7 @@ public class ThermalLogistics {
 		AttachmentRegistry.registerAttachment(DistributorFluid.ID, DistributorFluid::new);
 
 		AttachmentRegistry.registerAttachment(RequesterItem.ID, RequesterItem::new);
+		AttachmentRegistry.registerAttachment(RequesterFluid.ID, RequesterFluid::new);
 
 		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
 

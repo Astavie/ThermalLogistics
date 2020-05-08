@@ -77,10 +77,19 @@ public abstract class Process<I> {
 		return !onlyCheck && requester.hasWants() && updateWants();
 	}
 
+	/**
+	 * Used in crafters and terminals
+	 */
 	protected abstract boolean updateRetrieval(StackList<I> requests);
 
+	/**
+	 * Used in requesters
+	 */
 	protected abstract boolean updateWants();
 
+	/**
+	 * Used in requesters, crafters, and terminals
+	 */
 	protected abstract boolean attemptPull(ICrafter<I> crafter, StackList<I> stacks);
 
 	/**

@@ -662,4 +662,65 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	}
 
+	/*
+	public static class Fluid extends Recipe<FluidStack> implements IProcessRequesterFluid {
+
+		private final CrafterFluid parent;
+
+		public Fluid(CrafterFluid parent, int index) {
+			super(parent, parent.fluidDuct, FluidList::new, index);
+			this.parent = parent;
+			this.process = new ProcessFluid(this);
+		}
+
+		@Override
+		public int tickDelay() {
+			return ServoItem.tickDelays[parent.type];
+		}
+
+		@Override
+		public float throttle() {
+			return ServoFluid.throttle[parent.type];
+		}
+
+		@Override
+		public int maxSize() {
+			return ServoItem.maxSize[parent.type] * net.minecraftforge.fluids.Fluid.BUCKET_VOLUME;
+		}
+
+		@Override
+		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
+			return RequesterFluid.getSources(parent.fluidDuct);
+		}
+
+		@Override
+		public StackList<FluidStack> getRequestedStacks() {
+			StackList<FluidStack> list = super.getRequestedStacks().copy();
+
+			FluidStack fluid = ((GridFluid) getDuct().getGrid()).myTank.getFluid();
+			if (fluid != null)
+				list.remove(fluid);
+
+			return list;
+		}
+
+		@Override
+		public Map<RequesterReference<FluidStack>, StackList<FluidStack>> getRequests() {
+			Map<RequesterReference<FluidStack>, StackList<FluidStack>> requests = super.getRequests();
+
+			if (requests.containsKey(null)) {
+				// Remove traveling items
+				StackList<FluidStack> list = requests.get(null);
+
+				FluidStack fluid = ((GridFluid) getDuct().getGrid()).myTank.getFluid();
+				if (fluid != null)
+					list.remove(fluid);
+			}
+
+			return requests;
+		}
+
+	}
+	*/
+
 }

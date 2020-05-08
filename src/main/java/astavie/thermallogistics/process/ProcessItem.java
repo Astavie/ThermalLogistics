@@ -34,6 +34,14 @@ public class ProcessItem extends Process<ItemStack> {
 	 */
 	@Override
 	protected boolean updateRetrieval(StackList<ItemStack> requests) {
+		DuctUnitItem.Cache ownCache = ((DuctUnitItem) requester.getDuct()).tileCache[requester.getSide() ^ 1];
+		if (ownCache == null)
+			return false;
+
+		IItemHandler ownHandler = ownCache.getItemHandler(requester.getSide());
+		if (ownHandler == null)
+			return false;
+
 		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
 		for (Pair<DuctUnit, Byte> source : sources) {
 			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
@@ -51,7 +59,7 @@ public class ProcessItem extends Process<ItemStack> {
 				continue;
 
 			IItemHandler inv = cache.getItemHandler(side ^ 1);
-			if (inv == null)
+			if (inv == null || inv.equals(ownHandler))
 				continue;
 
 			ItemStack extract = extract(endPoint, side, inv, requests::amount, (DuctUnitItem) requester.getDuct(), (byte) (requester.getSide() ^ 1));
@@ -71,14 +79,22 @@ public class ProcessItem extends Process<ItemStack> {
 	protected boolean updateWants() {
 		byte endSide = requester.getSide();
 
-		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
-
 		// Check if there are interesting items
 
 		ItemList stacks = Snapshot.INSTANCE.getItems((GridItem) requester.getDuct().getGrid());
 		if (stacks.types().stream().anyMatch(type -> stacks.amount(type) > 0 && requester.amountRequired(type) > 0)) {
 
 			// Try items
+			DuctUnitItem.Cache ownCache = ((DuctUnitItem) requester.getDuct()).tileCache[requester.getSide() ^ 1];
+			if (ownCache == null)
+				return false;
+
+			IItemHandler ownHandler = ownCache.getItemHandler(requester.getSide());
+			if (ownHandler == null)
+				return false;
+
+			ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
+
 			for (Pair<DuctUnit, Byte> source : sources) {
 				DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
 				byte side = source.getRight();
@@ -95,7 +111,7 @@ public class ProcessItem extends Process<ItemStack> {
 					continue;
 
 				IItemHandler inv = cache.getItemHandler(side ^ 1);
-				if (inv == null)
+				if (inv == null || inv.equals(ownHandler))
 					continue;
 
 				ItemStack extract = extract(endPoint, side, inv, requester::amountRequired, (DuctUnitItem) requester.getDuct(), (byte) (endSide ^ 1));
@@ -213,7 +229,7 @@ public class ProcessItem extends Process<ItemStack> {
 				continue;
 
 			item = type.withAmount((int) Math.min(maxPull, req));
-			int left = StackHandler.canRouteItem((DuctUnitItem) requester.getDuct(), item, (byte) (requester.getSide() ^ 1), requester);
+			int left = StackHandler.canRouteItem(end, item, endSide);
 			item.shrink(left);
 
 			if (item.isEmpty())

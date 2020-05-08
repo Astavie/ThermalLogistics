@@ -7,7 +7,6 @@ import astavie.thermallogistics.attachment.IRequesterContainer;
 import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.client.gui.element.ElementSlotFluid;
 import astavie.thermallogistics.client.gui.element.ElementSlotItem;
-import astavie.thermallogistics.process.IProcessRequester;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 import cofh.core.gui.GuiContainerCore;
@@ -211,7 +210,7 @@ public class StackHandler {
 
 	// PARTIALLY COPIED FROM DuctUnitItem
 
-	public static int canRouteItem(DuctUnitItem duct, ItemStack stack, byte side, IProcessRequester<ItemStack> requester) {
+	public static int canRouteItem(DuctUnitItem duct, ItemStack stack, byte side) {
 		if (duct.getGrid() == null) {
 			return stack.getCount();
 		}
@@ -223,21 +222,21 @@ public class StackHandler {
 		curItem.setCount(Math.min(duct.getMoveStackSize(side), curItem.getCount()));
 
 		if (curItem.getCount() > 0) {
-			stackSizeLeft = simTransferI(duct, side, requester, curItem.copy());
+			stackSizeLeft = simTransferI(duct, side, curItem.copy());
 			stackSizeLeft = (stack.getCount() - curItem.getCount()) + stackSizeLeft;
 		}
 
 		return stackSizeLeft;
 	}
 
-	private static int simTransferI(DuctUnitItem duct, byte side, IProcessRequester<ItemStack> requester, ItemStack stack) {
+	private static int simTransferI(DuctUnitItem duct, byte side, ItemStack stack) {
 		SIM = true;
-		ItemStack itemStack = simTransfer(duct, side, requester, stack);
+		ItemStack itemStack = simTransfer(duct, side, stack);
 		SIM = false;
 		return itemStack.isEmpty() ? 0 : itemStack.getCount();
 	}
 
-	private static ItemStack simTransfer(DuctUnitItem duct, byte side, IProcessRequester<ItemStack> requester, ItemStack stack) {
+	private static ItemStack simTransfer(DuctUnitItem duct, byte side, ItemStack stack) {
 		EnumFacing face = EnumFacing.VALUES[side];
 
 		if (stack.isEmpty()) {
