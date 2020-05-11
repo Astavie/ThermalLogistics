@@ -15,7 +15,7 @@ public class FluidList extends StackList<FluidStack> {
 
 	@Override
 	public int getAmount(FluidStack stack) {
-		return stack.amount;
+		return stack == null ? 0 : stack.amount;
 	}
 
 	@Override

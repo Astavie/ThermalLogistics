@@ -81,6 +81,7 @@ public class ThermalLogistics {
 		AttachmentRegistry.registerAttachment(RequesterFluid.ID, RequesterFluid::new);
 
 		AttachmentRegistry.registerAttachment(CrafterItem.ID, CrafterItem::new);
+		AttachmentRegistry.registerAttachment(CrafterFluid.ID, CrafterFluid::new);
 
 		if (Loader.isModLoaded("thermalexpansion")) {
 			registerWrapper(CompatTE.TILE, new CompatTE());

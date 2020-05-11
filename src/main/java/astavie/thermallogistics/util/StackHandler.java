@@ -7,6 +7,7 @@ import astavie.thermallogistics.attachment.IRequesterContainer;
 import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.client.gui.element.ElementSlotFluid;
 import astavie.thermallogistics.client.gui.element.ElementSlotItem;
+import astavie.thermallogistics.process.IProcessRequester;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.Type;
 import cofh.core.gui.GuiContainerCore;
@@ -32,6 +33,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.IItemHandler;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -210,7 +212,7 @@ public class StackHandler {
 
 	// PARTIALLY COPIED FROM DuctUnitItem
 
-	public static int canRouteItem(DuctUnitItem duct, ItemStack stack, byte side) {
+	public static int canRouteItem(DuctUnitItem duct, ItemStack stack, byte side, @Nullable IProcessRequester<ItemStack> requester) {
 		if (duct.getGrid() == null) {
 			return stack.getCount();
 		}
@@ -222,21 +224,21 @@ public class StackHandler {
 		curItem.setCount(Math.min(duct.getMoveStackSize(side), curItem.getCount()));
 
 		if (curItem.getCount() > 0) {
-			stackSizeLeft = simTransferI(duct, side, curItem.copy());
+			stackSizeLeft = simTransferI(duct, side, curItem.copy(), requester);
 			stackSizeLeft = (stack.getCount() - curItem.getCount()) + stackSizeLeft;
 		}
 
 		return stackSizeLeft;
 	}
 
-	private static int simTransferI(DuctUnitItem duct, byte side, ItemStack stack) {
+	private static int simTransferI(DuctUnitItem duct, byte side, ItemStack stack, @Nullable IProcessRequester<ItemStack> requester) {
 		SIM = true;
-		ItemStack itemStack = simTransfer(duct, side, stack);
+		ItemStack itemStack = simTransfer(duct, side, stack, requester);
 		SIM = false;
 		return itemStack.isEmpty() ? 0 : itemStack.getCount();
 	}
 
-	private static ItemStack simTransfer(DuctUnitItem duct, byte side, ItemStack stack) {
+	private static ItemStack simTransfer(DuctUnitItem duct, byte side, ItemStack stack, @Nullable IProcessRequester<ItemStack> requester) {
 		EnumFacing face = EnumFacing.VALUES[side];
 
 		if (stack.isEmpty()) {
@@ -265,18 +267,18 @@ public class StackHandler {
 			for (ItemStack s : map.getItems())
 				travelingItems.addItemstack(s, side);
 
-		/*
-		for (StackList<ItemStack> list : requester.getRequests().values()) {
-			for (Type<ItemStack> type : list.types()) {
-				long amount = list.amount(type);
-				while (amount > 0) {
-					int remove = (int) Math.min(amount, type.maxSize());
-					travelingItems.addItemstack(type.withAmount(remove), side);
-					amount -= remove;
+		if (requester != null) {
+			for (StackList<ItemStack> list : requester.getRequests().values()) {
+				for (Type<ItemStack> type : list.types()) {
+					long amount = list.amount(type);
+					while (amount > 0) {
+						int remove = (int) Math.min(amount, type.maxSize());
+						travelingItems.addItemstack(type.withAmount(remove), side);
+						amount -= remove;
+					}
 				}
 			}
 		}
-		*/
 
 		// End own code
 

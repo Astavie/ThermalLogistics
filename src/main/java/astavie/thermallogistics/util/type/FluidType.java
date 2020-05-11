@@ -12,7 +12,7 @@ public class FluidType implements Type<FluidStack> {
 	private final FluidStack compare;
 
 	public FluidType(FluidStack compare) {
-		this.compare = FluidUtils.copy(compare, 1);
+		this.compare = compare == null ? null : FluidUtils.copy(compare, 1);
 	}
 
 	public static FluidType readPacket(PacketBase packet) {
@@ -73,7 +73,7 @@ public class FluidType implements Type<FluidStack> {
 
 	@Override
 	public boolean isNothing() {
-		return false;
+		return compare == null;
 	}
 
 	@Override

@@ -7,6 +7,7 @@ import astavie.thermallogistics.process.ProcessItem;
 import astavie.thermallogistics.process.Request;
 import astavie.thermallogistics.util.RequesterReference;
 import astavie.thermallogistics.util.StackHandler;
+import astavie.thermallogistics.util.collection.EmptyListWrapper;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.collection.ListWrapperWrapper;
 import astavie.thermallogistics.util.collection.StackList;
@@ -198,6 +199,9 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 	@Override
 	public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
+		if (!verifyCache()) {
+			return new EmptyListWrapper<>();
+		}
 		return new ListWrapperWrapper<>(routesWithInsertSideList, r -> Pair.of(r.endPoint, r.getLastSide()));
 	}
 
@@ -208,7 +212,11 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 
 	@Override
 	public long amountRequired(Type<ItemStack> type) {
-		return filter.matchesFilter(type.getAsStack()) ? Math.max(0, filter.getMaxStock() - amountInside(type)) : 0;
+		return filter.matchesFilter(type.getAsStack()) ?
+				Math.max(0, Math.min(
+						filter.getMaxStock() - amountInside(type),
+						maxFill(type)
+				)) : 0;
 	}
 
 	private long amountInside(Type<ItemStack> type) {
@@ -235,6 +243,11 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 		// Get total
 
 		return DuctUnitItem.getNumItems(inv, side ^ 1, type.getAsStack(), Integer.MAX_VALUE) + travelling;
+	}
+
+	private int maxFill(Type<ItemStack> type) {
+		int remaining = StackHandler.canRouteItem(itemDuct, type.withAmount(Integer.MAX_VALUE), side, this);
+		return Integer.MAX_VALUE - remaining;
 	}
 
 	@Override

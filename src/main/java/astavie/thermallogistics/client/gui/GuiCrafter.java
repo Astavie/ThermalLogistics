@@ -1,6 +1,7 @@
 package astavie.thermallogistics.client.gui;
 
 import astavie.thermallogistics.ThermalLogistics;
+import astavie.thermallogistics.attachment.CrafterFluid;
 import astavie.thermallogistics.attachment.CrafterItem;
 import astavie.thermallogistics.attachment.IAttachmentCrafter;
 import astavie.thermallogistics.attachment.Recipe;
@@ -88,8 +89,8 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 		if (attachment.canAlterRS())
 			addTab(new TabRedstoneControl(this, attachment));
 
-		//if (attachment instanceof CrafterFluid) TODO
-		//	addTab(tab = new TabFluid(this, this));
+		if (attachment instanceof CrafterFluid)
+			addTab(tab = new TabFluid(this, this));
 
 		addTab(new TabStackList<>(this, crafter, true));
 		addTab(new TabStackList<>(this, crafter, false));

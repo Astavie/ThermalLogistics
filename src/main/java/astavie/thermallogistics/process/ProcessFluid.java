@@ -29,7 +29,7 @@ public class ProcessFluid extends Process<FluidStack> {
 		super(requester);
 	}
 
-	private static FluidStack drain(FluidTankGrid tank, int maxPull, IFluidHandler inv, Function<Type<FluidStack>, Long> required) {
+	private static FluidStack drain(FluidTankGrid tank, int maxPull, IFluidHandler inv, Function<Type<FluidStack>, Long> required, IFluidHandler ownHandler) {
 		for (IFluidTankProperties properties : inv.getTankProperties()) {
 			FluidStack item = properties.getContents();
 			if (item == null)
@@ -38,6 +38,11 @@ public class ProcessFluid extends Process<FluidStack> {
 			// Check how much we want to drain
 			FluidType type = new FluidType(item);
 			int amount = (int) Math.min(maxPull, required.apply(type));
+			if (amount == 0)
+				continue;
+
+			// Check how much we want to fill
+			amount = ownHandler.fill(type.withAmount(amount), false);
 			if (amount == 0)
 				continue;
 
@@ -97,7 +102,7 @@ public class ProcessFluid extends Process<FluidStack> {
 				continue;
 
 			FluidTankGrid tank = getTank();
-			FluidStack extract = drain(tank, getMaxPull(tank), inv, requests::amount);
+			FluidStack extract = drain(tank, getMaxPull(tank), inv, requests::amount, ownHandler);
 			if (extract != null) {
 				sources.advanceCursor();
 				return true;
@@ -144,7 +149,7 @@ public class ProcessFluid extends Process<FluidStack> {
 					continue;
 
 				FluidTankGrid tank = getTank();
-				FluidStack extract = drain(tank, getMaxPull(tank), inv, requester::amountRequired);
+				FluidStack extract = drain(tank, getMaxPull(tank), inv, requester::amountRequired, ownHandler);
 				if (extract != null) {
 					sources.advanceCursor();
 					return true;
@@ -177,6 +182,14 @@ public class ProcessFluid extends Process<FluidStack> {
 
 	@Override
 	protected boolean attemptPull(ICrafter<FluidStack> crafter, StackList<FluidStack> stacks) {
+		DuctUnitFluid.Cache ownCache = ((DuctUnitFluid) requester.getDuct()).tileCache[requester.getSide() ^ 1];
+		if (ownCache == null)
+			return false;
+
+		IFluidHandler ownHandler = ownCache.getHandler(requester.getSide());
+		if (ownHandler == null)
+			return false;
+
 		DuctUnitFluid duct = (DuctUnitFluid) crafter.getDuct();
 		if (duct == null)
 			return false;
@@ -192,7 +205,7 @@ public class ProcessFluid extends Process<FluidStack> {
 			return false;
 
 		FluidTankGrid tank = getTank();
-		FluidStack extract = drain(tank, getMaxPull(tank), inv, stacks::amount);
+		FluidStack extract = drain(tank, getMaxPull(tank), inv, stacks::amount, ownHandler);
 		if (extract != null) {
 			crafter.finish(requester, new FluidType(extract), extract.amount);
 			requester.onCrafterSend(crafter, new FluidType(extract), extract.amount);

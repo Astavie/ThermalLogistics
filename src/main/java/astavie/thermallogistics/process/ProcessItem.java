@@ -229,7 +229,7 @@ public class ProcessItem extends Process<ItemStack> {
 				continue;
 
 			item = type.withAmount((int) Math.min(maxPull, req));
-			int left = StackHandler.canRouteItem(end, item, endSide);
+			int left = StackHandler.canRouteItem(end, item, endSide, null);
 			item.shrink(left);
 
 			if (item.isEmpty())

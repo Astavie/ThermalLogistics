@@ -34,7 +34,6 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
@@ -59,13 +58,17 @@ public class RequesterFluid extends RetrieverFluid implements IProcessRequesterF
 		filter.handleFlagByte(24); // Whitelist by default
 	}
 
-	public static ListWrapper<Pair<DuctUnit, Byte>> getSources(DuctUnitFluid fluidDuct) {
+	public static ListWrapper<Pair<DuctUnit, Byte>> getSources(DuctUnitFluid fluidDuct, byte s) {
 		LinkedList<Pair<DuctUnit, Byte>> list = new LinkedList<>();
 
 		for (DuctUnitFluid duct : fluidDuct.getGrid().nodeSet) {
 
 			for (byte k = 0; k < 6; k++) {
 				byte side = (byte) ((k + duct.internalSideCounter) % 6);
+
+				// Ignore self
+				if (duct == fluidDuct && side == s)
+					continue;
 
 				DuctUnitFluid.Cache cache = duct.tileCache[side];
 				if (cache == null || (!duct.isOutput(side) && !duct.isInput(side))) {
@@ -217,7 +220,7 @@ public class RequesterFluid extends RetrieverFluid implements IProcessRequesterF
 
 	@Override
 	public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
-		return getSources(fluidDuct);
+		return getSources(fluidDuct, side);
 	}
 
 	@Override
@@ -227,10 +230,11 @@ public class RequesterFluid extends RetrieverFluid implements IProcessRequesterF
 
 	@Override
 	public long amountRequired(Type<FluidStack> type) {
-		return filter.allowFluid(type.getAsStack()) ? Math.max(0, filter.getMaxStock() - amountInside(type)) : 0;
+		return filter.allowFluid(type.getAsStack()) ? maxFill(type) : 0;
 	}
 
-	private long amountInside(Type<FluidStack> type) {
+	private int maxFill(Type<FluidStack> type) {
+		// Get max fill
 		DuctUnitFluid.Cache cache = fluidDuct.tileCache[side];
 		if (cache == null)
 			return 0;
@@ -239,22 +243,17 @@ public class RequesterFluid extends RetrieverFluid implements IProcessRequesterF
 		if (inv == null)
 			return 0;
 
-		// Get items in queue
+		int max = inv.fill(type.withAmount(Integer.MAX_VALUE), false);
 
-		int travelling = 0;
+		// Subtract existing requests
+		GridFluid grid = fluidDuct.getGrid();
+		if (grid != null && type.references(grid.getFluid()))
+			max -= grid.getFluid().amount;
 
-		if (fluidDuct.getGrid() != null && type.references(fluidDuct.getGrid().getFluid()))
-			travelling += fluidDuct.getGrid().getFluid().amount;
+		for (StackList<FluidStack> list : requests.values())
+			max -= list.amount(type);
 
-		// Get total
-
-		int total = 0;
-
-		for (IFluidTankProperties properties : inv.getTankProperties())
-			if (type.references(properties.getContents()))
-				total += properties.getContents().amount;
-
-		return total + travelling;
+		return Math.max(max, 0);
 	}
 
 	@Override

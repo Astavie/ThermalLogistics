@@ -8,7 +8,9 @@ import astavie.thermallogistics.util.Snapshot;
 import astavie.thermallogistics.util.collection.*;
 import astavie.thermallogistics.util.type.Type;
 import cofh.thermaldynamics.duct.attachments.servo.ServoBase;
+import cofh.thermaldynamics.duct.attachments.servo.ServoFluid;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
+import cofh.thermaldynamics.duct.fluid.GridFluid;
 import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
@@ -18,6 +20,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -31,8 +34,8 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	public boolean enabled = true;
 	public int index;
 
-	public List<I> inputs = NonNullList.create();
-	public List<I> outputs = NonNullList.create();
+	public List<I> inputs = new ArrayList<>();
+	public List<I> outputs = new ArrayList<>();
 
 	public Map<RequesterReference<I>, StackList<I>> requestOutput = new LinkedHashMap<>();
 	public StackList<I> leftovers;
@@ -630,6 +633,9 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 		@Override
 		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
+			if (!parent.verifyCache()) {
+				return new EmptyListWrapper<>();
+			}
 			return new ListWrapperWrapper<>(parent.routesWithInsertSideList, r -> Pair.of(r.endPoint, r.getLastSide()));
 		}
 
@@ -662,7 +668,6 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	}
 
-	/*
 	public static class Fluid extends Recipe<FluidStack> implements IProcessRequesterFluid {
 
 		private final CrafterFluid parent;
@@ -690,7 +695,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 		@Override
 		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
-			return RequesterFluid.getSources(parent.fluidDuct);
+			return RequesterFluid.getSources(parent.fluidDuct, parent.side);
 		}
 
 		@Override
@@ -721,6 +726,5 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		}
 
 	}
-	*/
 
 }
