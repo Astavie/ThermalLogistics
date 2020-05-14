@@ -63,9 +63,7 @@ public class RequesterFluid extends RetrieverFluid implements IProcessRequesterF
 
 		for (DuctUnitFluid duct : fluidDuct.getGrid().nodeSet) {
 
-			for (byte k = 0; k < 6; k++) {
-				byte side = (byte) ((k + duct.internalSideCounter) % 6);
-
+			for (byte side = 0; side < 6; side++) {
 				// Ignore self
 				if (duct == fluidDuct && side == s)
 					continue;

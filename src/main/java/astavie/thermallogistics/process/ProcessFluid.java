@@ -42,7 +42,9 @@ public class ProcessFluid extends Process<FluidStack> {
 				continue;
 
 			// Check how much we want to fill
+			StackHandler.SIM = true;
 			amount = ownHandler.fill(type.withAmount(amount), false);
+			StackHandler.SIM = false;
 			if (amount == 0)
 				continue;
 

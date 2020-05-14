@@ -699,17 +699,6 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		}
 
 		@Override
-		public StackList<FluidStack> getRequestedStacks() {
-			StackList<FluidStack> list = super.getRequestedStacks().copy();
-
-			FluidStack fluid = ((GridFluid) getDuct().getGrid()).myTank.getFluid();
-			if (fluid != null)
-				list.remove(fluid);
-
-			return list;
-		}
-
-		@Override
 		public Map<RequesterReference<FluidStack>, StackList<FluidStack>> getRequests() {
 			Map<RequesterReference<FluidStack>, StackList<FluidStack>> requests = super.getRequests();
 

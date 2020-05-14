@@ -678,6 +678,10 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 
 		@Override
 		public int fill(FluidStack resource, boolean doFill) {
+			if (!doFill && StackHandler.SIM) {
+				return inv.fill(resource, false);
+			}
+
 			long required = 0;
 
 			Type<FluidStack> type = new FluidType(resource);
