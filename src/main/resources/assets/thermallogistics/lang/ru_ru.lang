@@ -61,6 +61,5 @@ info.logistics.manager.e.1=%s x %s
 info.logistics.manager.e.2=Нет предметов, перемещающихся в этой трубе
 
 gui.logistics.terminal.request=Запрос
-gui.logistics.terminal.missing=Отсутствующие предметы
 gui.logistics.terminal.enough=Нет необходимости запрашивать предметы
 gui.logistics.terminal.buffer=Буфер

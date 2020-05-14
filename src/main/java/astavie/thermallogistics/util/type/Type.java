@@ -18,6 +18,8 @@ public interface Type<I> {
 
 	String getDisplayName();
 
+	String getMissingLocalization(long amount);
+
 	void writePacket(PacketBase packet);
 
 	static Function<PacketBase, Type<?>> getReadFunction(int id) {

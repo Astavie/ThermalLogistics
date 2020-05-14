@@ -2,6 +2,7 @@ package astavie.thermallogistics.util.type;
 
 import codechicken.lib.fluid.FluidUtils;
 import cofh.core.network.PacketBase;
+import cofh.core.util.helpers.StringHelper;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
@@ -43,7 +44,12 @@ public class FluidType implements Type<FluidStack> {
 
 	@Override
 	public String getDisplayName() {
-		return compare.getUnlocalizedName();
+		return compare.getLocalizedName();
+	}
+
+	@Override
+	public String getMissingLocalization(long amount) {
+		return StringHelper.localizeFormat("gui.logistics.terminal.missing.fluid", amount, getDisplayName());
 	}
 
 	@Override

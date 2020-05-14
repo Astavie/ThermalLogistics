@@ -249,7 +249,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 					} else {
 						tooltip.add(StringHelper.localize("gui.logistics.terminal.missing"));
 						for (Map.Entry<Type<?>, Long> entry : request.missing.map.entrySet()) {
-							tooltip.add("§7" + StringHelper.localizeFormat("info.logistics.manager.e.1", entry.getValue(), entry.getKey().getDisplayName()));
+							tooltip.add("§7" + entry.getKey().getMissingLocalization(entry.getValue()));
 						}
 					}
 				}

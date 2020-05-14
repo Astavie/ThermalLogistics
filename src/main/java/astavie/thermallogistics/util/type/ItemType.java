@@ -2,6 +2,7 @@ package astavie.thermallogistics.util.type;
 
 import cofh.core.network.PacketBase;
 import cofh.core.util.helpers.ItemHelper;
+import cofh.core.util.helpers.StringHelper;
 import com.google.common.primitives.Ints;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.Ingredient;
@@ -52,6 +53,11 @@ public class ItemType implements Type<ItemStack> {
 	@Override
 	public String getDisplayName() {
 		return compare.getDisplayName();
+	}
+
+	@Override
+	public String getMissingLocalization(long amount) {
+		return StringHelper.localizeFormat("info.logistics.manager.e.1", amount, getDisplayName());
 	}
 
 	@Override

@@ -75,7 +75,8 @@ info.logistics.manager.f=Linking %s at {x%s, y%s, z%s, %s}
 
 gui.logistics.terminal.request=Request
 gui.logistics.terminal.complex=Request was too complex
-gui.logistics.terminal.missing=Missing items
+gui.logistics.terminal.missing=Missing stacks
+gui.logistics.terminal.missing.fluid=%s mB x %s
 gui.logistics.terminal.enough=No items need to be requested
 gui.logistics.terminal.buffer=Buffer
 gui.logistics.terminal.or=OR
