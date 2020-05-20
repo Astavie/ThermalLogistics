@@ -11,3 +11,9 @@ build
 
 # other
 run
+
+# vscode
+.vscode
+bin
+.classpath
+.project
