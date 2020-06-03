@@ -433,12 +433,12 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 		}
 
 		@Override
-		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
-			ListWrapper<Pair<DuctUnit, Byte>> sources = new ListWrapper<>();
+		public ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> getSources() {
+			ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> sources = new ListWrapper<>();
 
-			LinkedList<Pair<DuctUnit, Byte>> list = new LinkedList<>();
+			LinkedList<Pair<DuctUnit<?, ?, ?>, Byte>> list = new LinkedList<>();
 			Stream<Route<DuctUnitItem, GridItem>> stream = ServoItem.getRoutesWithDestinations(((DuctUnitItem) getDuct()).getCache().outputRoutes);
-			stream.map(r -> Pair.of((DuctUnit) r.endPoint, r.getLastSide())).forEach(list::add);
+			stream.map(r -> Pair.<DuctUnit<?, ?, ?>, Byte>of(r.endPoint, r.getLastSide())).forEach(list::add);
 
 			sources.setList(list, ListWrapper.SortType.NORMAL);
 			return sources;

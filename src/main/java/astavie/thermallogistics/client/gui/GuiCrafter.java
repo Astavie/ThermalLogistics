@@ -44,7 +44,7 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 	private static final int[][] levelButtonPos = {{-1, -1}, {176, 180}, {80, 204}};
 	private static final int[][] flagButtonsPos = {{176, 0}, {176, 60}, {216, 0}, {216, 60}, {176, 120}, {216, 120}, {176, 180}, {216, 180},};
 
-	public final List<ElementSlot> slots = new LinkedList<>();
+	public final List<ElementSlot<?>> slots = new LinkedList<>();
 	public final List<ElementButtonLinks> links = new LinkedList<>();
 
 	private final ICrafterWrapper<?> wrapper;
@@ -184,13 +184,13 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 					// Add slots
 					Slot<?> up = new Slot<>(crafter, i, true, x * 2);
-					this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, posX, y0, up)));
+					this.slots.add((ElementSlot<?>) addElement(StackHandler.getSlot(this, posX, y0, up)));
 
 					Slot<?> down = new Slot<>(crafter, i, true, x * 2 + 1);
-					this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, posX, y0 + 18, down)));
+					this.slots.add((ElementSlot<?>) addElement(StackHandler.getSlot(this, posX, y0 + 18, down)));
 
 					Slot<?> output = new Slot<>(crafter, i, false, x);
-					this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, posX, y0 + 38, output)));
+					this.slots.add((ElementSlot<?>) addElement(StackHandler.getSlot(this, posX, y0 + 38, output)));
 				}
 
 				// Add link info
@@ -203,13 +203,13 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 			// Add slots
 			Slot<?> left = new Slot<>(crafter, 0, true, 0);
-			this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, x0 - 18, y0, left)));
+			this.slots.add((ElementSlot<?>) addElement(StackHandler.getSlot(this, x0 - 18, y0, left)));
 
 			Slot<?> right = new Slot<>(crafter, 0, true, 1);
-			this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, x0, y0, right)));
+			this.slots.add((ElementSlot<?>) addElement(StackHandler.getSlot(this, x0, y0, right)));
 
 			Slot<?> output = new Slot<>(crafter, 0, false, 0);
-			this.slots.add((ElementSlot) addElement(StackHandler.getSlot(this, x0 - 9, y0 + 20, output)));
+			this.slots.add((ElementSlot<?>) addElement(StackHandler.getSlot(this, x0 - 9, y0 + 20, output)));
 
 			// Add link info
 			this.links.add((ElementButtonLinks) addElement(new ElementButtonLinks(this, 80, 38, 0)));
@@ -403,8 +403,8 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 		@Override
 		public void accept(I stack) {
-			if (recipe < crafter.getCrafters().size()) {
-				Recipe<I> recipe = (Recipe<I>) crafter.getCrafters().get(this.recipe);
+			if (recipe < crafter.getRecipes().size()) {
+				Recipe<I> recipe = crafter.getRecipes().get(this.recipe);
 				if (input) {
 					if (index < recipe.inputs.size())
 						recipe.inputs.set(index, stack);
@@ -424,8 +424,8 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 		@Override
 		public I get() {
-			if (recipe < crafter.getCrafters().size()) {
-				Recipe<I> recipe = (Recipe<I>) crafter.getCrafters().get(this.recipe);
+			if (recipe < crafter.getRecipes().size()) {
+				Recipe<I> recipe = crafter.getRecipes().get(this.recipe);
 				if (input) {
 					if (index < recipe.inputs.size())
 						return recipe.inputs.get(index);

@@ -1,33 +1,34 @@
 package astavie.thermallogistics.compat.jei;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import astavie.thermallogistics.client.gui.GuiCrafter;
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import mezz.jei.Internal;
-import mezz.jei.api.*;
+import mezz.jei.api.IIngredientFilter;
+import mezz.jei.api.IJeiRuntime;
+import mezz.jei.api.IModPlugin;
+import mezz.jei.api.IModRegistry;
+import mezz.jei.api.JEIPlugin;
 import mezz.jei.api.recipe.VanillaRecipeCategoryUid;
-import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
 import mezz.jei.config.KeyBindings;
 import mezz.jei.input.IClickedIngredient;
 import mezz.jei.input.InputHandler;
 import mezz.jei.input.MouseHelper;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 @JEIPlugin
 public class CompatJEI implements IModPlugin {
 
-	private static Method method = ReflectionHelper.findMethod(InputHandler.class, "getIngredientUnderMouseForKey", null, int.class, int.class);
+	private static Method method = ObfuscationReflectionHelper.findMethod(InputHandler.class, "getIngredientUnderMouseForKey", null, int.class, int.class);
 
 	private static IIngredientFilter filter;
 
 	@Override
 	public void register(IModRegistry registry) {
-		IRecipeTransferHandlerHelper helper = registry.getJeiHelpers().recipeTransferHandlerHelper();
-
 		CrafterHandler crafter = new CrafterHandler();
-		TerminalHandler terminal = new TerminalHandler(helper);
+		TerminalHandler terminal = new TerminalHandler();
 
 		registry.getRecipeTransferRegistry().addRecipeTransferHandler(terminal, VanillaRecipeCategoryUid.CRAFTING);
 		registry.getRecipeTransferRegistry().addUniversalRecipeTransferHandler(crafter);
@@ -49,7 +50,7 @@ public class CompatJEI implements IModPlugin {
 
 		if (showRecipe || showUses || bookmark) {
 			try {
-				InputHandler handler = ReflectionHelper.getPrivateValue(Internal.class, null, "inputHandler");
+				InputHandler handler = ObfuscationReflectionHelper.getPrivateValue(Internal.class, null, "inputHandler");
 				IClickedIngredient<?> clicked = (IClickedIngredient<?>) method.invoke(handler, MouseHelper.getX(), MouseHelper.getY());
 				return clicked != null;
 			} catch (IllegalAccessException | InvocationTargetException e) {

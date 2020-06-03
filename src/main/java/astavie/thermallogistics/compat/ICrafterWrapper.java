@@ -5,8 +5,8 @@ import net.minecraft.tileentity.TileEntity;
 
 public interface ICrafterWrapper<T extends TileEntity> {
 
+	@SuppressWarnings("unchecked")
 	default <I> void populateCast(TileEntity tile, byte side, Recipe<I> recipe, Class<I> itemClass) {
-		//noinspection unchecked
 		populate((T) tile, side, recipe, itemClass);
 	}
 

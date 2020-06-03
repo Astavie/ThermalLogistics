@@ -83,8 +83,8 @@ public class ProcessFluid extends Process<FluidStack> {
 		if (ownHandler == null)
 			return false;
 
-		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
-		for (Pair<DuctUnit, Byte> source : sources) {
+		ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> sources = requester.getSources();
+		for (Pair<DuctUnit<?, ?, ?>, Byte> source : sources) {
 			DuctUnitFluid endPoint = (DuctUnitFluid) source.getLeft();
 			byte side = source.getRight();
 
@@ -129,9 +129,9 @@ public class ProcessFluid extends Process<FluidStack> {
 			if (ownHandler == null)
 				return false;
 
-			ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
+			ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> sources = requester.getSources();
 
-			for (Pair<DuctUnit, Byte> source : sources) {
+			for (Pair<DuctUnit<?, ?, ?>, Byte> source : sources) {
 				DuctUnitFluid endPoint = (DuctUnitFluid) source.getLeft();
 				byte side = source.getRight();
 
@@ -220,8 +220,8 @@ public class ProcessFluid extends Process<FluidStack> {
 
 	@Override
 	public void findCrafter(Predicate<ICrafter<FluidStack>> predicate, boolean advanceCursor) {
-		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
-		for (Pair<DuctUnit, Byte> source : sources) {
+		ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> sources = requester.getSources();
+		for (Pair<DuctUnit<?, ?, ?>, Byte> source : sources) {
 			DuctUnitFluid fluidDuct = (DuctUnitFluid) source.getLeft();
 			byte side = source.getRight();
 

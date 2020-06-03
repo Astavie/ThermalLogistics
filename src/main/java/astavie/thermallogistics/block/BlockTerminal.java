@@ -65,7 +65,7 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 
 	@Override
 	public void onBlockPlacedBy(World world, BlockPos pos, IBlockState state, EntityLivingBase living, ItemStack stack) {
-		TileTerminal tile = (TileTerminal) world.getTileEntity(pos);
+		TileTerminal<?> tile = (TileTerminal<?>) world.getTileEntity(pos);
 		tile.setCustomName(ItemHelper.getNameFromItemStack(stack));
 		if (stack.getTagCompound() != null)
 			tile.requester.set(new ItemStack(stack.getTagCompound().getCompoundTag("requester")));
@@ -118,7 +118,6 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 
 	@Nonnull
 	@Override
-	@SuppressWarnings("deprecation")
 	public IBlockState getStateFromMeta(int meta) {
 		return this.getDefaultState().withProperty(DIRECTION, Direction.values()[meta]);
 	}
@@ -136,7 +135,7 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 
 	@Override
 	public void breakBlock(World world, BlockPos pos, IBlockState state) {
-		CoreUtils.dropItemStackIntoWorldWithVelocity(((TileTerminal) world.getTileEntity(pos)).requester.get(), world, pos);
+		CoreUtils.dropItemStackIntoWorldWithVelocity(((TileTerminal<?>) world.getTileEntity(pos)).requester.get(), world, pos);
 		super.breakBlock(world, pos, state);
 	}
 
@@ -153,14 +152,14 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 	@Override
 	public NBTTagCompound getItemStackTag(IBlockAccess world, BlockPos pos) {
 		NBTTagCompound tag = new NBTTagCompound();
-		tag.setTag("requester", ((TileTerminal) world.getTileEntity(pos)).requester.get().writeToNBT(new NBTTagCompound()));
+		tag.setTag("requester", ((TileTerminal<?>) world.getTileEntity(pos)).requester.get().writeToNBT(new NBTTagCompound()));
 		return tag;
 	}
 
 	@Override
 	public ArrayList<ItemStack> dismantleBlock(World world, BlockPos pos, IBlockState state, EntityPlayer player, boolean returnDrops) {
 		NBTTagCompound nbt = getItemStackTag(world, pos);
-		((TileTerminal) world.getTileEntity(pos)).requester.set(ItemStack.EMPTY);
+		((TileTerminal<?>) world.getTileEntity(pos)).requester.set(ItemStack.EMPTY);
 		return dismantleDelegate(nbt, world, pos, player, returnDrops, false);
 	}
 
@@ -235,6 +234,8 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 						return UP_WEST;
 					case EAST:
 						return UP_EAST;
+					default:
+						break;
 				}
 
 			} else if (vertical == EnumFacing.DOWN) {
@@ -247,6 +248,8 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 						return DOWN_WEST;
 					case EAST:
 						return DOWN_EAST;
+					default:
+						break;
 				}
 			} else {
 				switch (horizontal) {
@@ -258,6 +261,8 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 						return WEST;
 					case EAST:
 						return EAST;
+					default:
+						break;
 				}
 			}
 			return NORTH;

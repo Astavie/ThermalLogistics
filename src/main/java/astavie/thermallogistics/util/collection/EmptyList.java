@@ -12,8 +12,8 @@ public class EmptyList<I> extends StackList<I> {
 	private EmptyList() {
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <I> EmptyList<I> getInstance() {
-		//noinspection unchecked
 		return (EmptyList<I>) LIST;
 	}
 

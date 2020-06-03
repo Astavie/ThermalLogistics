@@ -170,10 +170,10 @@ public class ThermalLogistics {
 			Blocks.terminal_item.registerModels();
 		}
 
+		@SuppressWarnings("unchecked")
 		private static <V extends IForgeRegistryEntry<V>> void register(IForgeRegistry<V> registry, IInitializer i) {
 			i.preInit();
 
-			//noinspection unchecked
 			registry.register((V) i);
 		}
 

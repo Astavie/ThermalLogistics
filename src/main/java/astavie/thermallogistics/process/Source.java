@@ -68,7 +68,7 @@ public class Source<I> {
 
 	@Override
 	public boolean equals(Object obj) {
-		return obj instanceof Source && ((Source) obj).side == side && Objects.equals(((Source) obj).crafter, crafter);
+		return obj instanceof Source && ((Source<?>) obj).side == side && Objects.equals(((Source<?>) obj).crafter, crafter);
 	}
 
 }

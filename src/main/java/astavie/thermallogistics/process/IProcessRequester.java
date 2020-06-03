@@ -21,7 +21,7 @@ public interface IProcessRequester<I> extends IRequester<I> {
 	/**
 	 * @return A list of sources sorted by distance
 	 */
-	ListWrapper<Pair<DuctUnit, Byte>> getSources();
+	ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> getSources();
 
 	/**
 	 * A crafter has sent this stack toward this requester

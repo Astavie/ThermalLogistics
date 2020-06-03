@@ -107,9 +107,9 @@ public class StackHandler {
 		else throw new IllegalArgumentException("Unknown item type " + item.getClass().getName());
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <I> void addRequesters(Collection<IRequester<I>> collection, Object object) {
 		if (object instanceof IRequester) {
-			//noinspection unchecked
 			collection.add((IRequester<I>) object);
 		} else if (object instanceof IRequesterContainer) {
 			for (IRequester<?> requester : ((IRequesterContainer<?>) object).getRequesters())
@@ -117,10 +117,10 @@ public class StackHandler {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <I> void addCrafters(Collection<ICrafter<I>> collection, Object object) {
 		if (object instanceof ICrafter) {
-			if (((ICrafter) object).isEnabled())
-				//noinspection unchecked
+			if (((ICrafter<?>) object).isEnabled())
 				collection.add((ICrafter<I>) object);
 		} else if (object instanceof ICrafterContainer) {
 			for (ICrafter<?> crafter : ((ICrafterContainer<?>) object).getCrafters())
@@ -128,10 +128,10 @@ public class StackHandler {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <I> boolean forEachCrafter(Object object, Predicate<ICrafter<I>> function) {
 		if (object instanceof ICrafter) {
-			if (((ICrafter) object).isEnabled())
-				//noinspection unchecked
+			if (((ICrafter<?>) object).isEnabled())
 				return function.test((ICrafter<I>) object);
 		} else if (object instanceof ICrafterContainer) {
 			for (ICrafter<?> crafter : ((ICrafterContainer<?>) object).getCrafters())
@@ -141,10 +141,10 @@ public class StackHandler {
 		return false;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static <I> void addCraftable(StackList<I> list, Object object) {
 		if (object instanceof ICrafter) {
-			if (((ICrafter) object).isEnabled())
-				//noinspection unchecked
+			if (((ICrafter<?>) object).isEnabled())
 				for (Type<I> type : ((ICrafter<I>) object).getOutputs().types())
 					list.addCraftable(type);
 		} else if (object instanceof ICrafterContainer) {

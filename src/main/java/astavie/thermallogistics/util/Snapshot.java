@@ -279,12 +279,11 @@ public class Snapshot {
 		return tanks.get(grid);
 	}
 
+	@SuppressWarnings("unchecked")
 	public <I> StackList<I> getStacks(MultiBlockGrid<?> grid) {
 		if (grid instanceof GridItem)
-			//noinspection unchecked
 			return (StackList<I>) getItems((GridItem) grid);
 		else if (grid instanceof GridFluid)
-			//noinspection unchecked
 			return (StackList<I>) getFluids((GridFluid) grid);
 		return null;
 	}
@@ -301,12 +300,11 @@ public class Snapshot {
 
 	// Auto-crafting
 
+	@SuppressWarnings("unchecked")
 	public <I> StackList<I> getMutatedStacks(MultiBlockGrid<?> grid) {
 		if (grid instanceof GridItem)
-			//noinspection unchecked
 			return (StackList<I>) getMutatedItems((GridItem) grid);
 		else if (grid instanceof GridFluid)
-			//noinspection unchecked
 			return (StackList<I>) getMutatedFluids((GridFluid) grid);
 		return null;
 	}
@@ -329,6 +327,7 @@ public class Snapshot {
 		return fluidsMutated.get(grid);
 	}
 
+	@SuppressWarnings("unchecked")
 	public <I> StackList<I> getLeftovers(RequesterReference<I> reference) {
 		leftoversMutated.computeIfAbsent(reference, ref -> {
 			IRequester<I> requester = reference.get();
@@ -338,12 +337,11 @@ public class Snapshot {
 			return EmptyList.getInstance();
 		});
 
-		//noinspection unchecked
 		return (StackList<I>) leftoversMutated.get(reference);
 	}
 
+	@SuppressWarnings("unchecked")
 	private <I> void applyLeftover(RequesterReference<I> reference, StackList<?> list) {
-		//noinspection unchecked
 		((ICrafter<I>) reference.get()).applyLeftovers((StackList<I>) list);
 	}
 

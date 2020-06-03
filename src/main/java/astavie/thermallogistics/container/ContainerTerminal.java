@@ -10,9 +10,9 @@ import javax.annotation.Nonnull;
 
 public abstract class ContainerTerminal extends ContainerCore {
 
-	public final TileTerminal tile;
+	public final TileTerminal<?> tile;
 
-	public ContainerTerminal(TileTerminal tile, InventoryPlayer inventory) {
+	public ContainerTerminal(TileTerminal<?> tile, InventoryPlayer inventory) {
 		this.tile = tile;
 
 		addSlotToContainer(new SlotSpecial(tile.requester, 0, 8, 56));

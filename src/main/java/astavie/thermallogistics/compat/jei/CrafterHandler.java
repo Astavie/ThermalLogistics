@@ -54,8 +54,8 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter>,
 		int index;
 		Recipe<ItemStack> recipe = null;
 
-		for (index = 0; index < crafter.getCrafters().size(); index++) {
-			recipe = (Recipe<ItemStack>) crafter.getCrafters().get(index);
+		for (index = 0; index < crafter.getRecipes().size(); index++) {
+			recipe = crafter.getRecipes().get(index);
 			if (recipe.inputs.stream().allMatch(ItemStack::isEmpty) && recipe.outputs.stream().allMatch(ItemStack::isEmpty)) {
 				index++;
 				break;
@@ -105,8 +105,8 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter>,
 		int index;
 		Recipe<FluidStack> recipe = null;
 
-		for (index = 0; index < crafter.getCrafters().size(); index++) {
-			recipe = (Recipe<FluidStack>) crafter.getCrafters().get(index);
+		for (index = 0; index < crafter.getRecipes().size(); index++) {
+			recipe = crafter.getRecipes().get(index);
 			if (recipe.inputs.stream().allMatch(Objects::isNull) && recipe.outputs.stream().allMatch(Objects::isNull)) {
 				index++;
 				break;
@@ -154,16 +154,15 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter>,
 
 	@Nonnull
 	@Override
+	@SuppressWarnings("unchecked")
 	public <I> List<Target<I>> getTargets(@Nonnull GuiCrafter gui, @Nonnull I ingredient, boolean doStart) {
 		List<Target<I>> list = new LinkedList<>();
 
 		if ((ingredient instanceof ItemStack && gui.crafter.getItemClass() == ItemStack.class) || (ingredient instanceof FluidStack && gui.crafter.getItemClass() == FluidStack.class))
-			for (ElementSlot slot : gui.slots)
-				//noinspection unchecked
-				list.add(new ElementSlotTarget<I>(slot));
+			for (ElementSlot<?> slot : gui.slots)
+				list.add(new ElementSlotTarget<I>((ElementSlot<I>) slot));
 
 		if (ingredient instanceof FluidStack && gui.tab != null && gui.tab.isFullyOpened())
-			//noinspection unchecked
 			list.add((Target<I>) new TabFluidTarget(gui.tab));
 
 		return list;
@@ -185,7 +184,7 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter>,
 		mouseX -= gui.getGuiLeft();
 		mouseY -= gui.getGuiTop();
 
-		for (ElementSlot slot : gui.slots)
+		for (ElementSlot<?> slot : gui.slots)
 			if (slot.intersectsWith(mouseX, mouseY))
 				return slot.getIngredient();
 

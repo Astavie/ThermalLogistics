@@ -1,5 +1,17 @@
 package astavie.thermallogistics.compat.jei;
 
+import java.awt.Rectangle;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.client.gui.element.ElementSlot;
 import astavie.thermallogistics.container.ContainerTerminalItem;
@@ -12,7 +24,6 @@ import mezz.jei.api.gui.IGuiIngredient;
 import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
-import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -20,20 +31,7 @@ import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.util.NonNullList;
 import net.minecraftforge.oredict.OreDictionary;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.awt.*;
-import java.util.List;
-import java.util.*;
-import java.util.stream.Collectors;
-
 public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminalItem>, IAdvancedGuiHandler<GuiTerminalItem>, IGhostIngredientHandler<GuiTerminalItem> {
-
-	private final IRecipeTransferHandlerHelper helper;
-
-	public TerminalHandler(IRecipeTransferHandlerHelper helper) {
-		this.helper = helper;
-	}
 
 	@Nonnull
 	@Override
@@ -99,9 +97,9 @@ public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminal
 
 	@Nonnull
 	@Override
+	@SuppressWarnings("unchecked")
 	public <I> List<Target<I>> getTargets(@Nonnull GuiTerminalItem gui, @Nonnull I ingredient, boolean doStart) {
 		if (ingredient instanceof ItemStack && gui.tabCrafting.isFullyOpened())
-			//noinspection unchecked
 			return Arrays.stream(gui.tabCrafting.grid).map(slot -> (Target<I>) new TabTarget(gui.tabCrafting, slot)).collect(Collectors.toList());
 
 		return Collections.emptyList();

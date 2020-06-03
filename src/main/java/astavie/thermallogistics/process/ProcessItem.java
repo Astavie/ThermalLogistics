@@ -42,8 +42,8 @@ public class ProcessItem extends Process<ItemStack> {
 		if (ownHandler == null)
 			return false;
 
-		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
-		for (Pair<DuctUnit, Byte> source : sources) {
+		ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> sources = requester.getSources();
+		for (Pair<DuctUnit<?, ?, ?>, Byte> source : sources) {
 			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
 			byte side = source.getRight();
 
@@ -93,9 +93,9 @@ public class ProcessItem extends Process<ItemStack> {
 			if (ownHandler == null)
 				return false;
 
-			ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
+			ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> sources = requester.getSources();
 
-			for (Pair<DuctUnit, Byte> source : sources) {
+			for (Pair<DuctUnit<?, ?, ?>, Byte> source : sources) {
 				DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
 				byte side = source.getRight();
 
@@ -176,8 +176,8 @@ public class ProcessItem extends Process<ItemStack> {
 
 	@Override
 	public void findCrafter(Predicate<ICrafter<ItemStack>> predicate, boolean advanceCursor) {
-		ListWrapper<Pair<DuctUnit, Byte>> sources = requester.getSources();
-		for (Pair<DuctUnit, Byte> source : sources) {
+		ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> sources = requester.getSources();
+		for (Pair<DuctUnit<?, ?, ?>, Byte> source : sources) {
 			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
 			byte side = source.getRight();
 
@@ -212,7 +212,7 @@ public class ProcessItem extends Process<ItemStack> {
 	}
 
 	private ItemStack extract(DuctUnitItem duct, byte side, IItemHandler inv, Function<Type<ItemStack>, Long> required, DuctUnitItem end, byte endSide) {
-		Route route = duct.getRoute(end);
+		Route<?, ?> route = duct.getRoute(end);
 		if (route == null)
 			return ItemStack.EMPTY;
 

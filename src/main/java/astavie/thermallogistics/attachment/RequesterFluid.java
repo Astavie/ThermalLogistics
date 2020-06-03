@@ -58,8 +58,8 @@ public class RequesterFluid extends RetrieverFluid implements IProcessRequesterF
 		filter.handleFlagByte(24); // Whitelist by default
 	}
 
-	public static ListWrapper<Pair<DuctUnit, Byte>> getSources(DuctUnitFluid fluidDuct, byte s) {
-		LinkedList<Pair<DuctUnit, Byte>> list = new LinkedList<>();
+	public static ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> getSources(DuctUnitFluid fluidDuct, byte s) {
+		LinkedList<Pair<DuctUnit<?, ?, ?>, Byte>> list = new LinkedList<>();
 
 		for (DuctUnitFluid duct : fluidDuct.getGrid().nodeSet) {
 
@@ -78,7 +78,7 @@ public class RequesterFluid extends RetrieverFluid implements IProcessRequesterF
 
 		}
 
-		ListWrapper<Pair<DuctUnit, Byte>> wrapper = new ListWrapper<>();
+		ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> wrapper = new ListWrapper<>();
 		wrapper.setList(list, ListWrapper.SortType.NORMAL);
 
 		return wrapper;
@@ -167,6 +167,7 @@ public class RequesterFluid extends RetrieverFluid implements IProcessRequesterF
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public ItemStack getTileIcon() {
 		return myTile == null ? ItemStack.EMPTY : myTile.getBlockType().getItem(myTile.getWorld(), myTile.getPos(), myTile.getWorld().getBlockState(myTile.getPos()));
 	}
@@ -217,7 +218,7 @@ public class RequesterFluid extends RetrieverFluid implements IProcessRequesterF
 	}
 
 	@Override
-	public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
+	public ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> getSources() {
 		return getSources(fluidDuct, side);
 	}
 

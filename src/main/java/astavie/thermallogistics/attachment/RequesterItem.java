@@ -133,6 +133,7 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public ItemStack getTileIcon() {
 		return myTile == null ? ItemStack.EMPTY : myTile.getBlockType().getItem(myTile.getWorld(), myTile.getPos(), myTile.getWorld().getBlockState(myTile.getPos()));
 	}
@@ -198,7 +199,7 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 	}
 
 	@Override
-	public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
+	public ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> getSources() {
 		if (!verifyCache()) {
 			return new EmptyListWrapper<>();
 		}

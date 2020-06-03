@@ -21,7 +21,8 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
@@ -516,9 +517,10 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public ItemStack getTileIcon() {
 		// Sorry cpw, but I need some reflection
-		TileEntity tile = ReflectionHelper.getPrivateValue(ServoBase.class, parent, "myTile");
+		TileEntity tile = ObfuscationReflectionHelper.getPrivateValue(ServoBase.class, parent, "myTile");
 		return tile == null ? ItemStack.EMPTY : tile.getBlockType().getItem(tile.getWorld(), tile.getPos(), tile.getWorld().getBlockState(tile.getPos()));
 	}
 
@@ -632,7 +634,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		}
 
 		@Override
-		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
+		public ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> getSources() {
 			if (!parent.verifyCache()) {
 				return new EmptyListWrapper<>();
 			}
@@ -694,7 +696,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		}
 
 		@Override
-		public ListWrapper<Pair<DuctUnit, Byte>> getSources() {
+		public ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> getSources() {
 			return RequesterFluid.getSources(parent.fluidDuct, parent.side);
 		}
 

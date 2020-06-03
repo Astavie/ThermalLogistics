@@ -82,7 +82,7 @@ public class DistributorItem extends ServoItem {
 					if (stackSize <= 0)
 						continue;
 
-					Route itemRoute = outputRoute.copy();
+					Route<?, ?> itemRoute = outputRoute.copy();
 					item.setCount(stackSize);
 					return new TravelingItem(item, duct, itemRoute, (byte) (side ^ 1), speed);
 				}
@@ -98,7 +98,7 @@ public class DistributorItem extends ServoItem {
 					if (stackSize <= 0)
 						continue;
 
-					Route itemRoute = outputRoute.copy();
+					Route<?, ?> itemRoute = outputRoute.copy();
 					item.setCount(stackSize);
 					return new TravelingItem(item, duct, itemRoute, (byte) (side ^ 1), speed);
 				}
@@ -138,7 +138,7 @@ public class DistributorItem extends ServoItem {
 					if (stackSize <= 0)
 						continue;
 
-					Route itemRoute = outputRoute.copy();
+					Route<?, ?> itemRoute = outputRoute.copy();
 					item.setCount(stackSize);
 					return new TravelingItem(item, itemDuct, itemRoute, (byte) (side ^ 1), getSpeed());
 				}
@@ -162,7 +162,7 @@ public class DistributorItem extends ServoItem {
 					if (stackSize <= 0)
 						continue;
 
-					Route itemRoute = outputRoute.copy();
+					Route<?, ?> itemRoute = outputRoute.copy();
 					item.setCount(stackSize);
 					return new TravelingItem(item, itemDuct, itemRoute, (byte) (side ^ 1), getSpeed());
 				}
