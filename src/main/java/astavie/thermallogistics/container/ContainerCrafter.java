@@ -19,11 +19,11 @@ public class ContainerCrafter extends ContainerAttachmentBase {
 	protected void addPlayerInventory(InventoryPlayer inventory) {
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 9; j++) {
-				addSlotToContainer(new Slot(inventory, j + i * 9 + 9, 8 + j * 18, 20 + 123 + i * 18));
+				addSlotToContainer(new Slot(inventory, j + i * 9 + 9, 8 + j * 18, 20 + 14 + 123 + i * 18));
 			}
 		}
 		for (int i = 0; i < 9; i++) {
-			addSlotToContainer(new Slot(inventory, i, 8 + i * 18, 20 + 181));
+			addSlotToContainer(new Slot(inventory, i, 8 + i * 18, 20 + 14 + 181));
 		}
 	}
 

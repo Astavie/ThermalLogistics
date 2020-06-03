@@ -33,7 +33,7 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	public final List<RequesterReference<?>> linked = NonNullList.create();
 
-	public boolean enabled = true;
+	public boolean enabled = false;
 	public int index;
 
 	public List<I> inputs = new ArrayList<>();
@@ -77,19 +77,38 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	@Override
 	public void link(ICrafter<?> crafter) {
 		checkLinked();
-		RequesterReference<?> reference = crafter.createReference();
+		if (crafter instanceof Recipe) {
+			((Recipe<?>) crafter).checkLinked();
+		}
 
-		if (!isLinked(reference)) {
-			for (RequesterReference<?> link : linked) {
-				ICrafter<?> oldie = (ICrafter<?>) link.get();
-				oldie.link(reference);
-				crafter.link(link);
-			}
+		RequesterReference<?> mee = createReference();
+		RequesterReference<?> you = crafter.createReference();
 
-			linked.add(reference);
-			crafter.link(createReference());
+		// Link us to them
+		Collection<RequesterReference<?>> tmpLinked = new LinkedList<>(linked);
 
-			markDirty();
+		for (RequesterReference<?> reference : linked) {
+			Collection<RequesterReference<?>> collection = ((ICrafter<?>) reference.get()).getLinked();
+			collection.add(you);
+			collection.addAll(crafter.getLinked());
+		}
+		linked.add(you);
+		linked.addAll(crafter.getLinked());
+
+		// Link them to us
+		for (RequesterReference<?> reference : crafter.getLinked()) {
+			Collection<RequesterReference<?>> collection = ((ICrafter<?>) reference.get()).getLinked();
+			collection.add(mee);
+			collection.addAll(tmpLinked);
+		}
+		crafter.getLinked().add(mee);
+		crafter.getLinked().addAll(tmpLinked);
+
+		// Disable
+		markDirty();
+		setEnabled(false);
+		for (RequesterReference<?> reference : linked) {
+			((ICrafter<?>) reference.get()).setEnabled(false);
 		}
 	}
 
@@ -100,6 +119,14 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	@Override
 	public void unlink(ICrafter<?> crafter) {
 		checkLinked();
+
+		// Set disabled
+		setEnabled(false);
+		for (RequesterReference<?> reference : linked) {
+			((ICrafter<?>) reference.get()).setEnabled(false);
+		}
+
+		// Remove link
 		RequesterReference<?> reference = crafter.createReference();
 
 		for (RequesterReference<?> link : linked) {
@@ -269,8 +296,37 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		markDirty();
 	}
 
+	public void toggleEnabled() {
+		checkLinked();
+		setEnabled(!enabled);
+		for (RequesterReference<?> reference : linked) {
+			((ICrafter<?>) reference.get()).setEnabled(enabled);
+		}
+	}
+
+	@Override
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+		if (!enabled) {
+			onDisable();
+		}
+		markDirty();
+	}
+
+	public void checkEnabled() {
+		if (enabled) {
+			for (RequesterReference<?> reference : linked) {
+				if (!((ICrafter<?>) reference.get()).isEnabled()) {
+					enabled = false;
+					return;
+				}
+			}
+		}
+	}
+
 	public void check() {
 		checkLinked();
+		checkEnabled();
 		checkOutput();
 		balanceLeftovers();
 	}

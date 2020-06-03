@@ -86,10 +86,21 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 		recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
 
 		recipes.add(recipe);
+		
+		// Disable redstone control
+		rsMode = ControlMode.DISABLED;
 	}
 
 	public CrafterItem(TileGrid tile, byte side) {
 		super(tile, side);
+
+		// Disable redstone control
+		rsMode = ControlMode.DISABLED;
+	}
+
+	@Override
+	public boolean canAlterRS() {
+		return false;
 	}
 
 	private Recipe<ItemStack> newRecipe(int index) {
@@ -198,31 +209,15 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 		boolean onlyCheck = false;
 		for (Recipe<ItemStack> recipe : recipes) {
-			if (!onlyCheck) {
-				onlyCheck = recipe.updateMissing();
-			}
-			if (recipe.process.update(onlyCheck)) {
-				onlyCheck = true;
+			if (recipe.isEnabled()) {
+				if (!onlyCheck) {
+					onlyCheck = recipe.updateMissing();
+				}
+				if (recipe.process.update(onlyCheck)) {
+					onlyCheck = true;
+				}
 			}
 		}
-	}
-
-	@Override
-	public void onNeighborChange() {
-		boolean wasPowered = isPowered;
-		super.onNeighborChange();
-		if (wasPowered && !isPowered)
-			for (Recipe<ItemStack> recipe : recipes)
-				recipe.onDisable();
-	}
-
-	@Override
-	public void checkSignal() {
-		boolean wasPowered = isPowered;
-		super.checkSignal();
-		if (wasPowered && !isPowered)
-			for (Recipe<ItemStack> recipe : recipes)
-				recipe.onDisable();
 	}
 
 	@Override
@@ -251,7 +246,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			nbt.setTag("requestOutput", StackHandler.writeRequestMap(recipe.requestOutput));
 			nbt.setTag("leftovers", recipe.leftovers.writeNbt());
 			nbt.setTag("missing", recipe.missing.writeNbt());
-			nbt.setBoolean("enabled", recipe.enabled);
+			nbt.setBoolean("disabled", !recipe.enabled);
 			recipes.appendTag(nbt);
 		}
 
@@ -264,10 +259,14 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 		recipes.clear();
 
+		// 0.2-x enabled format
+		boolean enabled = tag.hasKey("rsMode") && tag.getByte("rsMode") == 0;
+
 		if (tag.hasKey("Inputs") || tag.hasKey("Outputs") || tag.hasKey("Linked")) {
 			// Version 0.1-x nbt format
 
 			Recipe<ItemStack> recipe = newRecipe(0);
+			recipe.enabled = true;
 			recipe.inputs.addAll(Collections.nCopies(SIZE[type] * 2, ItemStack.EMPTY));
 			recipe.outputs.addAll(Collections.nCopies(SIZE[type], ItemStack.EMPTY));
 
@@ -298,6 +297,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 				NBTTagCompound nbt = recipes.getCompoundTagAt(i);
 
 				Recipe<ItemStack> recipe = newRecipe(i);
+				recipe.enabled = enabled;
 
 				NBTTagList inputs = nbt.getTagList("inputs", Constants.NBT.TAG_COMPOUND);
 				for (int j = 0; j < inputs.tagCount(); j++)
@@ -342,7 +342,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 				recipe.requestOutput = StackHandler.readRequestMap(nbt.getTagList("requestOutput", Constants.NBT.TAG_COMPOUND), ItemList::new);
 				recipe.leftovers.readNbt(nbt.getTagList("leftovers", Constants.NBT.TAG_COMPOUND));
 				recipe.missing.readNbt(nbt.getTagList("missing", Constants.NBT.TAG_COMPOUND));
-				recipe.enabled = nbt.getBoolean("enabled");
+				recipe.enabled = enabled || (nbt.hasKey("disabled") && !nbt.getBoolean("disabled"));
 				this.recipes.add(recipe);
 			}
 		}
@@ -491,6 +491,14 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 							ThermalLogistics.Items.manager.link(player, stack, recipes.get(index));
 							((EntityPlayerMP) player).updateHeldItem();
 						}
+					}
+				} else if (message == 6) {
+					// Enable / disable
+					int index = payload.getInt();
+
+					if (index >= 0 && index < recipes.size()) {
+						Recipe<ItemStack> recipe = recipes.get(index);
+						recipe.toggleEnabled();
 					}
 				}
 

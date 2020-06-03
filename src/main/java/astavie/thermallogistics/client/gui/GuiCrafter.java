@@ -45,7 +45,7 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 	private static final int[][] flagButtonsPos = {{176, 0}, {176, 60}, {216, 0}, {216, 60}, {176, 120}, {216, 120}, {176, 180}, {216, 180},};
 
 	public final List<ElementSlot<?>> slots = new LinkedList<>();
-	public final List<ElementButtonLinks> links = new LinkedList<>();
+	public final List<ElementButton> links = new LinkedList<>();
 
 	private final ICrafterWrapper<?> wrapper;
 	public final IAttachmentCrafter<?> crafter;
@@ -63,7 +63,7 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 		this.attachment = crafter;
 		this.attachment.getFilter();
 		this.name = attachment.getName();
-		this.ySize = 224;
+		this.ySize = 238;
 
 		TileEntity tile = BlockHelper.getAdjacentTileEntity(attachment.baseTile, attachment.side);
 		if (tile == null) {
@@ -111,7 +111,7 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			buttonSize = 20;
 			int button_offset = buttonSize + 6;
 			int x0 = xSize / 2 - buttonNo * (button_offset / 2) + 3;
-			int y0 = 20 + 38 + 2 * 18 + 8;
+			int y0 = 20 + 38 + 2 * 18 + 8 + 14;
 
 			if (attachment.type > 0) {
 				splitButton = new ElementButton(this, x0, y0, "split", 0, 0, 0, buttonSize, 0, buttonSize * 2, buttonSize, buttonSize, ICON_PATH);
@@ -172,13 +172,13 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 		if (attachment.type > 0) {
 			int slots = CrafterItem.SIZE[attachment.type];
-			int recipeSlots = slots / crafter.getCrafters().size();
+			int recipeSlots = slots / crafter.getRecipes().size();
 
-			int start = slots * 9 + (crafter.getCrafters().size() - 1);
+			int start = slots * 9 + (crafter.getRecipes().size() - 1);
 			int x0 = xSize / 2 - start;
 			int y0 = 20 + 20;
 
-			for (int i = 0; i < crafter.getCrafters().size(); i++) {
+			for (int i = 0; i < crafter.getRecipes().size(); i++) {
 				for (int x = 0; x < recipeSlots; x++) {
 					int posX = x0 + (x + i * recipeSlots) * 18 + i * 2;
 
@@ -196,6 +196,21 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 				// Add link info
 				int pos0 = x0 + (i * recipeSlots) * 18 + i * 2;
 				this.links.add((ElementButtonLinks) addElement(new ElementButtonLinks(this, pos0 + (recipeSlots * 18) / 2 - 8, 20, i)));
+
+				// Add enabled / disabled
+				int y = 20 + 38 + 2 * 18 + 8 - 1;
+				int sheetY = crafter.getRecipes().get(i).enabled ? 10 : 0;
+				final int j = i;
+				this.links.add((ElementButton) addElement(new ElementButton(this, pos0 + (recipeSlots * 18) / 2 - 5, y, 10, 10, 96, sheetY, 106, sheetY, ICON_PATH) {
+					@Override
+					public void onClick() {
+						// Send to server
+						PacketTileInfo packet = ((ConnectionBase) crafter).getNewPacket(ConnectionBase.NETWORK_ID.GUI);
+						packet.addByte(6);
+						packet.addInt(j);
+						PacketHandler.sendToServer(packet);
+					}
+				}.setToolTip(crafter.getRecipes().get(i).enabled ? "info.logistics.disable" : "info.logistics.enable")));
 			}
 		} else {
 			int x0 = xSize / 2;
@@ -213,6 +228,20 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 			// Add link info
 			this.links.add((ElementButtonLinks) addElement(new ElementButtonLinks(this, 80, 38, 0)));
+
+			// Add enabled / disabled
+			int y = 20 + 38 + 2 * 18 + 8 - 1;
+			int sheetY = crafter.getRecipes().get(0).enabled ? 10 : 0;
+			this.links.add((ElementButton) addElement(new ElementButton(this, 83, y, 10, 10, 96, sheetY, 106, sheetY, ICON_PATH) {
+				@Override
+				public void onClick() {
+					// Send to server
+					PacketTileInfo packet = ((ConnectionBase) crafter).getNewPacket(ConnectionBase.NETWORK_ID.GUI);
+					packet.addByte(6);
+					packet.addInt(0);
+					PacketHandler.sendToServer(packet);
+				}
+			}.setToolTip(crafter.getRecipes().get(0).enabled ? "info.logistics.disable" : "info.logistics.enable")));
 		}
 
 		if (overlay != null) {

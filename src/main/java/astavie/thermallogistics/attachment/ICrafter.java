@@ -27,6 +27,8 @@ public interface ICrafter<I> extends IRequester<I> {
 
 	boolean isEnabled();
 
+	void setEnabled(boolean enabled);
+
 	StackList<I> getOutputs();
 
 	StackList<I> getLeftovers();
