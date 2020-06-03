@@ -16,12 +16,13 @@ import mezz.jei.config.KeyBindings;
 import mezz.jei.input.IClickedIngredient;
 import mezz.jei.input.InputHandler;
 import mezz.jei.input.MouseHelper;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 
 @JEIPlugin
+@SuppressWarnings("deprecation")
 public class CompatJEI implements IModPlugin {
 
-	private static Method method = ObfuscationReflectionHelper.findMethod(InputHandler.class, "getIngredientUnderMouseForKey", null, int.class, int.class);
+	private static Method method = ReflectionHelper.findMethod(InputHandler.class, "getIngredientUnderMouseForKey", null, int.class, int.class);
 
 	private static IIngredientFilter filter;
 
@@ -50,7 +51,7 @@ public class CompatJEI implements IModPlugin {
 
 		if (showRecipe || showUses || bookmark) {
 			try {
-				InputHandler handler = ObfuscationReflectionHelper.getPrivateValue(Internal.class, null, "inputHandler");
+				InputHandler handler = ReflectionHelper.getPrivateValue(Internal.class, null, "inputHandler");
 				IClickedIngredient<?> clicked = (IClickedIngredient<?>) method.invoke(handler, MouseHelper.getX(), MouseHelper.getY());
 				return clicked != null;
 			} catch (IllegalAccessException | InvocationTargetException e) {

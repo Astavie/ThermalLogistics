@@ -21,13 +21,14 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.function.Supplier;
 
+@SuppressWarnings("deprecation")
 public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 
 	public final List<RequesterReference<?>> linked = NonNullList.create();
@@ -517,10 +518,9 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 	}
 
 	@Override
-	@SuppressWarnings("deprecation")
 	public ItemStack getTileIcon() {
 		// Sorry cpw, but I need some reflection
-		TileEntity tile = ObfuscationReflectionHelper.getPrivateValue(ServoBase.class, parent, "myTile");
+		TileEntity tile = ReflectionHelper.getPrivateValue(ServoBase.class, parent, "myTile");
 		return tile == null ? ItemStack.EMPTY : tile.getBlockType().getItem(tile.getWorld(), tile.getPos(), tile.getWorld().getBlockState(tile.getPos()));
 	}
 
