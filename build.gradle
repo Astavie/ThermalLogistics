@@ -34,7 +34,7 @@ minecraft {
 
 repositories {
 	maven { url "http://maven.covers1624.net/" }
-	maven { url "http://chickenbones.net/maven/" }
+	// maven { url "http://chickenbones.net/maven/" }
 	maven { url "http://dvs1.progwml6.com/files/maven/" }
 }
 
