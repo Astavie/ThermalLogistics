@@ -91,15 +91,6 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				ingredients[i] = Ingredient.fromStacks(stacks);
 			}
 
-			IRecipe recipe = CraftingManager.getRecipe(new ResourceLocation(packet.getString()));
-			if (recipe == null)
-				return;
-
-			ItemStack craft = recipe.getRecipeOutput().copy();
-			ItemStack hand = player.inventory.getItemStack();
-			if (!shift && !hand.isEmpty() && (!ItemHelper.itemsIdentical(craft, hand) || craft.getCount() + hand.getCount() > hand.getMaxStackSize()))
-				return;
-
 			b:
 			//noinspection LoopConditionNotUpdatedInsideLoop
 			do {
@@ -122,9 +113,9 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 					break b;
 				}
 
+				// Get recipe
 				InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
 
-				// Craft item
 				a:
 				for (int i = 0, ingredientsLength = ingredients.length; i < ingredientsLength; i++) {
 					Ingredient ingredient = ingredients[i];
@@ -134,26 +125,57 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 					for (int slot = 0; slot < this.inventory.getSizeInventory(); slot++) {
 						ItemStack stack = this.inventory.getStackInSlot(slot);
 						if (ingredient.apply(stack)) {
-							ItemStack decreased = this.inventory.decrStackSize(slot, 1);
-							inventory.setInventorySlotContents(i, decreased);
+							inventory.setInventorySlotContents(i, ItemHelper.cloneStack(stack, 1));
 							continue a;
 						}
 					}
 					for (int slot = 0; slot < player.inventory.mainInventory.size(); slot++) {
 						ItemStack stack = player.inventory.getStackInSlot(slot);
 						if (ingredient.apply(stack)) {
-							ItemStack decreased = player.inventory.decrStackSize(slot, 1);
-							inventory.setInventorySlotContents(i, decreased);
+							inventory.setInventorySlotContents(i, ItemHelper.cloneStack(stack, 1));
 							continue a;
 						}
 					}
 				}
 
-				craft.onCrafting(world, player, 1);
+				IRecipe recipe = CraftingManager.findMatchingRecipe(inventory, player.world);
+				if (recipe == null)
+					break;
+				
+				ItemStack craft = recipe.getCraftingResult(inventory);
+				ItemStack hand = player.inventory.getItemStack();
+				if (!shift && !hand.isEmpty() && (!ItemHelper.itemsIdentical(craft, hand) || craft.getCount() + hand.getCount() > hand.getMaxStackSize()))
+					break;
+
+				// No turning back now!
+				craft.onCrafting(world, player, craft.getCount());
 				FMLCommonHandler.instance().firePlayerCraftingEvent(player, craft, inventory);
 
 				if (!recipe.isDynamic()) {
 					player.unlockRecipes(Lists.newArrayList(recipe));
+				}
+
+				// Use ingredients
+				a:
+				for (int i = 0, ingredientsLength = ingredients.length; i < ingredientsLength; i++) {
+					Ingredient ingredient = ingredients[i];
+					if (ingredient == Ingredient.EMPTY)
+						continue;
+
+					for (int slot = 0; slot < this.inventory.getSizeInventory(); slot++) {
+						ItemStack stack = this.inventory.getStackInSlot(slot);
+						if (ingredient.apply(stack)) {
+							this.inventory.decrStackSize(slot, 1);
+							continue a;
+						}
+					}
+					for (int slot = 0; slot < player.inventory.mainInventory.size(); slot++) {
+						ItemStack stack = player.inventory.getStackInSlot(slot);
+						if (ingredient.apply(stack)) {
+							player.inventory.decrStackSize(slot, 1);
+							continue a;
+						}
+					}
 				}
 
 				// Add containers
