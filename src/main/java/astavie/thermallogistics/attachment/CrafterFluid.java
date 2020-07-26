@@ -59,6 +59,9 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 
 	private final IFilterFluid filter2 = fluid -> checkCache() && matchesInput(fluid);
 
+	private boolean processParallel = true;
+	private int currentRecipe = 0;
+
 	public CrafterFluid(TileGrid tile, byte side) {
 		super(tile, side);
 		
@@ -77,6 +80,21 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 		
 		// Disable redstone control
 		rsMode = ControlMode.DISABLED;
+	}
+
+	@Override
+	public boolean processParallel() {
+		return processParallel;
+	}
+
+	@Override
+	public void processParallel(boolean parallel) {
+		this.processParallel = parallel;
+	}
+
+	@Override
+	public int currentRecipe() {
+		return currentRecipe;
 	}
 
 	@Override
@@ -155,15 +173,40 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 		}
 
 		boolean onlyCheck = false;
-		for (Recipe<FluidStack> recipe : recipes) {
+		for (int i = 0; i < recipes.size(); i++) {
+			Recipe<FluidStack> recipe = recipes.get(i);
 			if (recipe.isEnabled()) {
-				if (!onlyCheck) {
+				boolean actuallyDoIt = !onlyCheck && (processParallel || currentRecipe == i);
+				if (actuallyDoIt) {
 					onlyCheck = recipe.updateMissing();
 				}
-				if (recipe.process.update(onlyCheck)) {
+				if (recipe.process.update(!actuallyDoIt)) {
 					onlyCheck = true;
 				}
 			}
+		}
+
+		int lastLastRecipe = currentRecipe;
+		if (!processParallel && currentRecipe == -1) {
+			currentRecipe = 0;
+		}
+		int lastRecipe = currentRecipe;
+		while (!processParallel && currentRecipe < recipes.size() && recipes.get(currentRecipe).isDone()) {
+			currentRecipe++;
+		}
+		if (currentRecipe >= recipes.size()) {
+			currentRecipe = 0;
+		}
+		while (!processParallel && currentRecipe < lastRecipe && recipes.get(currentRecipe).isDone()) {
+			currentRecipe++;
+		}
+		if ((!processParallel && recipes.get(currentRecipe).isDone()) || processParallel) {
+			currentRecipe = -1;
+		}
+
+		if (lastLastRecipe != currentRecipe) {
+			// Send to clients
+			PacketHandler.sendToAllAround(getGuiPacket(), baseTile);
 		}
 	}
 
@@ -221,6 +264,8 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 			recipes.appendTag(nbt);
 		}
 
+		tag.setBoolean("parallel", processParallel);
+		tag.setInteger("recipe", currentRecipe);
 		tag.setTag("recipes", recipes);
 	}
 
@@ -291,6 +336,11 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 				}
 			}
 		} else {
+			// Version 0.3+ nbt format
+
+			processParallel = tag.getBoolean("parallel");
+			currentRecipe = tag.getInteger("recipe");
+
 			NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
 			for (int i = 0; i < recipes.tagCount(); i++) {
 				NBTTagCompound nbt = recipes.getCompoundTagAt(i);
@@ -351,6 +401,7 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 		super.readPortableData(player, tag);
 
 		if (tag.getInteger("recipesType") == type && tag.getString("recipesClass").equals("FluidStack")) {
+			processParallel = tag.getBoolean("parallel");
 			recipes.clear();
 
 			NBTTagList recipes = tag.getTagList("recipes", Constants.NBT.TAG_COMPOUND);
@@ -450,6 +501,7 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 							r.inputs.set(i, payload.getFluidStack());
 						for (int i = 0; i < r.outputs.size(); i++)
 							r.outputs.set(i, payload.getFluidStack());
+						markDirty();
 					}
 				} else if (message == 5) {
 					// Link!
@@ -461,6 +513,7 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 						if (stack.getItem() == ThermalLogistics.Items.manager) {
 							ThermalLogistics.Items.manager.link(player, stack, recipes.get(index));
 							((EntityPlayerMP) player).updateHeldItem();
+							markDirty();
 						}
 					}
 				} else if (message == 6) {
@@ -470,7 +523,11 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 					if (index >= 0 && index < recipes.size()) {
 						Recipe<FluidStack> recipe = recipes.get(index);
 						recipe.toggleEnabled();
+						markDirty();
 					}
+				} else if (message == 7) {
+					processParallel = !processParallel;
+					markDirty();
 				}
 
 				// Send to clients
@@ -495,6 +552,9 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 
 						recipes.add(recipe);
 					}
+
+					processParallel = payload.getBool();
+					currentRecipe = payload.getInt();
 				}
 				if (message == 0 || message == 1) {
 					int size = payload.getInt();
@@ -552,6 +612,9 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 
 			packet.addBool(recipe.enabled);
 		}
+
+		packet.addBool(processParallel);
+		packet.addInt(currentRecipe);
 
 		writeSyncPacket(packet);
 		return packet;

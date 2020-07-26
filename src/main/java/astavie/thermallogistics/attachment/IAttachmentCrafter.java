@@ -20,4 +20,10 @@ public interface IAttachmentCrafter<I> extends ICrafterContainer<I> {
 
 	void markDirty();
 
+	boolean processParallel();
+
+	int currentRecipe();
+
+	void processParallel(boolean parallel);
+
 }

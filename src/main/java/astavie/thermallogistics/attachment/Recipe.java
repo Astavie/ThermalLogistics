@@ -64,6 +64,10 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 		((ICrafter<I>) linked.me.get()).applyProposal(null, linked);
 	}
 
+	public boolean isDone() {
+		return !enabled || requestOutput.values().stream().allMatch(s -> s.isEmpty());
+	}
+
 	@Override
 	public Collection<RequesterReference<?>> getLinked() {
 		return linked;

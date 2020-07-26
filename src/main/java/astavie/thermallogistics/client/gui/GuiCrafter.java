@@ -106,12 +106,12 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 		int buttonNo = flagNums.length + levelNums.length;
 		if (attachment.type > 0)
-			buttonNo++;
+			buttonNo+=2;
 
 		if (buttonNo != 0) {
 			buttonSize = 20;
-			int button_offset = buttonSize + 6;
-			int x0 = xSize / 2 - buttonNo * (button_offset / 2) + 3;
+			int button_offset = buttonSize + 4;
+			int x0 = xSize / 2 - buttonNo * (button_offset / 2) + 2;
 			int y0 = 20 + 38 + 2 * 18 + 8 + 14;
 
 			if (attachment.type > 0) {
@@ -151,7 +151,16 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			splitButton.setToolTipLocalized(StringHelper.localizeFormat("info.logistics.split", crafter.getCrafters().size()));
 		}
 		if (circuitButton != null) {
+			int x = 132;
+			if (!crafter.processParallel())
+				x += buttonSize;
 			
+			circuitButton.setSheetX(x);
+			circuitButton.setHoverX(x);
+			circuitButton.setDisabledX(x);
+
+			circuitButton.setEnabled(crafter.getCrafters().size() > 1);
+			circuitButton.setToolTipLocalized(StringHelper.localize("info.logistics." + (crafter.processParallel() ? "parallel" : "series")));
 		}
 		for (int i = 0; i < flagButtons.length; i++) {
 			if (flagButtons[i] != null) {
@@ -347,6 +356,18 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			setButtons();
 			return;
 		}
+		if (circuitButton != null && circuitButton.getName().equals(buttonName)) {
+			playClickSound(0.8F);
+
+			crafter.processParallel(!crafter.processParallel());
+			
+			PacketTileInfo packet = ((ConnectionBase) crafter).getNewPacket(ConnectionBase.NETWORK_ID.GUI);
+			packet.addByte(7);
+			PacketHandler.sendToServer(packet);
+
+			setButtons();
+			return;
+		}
 		for (int i = 0; i < flagButtons.length; i++) {
 			ElementButton button = flagButtons[i];
 			if (button != null && button.getName().equals(buttonName)) {
@@ -400,6 +421,47 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			itemRender.zLevel = 0.0F;
 			GlStateManager.popMatrix();
 		}
+	}
+
+	@Override
+	protected void drawGuiContainerBackgroundLayer(float partialTick, int x, int y) {
+		GlStateManager.color(1, 1, 1, 1);
+		bindTexture(texture);
+
+		if (xSize > 256 || ySize > 256) {
+			drawSizedTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize, 512, 512);
+		} else {
+			drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
+		}
+
+		mouseX = x - guiLeft;
+		mouseY = y - guiTop;
+
+		GlStateManager.pushMatrix();
+		GlStateManager.translate(guiLeft, guiTop, 0.0F);
+
+		// start own code
+		if (!crafter.processParallel() && crafter.currentRecipe() >= 0) {
+			int current = crafter.currentRecipe();
+
+			int slots = CrafterItem.SIZE[attachment.type];
+			int recipeSlots = slots / crafter.getRecipes().size();
+			int start = slots * 9 + (crafter.getRecipes().size() - 1);
+
+			int x0 = xSize / 2 - start;
+			int posX = x0 + (current * recipeSlots) * 18 + current * 2;
+			int posY = 20 + 20;
+
+			int width = recipeSlots * 18;
+			int height = 38 + 18;
+
+			drawGradientRect(posX - 2, posY - 2, posX + width + 2, posY + height + 2, 0xFF00AA00, 0xFF00AA00);
+		}
+
+		// end own code
+		drawElements(partialTick, false);
+		drawTabs(partialTick, false);
+		GlStateManager.popMatrix();
 	}
 
 	@Override
