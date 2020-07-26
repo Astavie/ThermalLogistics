@@ -52,6 +52,7 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 	private final ConnectionBase attachment;
 	public TabFluid tab = null;
 	private ElementButton splitButton;
+	private ElementButton circuitButton;
 	private ElementButton[] flagButtons = new ElementButton[0];
 	private ElementButton[] levelButtons = new ElementButton[FilterLogic.defaultLevels.length];
 	private int buttonSize;
@@ -116,9 +117,12 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			if (attachment.type > 0) {
 				splitButton = new ElementButton(this, x0, y0, "split", 0, 0, 0, buttonSize, 0, buttonSize * 2, buttonSize, buttonSize, ICON_PATH);
 				addElement(splitButton);
+
+				circuitButton = new ElementButton(this, x0 + button_offset, y0, "circuit", 132, 0, 132, buttonSize, 132, buttonSize * 2, buttonSize, buttonSize, ICON_PATH);
+				addElement(circuitButton);
 			}
 
-			int offset = attachment.type > 0 ? 1 : 0;
+			int offset = attachment.type > 0 ? 2 : 0;
 
 			for (int i = 0; i < flagNums.length; i++) {
 				int j = flagNums[i];
@@ -145,6 +149,9 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			splitButton.setSheetX(x);
 			splitButton.setHoverX(x);
 			splitButton.setToolTipLocalized(StringHelper.localizeFormat("info.logistics.split", crafter.getCrafters().size()));
+		}
+		if (circuitButton != null) {
+			
 		}
 		for (int i = 0; i < flagButtons.length; i++) {
 			if (flagButtons[i] != null) {
