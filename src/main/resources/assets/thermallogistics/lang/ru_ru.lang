@@ -18,6 +18,7 @@ item.logistics.distributor.basic.name=Распределитель
 item.logistics.distributor.hardened.name=Усиленный распределитель
 item.logistics.distributor.reinforced.name=Укреплённый распределитель
 item.logistics.distributor.signalum.name=Синаловый распределитель
+
 item.logistics.distributor.resonant.name=Резонирующий распределитель
 item.logistics.distributor.info=Извлекает элементы/жидкости, устанавливая приоритет фильтрам.
 
@@ -28,37 +29,59 @@ tile.logistics.terminal.item.name=Терминал
 
 info.logistics.terminal.dump.inventory=Сбрасывать в инвентарь
 info.logistics.terminal.dump.network=Сбрасывать в сеть
+info.logistics.terminal.requester=Перед тем как запрашивать что либо, пожалуйста, вставьте Запросчик в слот запроса
 
 info.logistics.import=Импортировать
 info.logistics.fluid.get=Получить жидкость
 
-info.logistics.inputs=Вводимые: §f%s
-info.logistics.outputs=Выводимые: §f%s
+info.logistics.inputs=Входы: §f%s
+info.logistics.outputs=Выходы: §f%s
 info.logistics.split=Рецепты: %s
+info.logistics.parallel=Осуществлять крафты параллельно 
+info.logistics.series=Осуществлять крафты поочерёдно
+info.logistics.unlinked.0=Этот рецепт не привязан 
+info.logistics.unlinked.1=Кликните Сетевым Менеджером сюда, чтобы начать привязку
+info.logistics.enable=Включить Создатели и Привязанные Создатели
+info.logistics.disable=Выключить Создатели и Привязанные Создатели
 
-info.logistics.tab.link=Связанные создатели
+info.logistics.tab.link=Привязанные создатели
 info.logistics.tab.fluid=Добавить жидкость
 info.logistics.tab.crafting=Создание
+info.logistics.tab.input=Входы
+info.logistics.tab.output=Выходы
+info.logistics.tab.missing=Отсутствующие материалы 
 
 info.logistics.manager.a.0=Используйте на сервоприводе для мониторинга системы.
-info.logistics.manager.a.1=Используйте на двух создателях, чтобы связать их.
+info.logistics.manager.a.1=Используйте на двух создателях, чтобы привязать их.
 info.logistics.manager.a.2=Взаимодействует с сервоприводами.
 
-info.logistics.manager.b.0=§eНажмите (%s), чтобы включить связывание.§r
+info.logistics.manager.b.0=§eНажмите (%s), чтобы включить привязывание.§r
+info.logistics.manager.b.1=§eНажмите (%s), чтобы включить массовое привязывание.§r
 info.logistics.manager.b.2=§eНажмите (%s), чтобы включить мониторинг.§r
 
-info.logistics.manager.c.0=Мониторинг включен
-info.logistics.manager.c.1=Связывание включено
+info.logistics.manager.c.0=Мониторинг включён
+info.logistics.manager.c.1=Привязывание включено
+info.logistics.manager.c.2=Включено массовое привязывание
 
-info.logistics.manager.d.0=Начало связи...
-info.logistics.manager.d.1=Невозможно связать. Пожалуйста, попробуйте ещё раз.
-info.logistics.manager.d.2=Эти создатели уже связаны.
-info.logistics.manager.d.4=Связывание отменено.
+info.logistics.manager.d.0=Начат процесс привязывания...
+info.logistics.manager.d.1=Невозможно привязать. Пожалуйста, попробуйте ещё раз.
+info.logistics.manager.d.2=Эти создатели уже привязаны.
+info.logistics.manager.d.3=Привязывание прошло успешно! Убедитесь, что рецепт внутри создателя включён.
+info.logistics.manager.d.4=Привязывание отменено.
+info.logistics.manager.d.5=У создателя нет рецептов.
+info.logistics.manager.d.6=Создатель имеет более одного рецепта, пожалуйста, откройте и выберите один из них или включите режим массового привязывания.
 
 info.logistics.manager.e.0=Предметы, перемещающиеся в этой трубе
 info.logistics.manager.e.1=%s x %s
 info.logistics.manager.e.2=Нет предметов, перемещающихся в этой трубе
 
+info.logistics.manager.f=Привязка %s {x%s, y%s, z%s, %s}
+
 gui.logistics.terminal.request=Запрос
+gui.logistics.terminal.complex=Запрос бы слишком сложным
+gui.logistics.terminal.missing=Отсутствующие материалы 
+gui.logistics.terminal.missing.fluid=%s mB x %s
 gui.logistics.terminal.enough=Нет необходимости запрашивать предметы
 gui.logistics.terminal.buffer=Буфер
+gui.logistics.terminal.or=ИЛИ
+gui.logistics.terminal.cancel=Сделайте правый клик для отмены
