@@ -4,8 +4,8 @@ item.logistics.requester.basic.name=Запросчик
 item.logistics.requester.hardened.name=Усиленный запросчик
 item.logistics.requester.reinforced.name=Укреплённый запросчик
 item.logistics.requester.signalum.name=Синаловый запросчик
-item.logistics.requester.resonant.name=Резонирующий запросчик
-item.logistics.requester.info=Притягивает (или создаёт) предметы/жидкости к себе. 
+item.logistics.requester.resonant.name=Резонирующий запросчик 
+item.logistics.requester.info=Создаёт и/или притягивает предметы/жидкости к себе.
 
 item.logistics.crafter.basic.name=Создатель
 item.logistics.crafter.hardened.name=Усиленный создатель
