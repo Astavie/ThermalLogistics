@@ -239,27 +239,31 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 			}
 		}
 
-		int lastLastRecipe = currentRecipe;
-		if (!processParallel && currentRecipe == -1) {
-			currentRecipe = 0;
-		}
-		int lastRecipe = currentRecipe;
-		while (!processParallel && currentRecipe < recipes.size() && recipes.get(currentRecipe).isDone()) {
-			currentRecipe++;
-		}
-		if (currentRecipe >= recipes.size()) {
-			currentRecipe = 0;
-		}
-		while (!processParallel && currentRecipe < lastRecipe && recipes.get(currentRecipe).isDone()) {
-			currentRecipe++;
-		}
-		if ((!processParallel && recipes.get(currentRecipe).isDone()) || processParallel) {
-			currentRecipe = -1;
-		}
+		if (!processParallel) {
+			int lastRecipe = currentRecipe;
 
-		if (lastLastRecipe != currentRecipe) {
-			// Send to clients
-			PacketHandler.sendToAllAround(getGuiPacket(), baseTile);
+			if (currentRecipe == -1) {
+				currentRecipe = 0;
+			}
+			while (currentRecipe < recipes.size() && recipes.get(currentRecipe).isDone()) {
+				currentRecipe++;
+			}
+			if (currentRecipe >= recipes.size()) {
+				currentRecipe = 0;
+			}
+			while (currentRecipe < lastRecipe && recipes.get(currentRecipe).isDone()) {
+				currentRecipe++;
+			}
+			if (recipes.get(currentRecipe).isDone()) {
+				currentRecipe = -1;
+			}
+
+			if (lastRecipe != currentRecipe) {
+				// Send to clients
+				PacketHandler.sendToAllAround(getGuiPacket(), baseTile);
+			}
+		} else {
+			currentRecipe = -1;
 		}
 	}
 
