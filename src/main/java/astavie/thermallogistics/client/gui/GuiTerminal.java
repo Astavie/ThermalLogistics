@@ -10,6 +10,7 @@ import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.type.Type;
 import cofh.core.gui.element.ElementBase;
+import cofh.core.gui.element.ElementButton;
 import cofh.core.gui.element.ElementSlider;
 import cofh.core.gui.element.ElementTextField;
 import cofh.core.gui.element.listbox.SliderVertical;
@@ -302,6 +303,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 		}
 
 		GlStateManager.translate(0, 0, 100);
+		GlStateManager.disableLighting();
 		super.drawGuiContainerForegroundLayer(mouseX, mouseY);
 	}
 
@@ -330,9 +332,16 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 							}
 						}
 
-						Overlay overlay = new Overlay(this, posX * 18 + 7, posY * 18 + 17, 81, 18);
+						Overlay overlay = new Overlay(this, posX * 18 + 7, posY * 18 + 17, 81 + 16, 18);
 						overlay.elements.add(new ElementStack(this, 0, 0, selected, false));
 						overlay.elements.add(amount.get());
+						overlay.elements.add(new ElementButton(this, 81, 2, 14, 14, 222, 0, 222, 14, texture.toString()) {
+							@Override
+							public void onClick() {
+								request(selected, amount.get().getText().isEmpty() ? 1 : Long.parseLong(amount.get().getText()));
+								setOverlay(null);
+							}
+						});
 
 						setOverlay(overlay);
 					} else {
