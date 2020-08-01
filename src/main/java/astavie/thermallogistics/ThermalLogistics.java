@@ -21,6 +21,7 @@ import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.config.Property;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
@@ -63,6 +64,8 @@ public class ThermalLogistics {
 
 	public boolean smallText;
 
+	public Property autofocus, jei;
+
 	public <T extends TileEntity> boolean registerWrapper(Class<T> c, ICrafterWrapper<T> w) {
 		if (registry.containsKey(c))
 			return false;
@@ -96,6 +99,9 @@ public class ThermalLogistics {
 		calculationTimeout = config.getInt("Calculation Timeout", Configuration.CATEGORY_GENERAL, 1000, 10, Integer.MAX_VALUE, "The amount of milliseconds before a crafting calculation gets timed out.");
 
 		smallText = config.getBoolean("Small Text", Configuration.CATEGORY_CLIENT, true, "Whether or not item counts in the terminal should be twice as small to fit more digits.");
+
+		autofocus = config.get(Configuration.CATEGORY_CLIENT, "Autofocus", true, "Whether or not the search bar in the terminal automatically gets focus. [default: true]");
+		jei = config.get(Configuration.CATEGORY_CLIENT, "JEI Synchronization",  true, "Whether or not the search bar in the terminal is synchronized with the JEI search bar. [default: true]");
 
 		config.save();
 	}

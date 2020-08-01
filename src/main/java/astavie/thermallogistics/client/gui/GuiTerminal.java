@@ -34,6 +34,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 
@@ -90,7 +91,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 		search.accept(new ElementTextFieldClear(this, 80, 5, 88, 10, true) {
 			@Override
 			protected void onCharacterEntered(boolean success) {
-				if (Loader.isModLoaded("jei")) {
+				if (ThermalLogistics.INSTANCE.jei.getBoolean() && Loader.isModLoaded("jei")) {
 					CompatJEI.synchronize(getText());
 				}
 			}
@@ -104,7 +105,44 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 		addElement(search.get());
 		addElement(slider);
 
-		search.get().setFocused(true);
+		Supplier<Integer> autofocus = () -> ThermalLogistics.INSTANCE.autofocus.getBoolean() ? 210 : 194;
+
+		addElement(new ElementButton(this, -18, 0, 16, 16, autofocus.get(), 37, autofocus.get(), 37 + 16, texture.toString()) {
+			@Override
+			public void onClick() {
+				ThermalLogistics.INSTANCE.autofocus.set(!ThermalLogistics.INSTANCE.autofocus.getBoolean());
+				ThermalLogistics.INSTANCE.config.save();
+				
+				setSheetX(autofocus.get());
+				setHoverX(autofocus.get());
+				setToolTipLocalized(StringHelper.localize("info.logistics.terminal.autofocus." + ThermalLogistics.INSTANCE.autofocus.getBoolean()));
+
+				if (ThermalLogistics.INSTANCE.autofocus.getBoolean()) {
+					search.get().onMousePressed(1000, 0, 0);
+				} else {
+					search.get().setFocused(false);
+				}
+			}
+		}.setToolTipLocalized(StringHelper.localize("info.logistics.terminal.autofocus." + ThermalLogistics.INSTANCE.autofocus.getBoolean())));
+
+		if (Loader.isModLoaded("jei")) {
+			Supplier<Integer> synch = () -> ThermalLogistics.INSTANCE.jei.getBoolean() ? 210 : 194;
+
+			addElement(new ElementButton(this, -18, 18, 16, 16, synch.get(), 69, synch.get(), 69 + 16, texture.toString()) {
+				@Override
+				public void onClick() {
+					ThermalLogistics.INSTANCE.jei.set(!ThermalLogistics.INSTANCE.jei.getBoolean());
+					ThermalLogistics.INSTANCE.config.save();
+
+					setSheetX(synch.get());
+					setHoverX(synch.get());
+					setToolTipLocalized(StringHelper.localize("info.logistics.terminal.jei." + ThermalLogistics.INSTANCE.jei.getBoolean()));
+				}
+			}.setToolTipLocalized(StringHelper.localize("info.logistics.terminal.jei." + ThermalLogistics.INSTANCE.jei.getBoolean())));
+		}
+
+		if (ThermalLogistics.INSTANCE.autofocus.getBoolean())
+			search.get().setFocused(true);
 
 		slider.setLimits(0, Math.max((filter.size() - 1) / 9 - rows + 1, 0));
 		slider.setEnabled(filter.size() > rows * 9);
@@ -168,7 +206,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 	public ElementBase addElement(ElementBase element) {
 		if (element.getPosY() > split) {
 			element.setPosition(element.getPosX(), element.getPosY() + (rows - 2) * 18);
-		} else if (element.getPosY() + element.getHeight() > split) {
+		} else if (!(element instanceof ElementButton) && element.getPosY() + element.getHeight() > split) {
 			element.setSize(element.getWidth(), element.getHeight() + (rows - 2) * 18);
 		}
 		return super.addElement(element);
@@ -414,7 +452,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 
 	@Override
 	public void onLeave(ElementTextField text) {
-		if (!search.test(text)) {
+		if (ThermalLogistics.INSTANCE.autofocus.getBoolean() && !search.test(text)) {
 			search.get().onMousePressed(1000, 0, 0);
 		}
 	}

@@ -1,5 +1,6 @@
 package astavie.thermallogistics.client.gui.element;
 
+import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.gui.IFocusGui;
 import cofh.core.gui.GuiContainerCore;
 import cofh.core.gui.element.ElementTextField;
@@ -28,7 +29,7 @@ public class ElementTextFieldClear extends ElementTextField {
 	public void onMouseReleased(int mouseX, int mouseY) {
 		if (this.rightClick) {
 			this.rightClick = false;
-		} else if (!permanent) {
+		} else if (!permanent || !ThermalLogistics.INSTANCE.autofocus.getBoolean()) {
 			super.onMouseReleased(mouseX, mouseY);
 		}
 	}

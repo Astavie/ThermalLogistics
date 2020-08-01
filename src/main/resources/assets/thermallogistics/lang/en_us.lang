@@ -31,6 +31,11 @@ info.logistics.terminal.dump.inventory=Dump to inventory
 info.logistics.terminal.dump.network=Dump to network
 info.logistics.terminal.requester=Please put a requester in the requester slot before requesting items.
 
+info.logistics.terminal.autofocus.true=Autofocus search bar
+info.logistics.terminal.autofocus.false=Don't autofocus search bar
+info.logistics.terminal.jei.true=Synchronize with JEI
+info.logistics.terminal.jei.false=Don't synchronize with JEI
+
 info.logistics.import=Import
 info.logistics.fluid.get=Get Fluid
 
