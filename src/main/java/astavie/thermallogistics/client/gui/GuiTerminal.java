@@ -1,5 +1,6 @@
 package astavie.thermallogistics.client.gui;
 
+import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.client.gui.element.ElementStack;
 import astavie.thermallogistics.client.gui.element.ElementTextFieldAmount;
 import astavie.thermallogistics.client.gui.element.ElementTextFieldClear;
@@ -279,7 +280,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 				Triple<Type<I>, Long, Boolean> triple = filter.get(slot);
 
 				GlStateManager.enableDepth();
-				StackHandler.render(this, posX, posY, triple.getLeft().getAsStack(), triple.getMiddle() == 0L ? "Craft" : StringHelper.getScaledNumber(triple.getMiddle()));
+				StackHandler.render(this, posX, posY, triple.getLeft().getAsStack(), triple.getMiddle() == 0L ? ThermalLogistics.INSTANCE.smallText ? "Craft" : "+" : StackHandler.getScaledNumber(triple.getMiddle()));
 			}
 		}
 
@@ -299,7 +300,7 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 			}
 
 			GlStateManager.enableDepth();
-			StackHandler.render(this, 26 + j * 18, bar, request.type.getAsStack(), StringHelper.getScaledNumber(request.amount));
+			StackHandler.render(this, 26 + j * 18, bar, request.type.getAsStack(), StackHandler.getScaledNumber(request.amount));
 		}
 
 		GlStateManager.translate(0, 0, 100);

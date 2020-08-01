@@ -334,7 +334,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 	@Nullable
 	@Override
 	public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
-		if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && facing != world.getBlockState(pos).getValue(BlockTerminal.DIRECTION).getFace())
+		if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && facing != null && facing != world.getBlockState(pos).getValue(BlockTerminal.DIRECTION).getFace())
 			return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(new Inventory(this, inventory, (byte) facing.getIndex()));
 		return super.getCapability(capability, facing);
 	}

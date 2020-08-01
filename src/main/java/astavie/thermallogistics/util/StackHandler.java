@@ -1,5 +1,6 @@
 package astavie.thermallogistics.util;
 
+import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.attachment.ICrafter;
 import astavie.thermallogistics.attachment.ICrafterContainer;
 import astavie.thermallogistics.attachment.IRequester;
@@ -86,12 +87,16 @@ public class StackHandler {
 			GlStateManager.disableDepth();
 			GlStateManager.disableBlend();
 
-			GlStateManager.pushMatrix();
+			if (ThermalLogistics.INSTANCE.smallText) {
+				GlStateManager.pushMatrix();
 
-			GlStateManager.scale(0.5, 0.5, 0.5);
-			gui.getFontRenderer().drawStringWithShadow(text, (x + 16) * 2 - gui.getFontRenderer().getStringWidth(text), (y + 12) * 2, 0xFFFFFF);
+				GlStateManager.scale(0.5, 0.5, 0.5);
+				gui.getFontRenderer().drawStringWithShadow(text, (x + 16) * 2 - gui.getFontRenderer().getStringWidth(text), (y + 12) * 2, 0xFFFFFF);
 
-			GlStateManager.popMatrix();
+				GlStateManager.popMatrix();
+			} else {
+				gui.getFontRenderer().drawStringWithShadow(text, x + 17 - gui.getFontRenderer().getStringWidth(text), y + 9, 0xFFFFFF);
+			}
 
 			GlStateManager.enableLighting();
 			GlStateManager.enableDepth();
@@ -208,6 +213,23 @@ public class StackHandler {
 		}
 
 		return request;
+	}
+
+	public static String getScaledNumber(long number) {
+		if (ThermalLogistics.INSTANCE.smallText) {
+			return StringHelper.getScaledNumber(number);
+		} else {
+			// Same as StringHelper but without a decimal point
+			if (number >= 1000000000) {
+				return number / 1000000000 + "G";
+			} else if (number >= 1000000) {
+				return number / 1000000 + "M";
+			} else if (number >= 1000) {
+				return number / 1000 + "k";
+			} else {
+				return String.valueOf(number);
+			}
+		}
 	}
 
 	// PARTIALLY COPIED FROM DuctUnitItem

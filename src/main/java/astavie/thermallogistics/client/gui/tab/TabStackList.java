@@ -257,7 +257,7 @@ public class TabStackList<I> extends TabBase {
 					int x = sideOffset() + 2 + 38 + STACK_HEIGHT * j;
 					int y = 21 + (i - currentLine) * STACK_HEIGHT;
 
-					StackHandler.render(gui, x, y, type.getAsStack(), StringHelper.getScaledNumber(list.amount(type)));
+					StackHandler.render(gui, x, y, type.getAsStack(), StackHandler.getScaledNumber(list.amount(type)));
 				}
 
 				if (!iterator.hasNext())
