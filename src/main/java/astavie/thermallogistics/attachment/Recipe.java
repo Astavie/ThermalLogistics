@@ -11,6 +11,7 @@ import cofh.thermaldynamics.duct.attachments.servo.ServoBase;
 import cofh.thermaldynamics.duct.attachments.servo.ServoFluid;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.fluid.GridFluid;
+import cofh.thermaldynamics.duct.item.DuctUnitItem;
 import cofh.thermaldynamics.duct.item.GridItem;
 import cofh.thermaldynamics.duct.item.StackMap;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
@@ -22,6 +23,7 @@ import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import net.minecraftforge.items.IItemHandler;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -676,6 +678,34 @@ public abstract class Recipe<I> implements ICrafter<I>, IProcessRequester<I> {
 			super(parent, parent.itemDuct, ItemList::new, index);
 			this.parent = parent;
 			this.process = new ProcessItem(this);
+		}
+
+		@Override
+		public long amountEmpty(Type<ItemStack> type) {
+			return Math.max(parent.filter.getMaxStock() - amountInside(type), 0);
+		}
+
+		private long amountInside(Type<ItemStack> type) {
+			DuctUnitItem.Cache cache = parent.itemDuct.tileCache[parent.side];
+			if (cache == null)
+				return 0;
+
+			IItemHandler inv = cache.getItemHandler(parent.side ^ 1);
+			if (inv == null)
+				return 0;
+
+			// Get items in queue
+
+			int travelling = 0;
+
+			StackMap map = parent.itemDuct.getGrid().travelingItems.getOrDefault(getDestination(), new StackMap());
+			for (ItemStack item : map.getItems())
+				if (type.references(item))
+					travelling += item.getCount();
+
+			// Get total
+
+			return DuctUnitItem.getNumItems(inv, parent.side ^ 1, type.getAsStack(), Integer.MAX_VALUE) + travelling;
 		}
 
 		@Override

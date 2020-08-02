@@ -42,6 +42,10 @@ public class ProcessItem extends Process<ItemStack> {
 		if (ownHandler == null)
 			return false;
 
+		Function<Type<ItemStack>, Long> required = type -> {
+			return Math.min(requests.amount(type), ((IProcessRequesterItem) requester).amountEmpty(type));
+		};
+
 		ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> sources = requester.getSources();
 		for (Pair<DuctUnit<?, ?, ?>, Byte> source : sources) {
 			DuctUnitItem endPoint = (DuctUnitItem) source.getLeft();
@@ -62,7 +66,7 @@ public class ProcessItem extends Process<ItemStack> {
 			if (inv == null || inv.equals(ownHandler))
 				continue;
 
-			ItemStack extract = extract(endPoint, side, inv, requests::amount, (DuctUnitItem) requester.getDuct(), (byte) (requester.getSide() ^ 1));
+			ItemStack extract = extract(endPoint, side, inv, required, (DuctUnitItem) requester.getDuct(), (byte) (requester.getSide() ^ 1));
 			if (!extract.isEmpty()) {
 				sources.advanceCursor();
 				return true;
@@ -163,7 +167,11 @@ public class ProcessItem extends Process<ItemStack> {
 		if (inv == null)
 			return false;
 
-		ItemStack extract = extract(duct, (byte) (side ^ 1), inv, list::amount, (DuctUnitItem) requester.getDuct(), (byte) (requester.getSide() ^ 1));
+		Function<Type<ItemStack>, Long> required = type -> {
+			return Math.min(list.amount(type), ((IProcessRequesterItem) requester).amountEmpty(type));
+		};
+
+		ItemStack extract = extract(duct, (byte) (side ^ 1), inv, required, (DuctUnitItem) requester.getDuct(), (byte) (requester.getSide() ^ 1));
 		if (!extract.isEmpty()) {
 			crafter.finish(requester, new ItemType(extract), extract.getCount());
 			requester.onCrafterSend(crafter, new ItemType(extract), extract.getCount());

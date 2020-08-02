@@ -15,6 +15,7 @@ import astavie.thermallogistics.util.StackHandler;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.collection.StackList;
 import astavie.thermallogistics.util.type.ItemType;
+import astavie.thermallogistics.util.type.Type;
 import codechicken.lib.inventory.InventorySimple;
 import cofh.core.inventory.InventoryCraftingFalse;
 import cofh.core.network.PacketBase;
@@ -91,7 +92,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			}
 
 			b:
-			//noinspection LoopConditionNotUpdatedInsideLoop
+			// noinspection LoopConditionNotUpdatedInsideLoop
 			do {
 				// Get available items
 				ItemList items = new ItemList();
@@ -115,8 +116,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				// Get recipe
 				InventoryCrafting inventory = new InventoryCraftingFalse(3, 3);
 
-				a:
-				for (int i = 0, ingredientsLength = ingredients.length; i < ingredientsLength; i++) {
+				a: for (int i = 0, ingredientsLength = ingredients.length; i < ingredientsLength; i++) {
 					Ingredient ingredient = ingredients[i];
 					if (ingredient == Ingredient.EMPTY)
 						continue;
@@ -140,10 +140,11 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				IRecipe recipe = CraftingManager.findMatchingRecipe(inventory, player.world);
 				if (recipe == null)
 					break;
-				
+
 				ItemStack craft = recipe.getCraftingResult(inventory);
 				ItemStack hand = player.inventory.getItemStack();
-				if (!shift && !hand.isEmpty() && (!ItemHelper.itemsIdentical(craft, hand) || craft.getCount() + hand.getCount() > hand.getMaxStackSize()))
+				if (!shift && !hand.isEmpty() && (!ItemHelper.itemsIdentical(craft, hand)
+						|| craft.getCount() + hand.getCount() > hand.getMaxStackSize()))
 					break;
 
 				// No turning back now!
@@ -155,8 +156,7 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				}
 
 				// Use ingredients
-				a:
-				for (int i = 0, ingredientsLength = ingredients.length; i < ingredientsLength; i++) {
+				a: for (int i = 0, ingredientsLength = ingredients.length; i < ingredientsLength; i++) {
 					Ingredient ingredient = ingredients[i];
 					if (ingredient == Ingredient.EMPTY)
 						continue;
@@ -183,18 +183,21 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				ForgeHooks.setCraftingPlayer(null);
 
 				for (ItemStack stack : ret) {
-					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory), stack.copy(), false);
+					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory),
+							stack.copy(), false);
 					if (!item.isEmpty())
 						player.inventory.placeItemBackInInventory(world, item);
 				}
 
 				// Add item
 				if (shift) {
-					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory), craft.copy(), false);
+					ItemStack item = InventoryHelper.insertStackIntoInventory(new InvWrapper(this.inventory),
+							craft.copy(), false);
 					if (!item.isEmpty())
 						player.inventory.placeItemBackInInventory(world, item);
 				} else {
-					player.inventory.setItemStack(hand.isEmpty() ? craft.copy() : ItemHelper.cloneStack(hand, hand.getCount() + craft.getCount()));
+					player.inventory.setItemStack(hand.isEmpty() ? craft.copy()
+							: ItemHelper.cloneStack(hand, hand.getCount() + craft.getCount()));
 					((EntityPlayerMP) player).updateHeldItem();
 				}
 			} while (shift);
@@ -218,7 +221,9 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				if (item.isEmpty())
 					continue;
 
-				item.setCount(InventoryHelper.insertStackIntoInventory(new PlayerMainInvWrapper(player.inventory), item.copy(), false).getCount());
+				item.setCount(InventoryHelper
+						.insertStackIntoInventory(new PlayerMainInvWrapper(player.inventory), item.copy(), false)
+						.getCount());
 			}
 			player.openContainer.detectAndSendChanges();
 		} else if (message == 5) {
@@ -254,7 +259,8 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			return routesWithInsertSideList;
 		}
 
-		Stream<Route<DuctUnitItem, GridItem>> routesWithDestinations = ServoItem.getRoutesWithDestinations(duct.getCache().outputRoutes);
+		Stream<Route<DuctUnitItem, GridItem>> routesWithDestinations = ServoItem
+				.getRoutesWithDestinations(duct.getCache().outputRoutes);
 		LinkedList<Route<DuctUnitItem, GridItem>> objects = Lists.newLinkedList();
 		routesWithDestinations.forEach(objects::add);
 
@@ -271,7 +277,8 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			if (duct == null)
 				continue;
 
-			TravelingItem item = DistributorItem.findRouteForItem(stack, getRoutes(duct), duct, side ^ 1, ServoItem.range[type], ServoItem.speedBoost[type]);
+			TravelingItem item = DistributorItem.findRouteForItem(stack, getRoutes(duct), duct, side ^ 1,
+					ServoItem.range[type], ServoItem.speedBoost[type]);
 			if (item == null)
 				continue;
 
@@ -328,14 +335,18 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 	@Override
 	public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
-		return capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && facing != world.getBlockState(pos).getValue(BlockTerminal.DIRECTION).getFace() || super.hasCapability(capability, facing);
+		return capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY
+				&& facing != world.getBlockState(pos).getValue(BlockTerminal.DIRECTION).getFace()
+				|| super.hasCapability(capability, facing);
 	}
 
 	@Nullable
 	@Override
 	public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
-		if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && facing != null && facing != world.getBlockState(pos).getValue(BlockTerminal.DIRECTION).getFace())
-			return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(new Inventory(this, inventory, (byte) facing.getIndex()));
+		if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && facing != null
+				&& facing != world.getBlockState(pos).getValue(BlockTerminal.DIRECTION).getFace())
+			return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY
+					.cast(new Inventory(this, inventory, (byte) facing.getIndex()));
 		return super.getCapability(capability, facing);
 	}
 
@@ -458,7 +469,8 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 			ListWrapper<Pair<DuctUnit<?, ?, ?>, Byte>> sources = new ListWrapper<>();
 
 			LinkedList<Pair<DuctUnit<?, ?, ?>, Byte>> list = new LinkedList<>();
-			Stream<Route<DuctUnitItem, GridItem>> stream = ServoItem.getRoutesWithDestinations(((DuctUnitItem) getDuct()).getCache().outputRoutes);
+			Stream<Route<DuctUnitItem, GridItem>> stream = ServoItem
+					.getRoutesWithDestinations(((DuctUnitItem) getDuct()).getCache().outputRoutes);
 			stream.map(r -> Pair.<DuctUnit<?, ?, ?>, Byte>of(r.endPoint, r.getLastSide())).forEach(list::add);
 
 			sources.setList(list, ListWrapper.SortType.NORMAL);
@@ -471,7 +483,8 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 			DuctUnit<?, ?, ?> duct = getDuct();
 			if (duct != null) {
-				StackMap map = ((GridItem) duct.getGrid()).travelingItems.getOrDefault(getDestination(), new StackMap());
+				StackMap map = ((GridItem) duct.getGrid()).travelingItems.getOrDefault(getDestination(),
+						new StackMap());
 				for (ItemStack item : map.getItems())
 					list.remove(item);
 			}
@@ -487,12 +500,18 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 				// Remove traveling items
 				StackList<ItemStack> list = requests.get(null);
 
-				StackMap map = ((GridItem) getDuct().getGrid()).travelingItems.getOrDefault(getDestination(), new StackMap());
+				StackMap map = ((GridItem) getDuct().getGrid()).travelingItems.getOrDefault(getDestination(),
+						new StackMap());
 				for (ItemStack item : map.getItems())
 					list.remove(item);
 			}
 
 			return requests;
+		}
+
+		@Override
+		public long amountEmpty(Type<ItemStack> type) {
+			return Integer.MAX_VALUE;
 		}
 
 	}

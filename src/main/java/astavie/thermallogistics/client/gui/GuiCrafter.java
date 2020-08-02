@@ -21,9 +21,12 @@ import cofh.core.util.helpers.BlockHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.attachments.ConnectionBase;
 import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
+import mcjty.rftools.blocks.screens.GuiScreen;
+
 import com.google.common.primitives.Ints;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.inventory.Container;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidStack;
@@ -51,10 +54,20 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 	public final IAttachmentCrafter<?> crafter;
 	private final ConnectionBase attachment;
 	public TabFluid tab = null;
+
 	private ElementButton splitButton;
 	private ElementButton circuitButton;
 	private ElementButton[] flagButtons = new ElementButton[0];
 	private ElementButton[] levelButtons = new ElementButton[FilterLogic.defaultLevels.length];
+
+	public ElementButton decRetainSize;
+	public ElementButton incRetainSize;
+
+	public boolean isAdvItemFilter;
+
+	int minRetainSize;
+	int maxRetainSize;
+
 	private int buttonSize;
 	private FluidStack fluid = null;
 
@@ -72,6 +85,8 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 		} else {
 			wrapper = ThermalLogistics.INSTANCE.getWrapper(tile.getClass());
 		}
+
+		this.isAdvItemFilter = attachment.allowDuctConnection() && attachment.filter.canAlterFlag(FilterLogic.levelRetainSize);
 
 		String info = attachment.getInfo();
 		if (info != null)
@@ -136,8 +151,18 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			}
 		}
 
+		decRetainSize = new ElementButton(this, 137, 52, "DecRetainSize", 216, 120, 216, 134, 216, 148, 14, 14, TEX_PATH).setToolTip("info.thermaldynamics.filter.decRetainSize");
+		incRetainSize = new ElementButton(this, 153, 52, "IncRetainSize", 230, 120, 230, 134, 230, 148, 14, 14, TEX_PATH).setToolTip("info.thermaldynamics.filter.incRetainSize");
+
+		if (isAdvItemFilter) {
+			addElement(decRetainSize);
+			addElement(incRetainSize);
+			minRetainSize = FilterLogic.minLevels[attachment.filter.type][FilterLogic.levelRetainSize];
+			maxRetainSize = FilterLogic.maxLevels[attachment.filter.type][FilterLogic.levelRetainSize];
+		}
+
 		if (wrapper != null) {
-			ElementButton button = new ElementButton(this, 10, 20 + 48, "import", 80, 0, 80, 16, 16, 16, ICON_PATH);
+			ElementButton button = new ElementButton(this, xSize - 32, 20 + 48, "import", 80, 0, 80, 16, 16, 16, ICON_PATH);
 			button.setToolTip("info.logistics.import");
 			addElement(button);
 		}
@@ -192,6 +217,9 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 			int start = slots * 9 + (crafter.getRecipes().size() - 1);
 			int x0 = xSize / 2 - start;
+			if (attachment.type == 4) {
+				x0 -= 17;
+			}
 			int y0 = 20 + 20;
 
 			for (int i = 0; i < crafter.getRecipes().size(); i++) {
@@ -269,6 +297,20 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 	@Override
 	protected void updateElementInformation() {
 		setButtons();
+
+		if (isAdvItemFilter) {
+			int qty = attachment.filter.getLevel(FilterLogic.levelRetainSize);
+			if (qty > minRetainSize) {
+				decRetainSize.setActive();
+			} else {
+				decRetainSize.setDisabled();
+			}
+			if (qty < maxRetainSize) {
+				incRetainSize.setActive();
+			} else {
+				incRetainSize.setDisabled();
+			}
+		}
 	}
 
 	@Override
@@ -403,12 +445,51 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			PacketTileInfo packet = ((ConnectionBase) crafter).getNewPacket(ConnectionBase.NETWORK_ID.GUI);
 			packet.addByte(3);
 			PacketHandler.sendToServer(packet);
+			return;
 		}
+
+		int change = 1;
+		float pitch = 0.7F;
+		if (GuiScreen.isShiftKeyDown()) {
+			change = 16;
+			pitch = 0.9F;
+			if (mouseButton == 1) {
+				change = 4;
+				pitch = 0.8F;
+			}
+		}
+		
+		if (buttonName.equalsIgnoreCase("DecRetainSize")) {
+			attachment.filter.decLevel(FilterLogic.levelRetainSize, change, false);
+			pitch -= 0.1F;
+		} else if (buttonName.equalsIgnoreCase("IncRetainSize")) {
+			attachment.filter.incLevel(FilterLogic.levelRetainSize, change, false);
+			pitch += 0.1F;
+		}
+
+		playClickSound(pitch);
 	}
 
 	@Override
 	protected void drawGuiContainerForegroundLayer(int x, int y) {
+		if (isAdvItemFilter) {
+			int xQty = 146;
+			int qty = attachment.filter.getLevel(FilterLogic.levelRetainSize);
+			if (qty == 0) {
+				xQty -= 9;
+				fontRenderer.drawString(StringHelper.localize("info.thermaldynamics.filter.zeroRetainSize"), xQty, 42, 0x404040);
+			} else {
+				if (qty < 10) {
+					xQty += 6;
+				} else if (qty >= 100) {
+					xQty -= 3;
+				}
+				fontRenderer.drawString("" + qty, xQty, 18, 0x404040);
+			}
+		}
+
 		super.drawGuiContainerForegroundLayer(x, y);
+
 		if (fluid != null) {
 			GlStateManager.pushMatrix();
 			GlStateManager.translate(0.0F, 0.0F, 64.0F);

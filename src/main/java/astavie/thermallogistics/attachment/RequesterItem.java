@@ -220,6 +220,11 @@ public class RequesterItem extends RetrieverItem implements IProcessRequesterIte
 				)) : 0;
 	}
 
+	@Override
+	public long amountEmpty(Type<ItemStack> type) {
+		return Integer.MAX_VALUE;
+	}
+
 	private long amountInside(Type<ItemStack> type) {
 		DuctUnitItem.Cache cache = itemDuct.tileCache[side];
 		if (cache == null)
