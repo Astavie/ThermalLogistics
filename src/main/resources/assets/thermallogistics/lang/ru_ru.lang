@@ -31,6 +31,11 @@ info.logistics.terminal.dump.inventory=Сбрасывать в инвентар�
 info.logistics.terminal.dump.network=Сбрасывать в сеть
 info.logistics.terminal.requester=Перед тем как запрашивать что либо, пожалуйста, вставьте Запросчик в слот запроса
 
+info.logistics.terminal.autofocus.true=Автоматический поиск
+info.logistics.terminal.autofocus.false=Обычный поиск
+info.logistics.terminal.jei.true=Синхронизация с JEI
+info.logistics.terminal.jei.false=Без синхронизации с JEI
+
 info.logistics.import=Импортировать
 info.logistics.fluid.get=Получить жидкость
 
