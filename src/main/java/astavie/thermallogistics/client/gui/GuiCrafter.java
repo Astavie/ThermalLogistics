@@ -21,7 +21,6 @@ import cofh.core.util.helpers.BlockHelper;
 import cofh.core.util.helpers.StringHelper;
 import cofh.thermaldynamics.duct.attachments.ConnectionBase;
 import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
-import mcjty.rftools.blocks.screens.GuiScreen;
 
 import com.google.common.primitives.Ints;
 import net.minecraft.client.renderer.GlStateManager;
@@ -450,7 +449,7 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 		int change = 1;
 		float pitch = 0.7F;
-		if (GuiScreen.isShiftKeyDown()) {
+		if (isShiftKeyDown()) {
 			change = 16;
 			pitch = 0.9F;
 			if (mouseButton == 1) {
@@ -484,7 +483,7 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 				} else if (qty >= 100) {
 					xQty -= 3;
 				}
-				fontRenderer.drawString("" + qty, xQty, 18, 0x404040);
+				fontRenderer.drawString("" + qty, xQty, 42, 0x404040);
 			}
 		}
 
