@@ -528,6 +528,10 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			int start = slots * 9 + (crafter.getRecipes().size() - 1);
 
 			int x0 = xSize / 2 - start;
+			if (attachment.type == 4) {
+				x0 -= 17;
+			}
+
 			int posX = x0 + (current * recipeSlots) * 18 + current * 2;
 			int posY = 20 + 20;
 
