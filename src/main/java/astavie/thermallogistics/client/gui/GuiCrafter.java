@@ -25,7 +25,6 @@ import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
 import com.google.common.primitives.Ints;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.inventory.Container;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidStack;

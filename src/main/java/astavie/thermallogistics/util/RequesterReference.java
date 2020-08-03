@@ -1,5 +1,7 @@
 package astavie.thermallogistics.util;
 
+import java.util.List;
+
 import astavie.thermallogistics.attachment.IRequester;
 import astavie.thermallogistics.attachment.IRequesterContainer;
 import cofh.core.network.PacketBase;
@@ -125,13 +127,16 @@ public class RequesterReference<I> {
 			if (tile instanceof IRequester) {
 				cache = (IRequester<I>) tile;
 			} else if (tile instanceof IRequesterContainer) {
-				cache = (IRequester<I>) ((IRequesterContainer<?>) tile).getRequesters().get(index);
+				List<? extends IRequester<?>> list = ((IRequesterContainer<?>) tile).getRequesters();
+				cache = index < list.size() ? (IRequester<I>) list.get(index) : null;
 			} else if (tile instanceof TileGrid) {
 				Attachment attachment = ((TileGrid) tile).getAttachment(side);
-				if (attachment instanceof IRequester)
+				if (attachment instanceof IRequester) {
 					cache = (IRequester<I>) attachment;
-				else if (attachment instanceof IRequesterContainer)
-					cache = (IRequester<I>) ((IRequesterContainer<?>) attachment).getRequesters().get(index);
+				} else if (attachment instanceof IRequesterContainer) {
+					List<? extends IRequester<?>> list = ((IRequesterContainer<?>) attachment).getRequesters();
+					cache = index < list.size() ? (IRequester<I>) list.get(index) : null;
+				}
 			}
 		} catch (ClassCastException ignore) {
 			cache = null;
