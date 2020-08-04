@@ -215,7 +215,7 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 
 			int start = slots * 9 + (crafter.getRecipes().size() - 1);
 			int x0 = xSize / 2 - start;
-			if (attachment.type == 4) {
+			if (attachment.type == 4 && isAdvItemFilter) {
 				x0 -= 17;
 			}
 			int y0 = 20 + 20;
@@ -528,7 +528,7 @@ public class GuiCrafter extends GuiOverlay implements IFluidGui {
 			int start = slots * 9 + (crafter.getRecipes().size() - 1);
 
 			int x0 = xSize / 2 - start;
-			if (attachment.type == 4) {
+			if (attachment.type == 4 && isAdvItemFilter) {
 				x0 -= 17;
 			}
 
