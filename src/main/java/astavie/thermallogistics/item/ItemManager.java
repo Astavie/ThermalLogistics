@@ -327,8 +327,9 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 				int size = Math.min(crafter.getCrafters().size(), second.getCrafters().size());
 
 				for (int i = 0; i < size; i++) {
-					crafter.getCrafters().get(i).checkLinked();
-					crafter.getCrafters().get(i).link(second.getCrafters().get(i));
+					if (!crafter.getCrafters().get(i).isLinked(second.getCrafters().get(i).createReference())) {
+						crafter.getCrafters().get(i).link(second.getCrafters().get(i));
+					}
 				}
 
 				// Success

@@ -483,10 +483,13 @@ public class TileTerminalItem extends TileTerminal<ItemStack> {
 
 			DuctUnit<?, ?, ?> duct = getDuct();
 			if (duct != null) {
-				StackMap map = ((GridItem) duct.getGrid()).travelingItems.getOrDefault(getDestination(),
-						new StackMap());
-				for (ItemStack item : map.getItems())
-					list.remove(item);
+				GridItem grid = (GridItem) duct.getGrid();
+				if (grid != null) {
+					StackMap map = grid.travelingItems.getOrDefault(getDestination(),
+							new StackMap());
+					for (ItemStack item : map.getItems())
+						list.remove(item);
+				}
 			}
 
 			return list;
