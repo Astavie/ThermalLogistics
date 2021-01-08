@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import astavie.thermallogistics.util.type.Type;
 import astavie.thermallogistics.client.gui.GuiTerminalItem;
 import astavie.thermallogistics.client.gui.element.ElementSlot;
 import astavie.thermallogistics.container.ContainerTerminalItem;
@@ -133,6 +134,15 @@ public class TerminalHandler implements IRecipeTransferHandler<ContainerTerminal
 			if (stacks == null)
 				return stack.isEmpty();
 			return Arrays.stream(stacks).anyMatch(item -> ItemHelper.itemsIdentical(item, stack));
+		}
+
+		@Override
+		public boolean test(Type<ItemStack> type) {
+			if (super.get() != null)
+				return super.test(type);
+			if (stacks == null)
+				return type.isNothing();
+			return Arrays.stream(stacks).anyMatch(type::references);
 		}
 
 		@Override

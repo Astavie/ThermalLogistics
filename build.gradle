@@ -118,13 +118,13 @@ publishing {
 publishing {
     repositories {
         maven {
-            url "/home/astavie/Documents/Code/Maven"
+            url "/media/astavie/External SSD/Code/Github Pages/Maven"
         }
     }
 }
 
 task pushMaven(type: Exec) {
-    workingDir '/home/astavie/Documents/Code/Maven'
+    workingDir '/media/astavie/External SSD/Code/Github Pages/Maven'
     commandLine 'bash', 'push.sh', "astavie/${mod_id}", "Maven, ${mod_name}, ${project.version}"
 }
 

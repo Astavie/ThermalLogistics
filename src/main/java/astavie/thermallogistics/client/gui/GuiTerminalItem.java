@@ -83,7 +83,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			if (!stack.isEmpty())
 				copy.add(stack);
 
-		copy.addAll(tile.terminal);
+		copy.addAll(tile.terminal); // TODO: Add expected items to list of items
 
 		int count = 1;
 		if (!tabCrafting.amount.getText().isEmpty())
