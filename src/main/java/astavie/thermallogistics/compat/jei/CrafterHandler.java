@@ -210,7 +210,7 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter>,
 
 		@Override
 		public void accept(@Nonnull FluidStack ingredient) {
-			tab.slot.accept(ingredient);
+			tab.slot.accept(ingredient, 2);
 		}
 
 	}
@@ -231,7 +231,7 @@ public class CrafterHandler implements IRecipeTransferHandler<ContainerCrafter>,
 
 		@Override
 		public void accept(@Nonnull I ingredient) {
-			slot.accept(ingredient);
+			slot.accept(ingredient, 2);
 		}
 
 	}

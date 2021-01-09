@@ -47,28 +47,34 @@ public class ElementSlotFluid extends ElementSlot<FluidStack> {
 	@Override
 	public boolean onMousePressed(int mouseX, int mouseY, int mouseButton) {
 		if (mouseButton < 2 && intersectsWith(mouseX, mouseY)) {
-			FluidStack get = fluid.get();
 			FluidStack drag = null;
-			FluidStack fluid;
 
 			if (gui instanceof IFluidGui)
 				drag = ((IFluidGui) gui).getFluid();
 			if (drag == null)
 				drag = FluidHelper.getFluidForFilledItem(gui.draggedStack.isEmpty() ? gui.mc.player.inventory.getItemStack() : gui.draggedStack);
 
-			if (drag == null)
-				fluid = null;
-			else if (mouseButton == 0 || !count)
-				fluid = drag.copy();
-			else if (FluidHelper.isFluidEqual(get, drag))
-				fluid = FluidUtils.copy(get, get.amount + drag.amount);
-			else
-				fluid = drag.copy();
-
-			consumer.accept(fluid);
+			accept(drag, mouseButton);
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public void accept(@Nonnull FluidStack ingredient, int mouse) {
+		FluidStack get = fluid.get();
+		FluidStack fluid;
+
+		if (ingredient == null)
+			fluid = null;
+		else if (mouse == 0 || !count)
+			fluid = ingredient.copy();
+		else if (FluidHelper.isFluidEqual(get, ingredient))
+			fluid = FluidUtils.copy(get, get.amount + ingredient.amount);
+		else
+			fluid = ingredient.copy();
+
+		consumer.accept(fluid);
 	}
 
 	@Override

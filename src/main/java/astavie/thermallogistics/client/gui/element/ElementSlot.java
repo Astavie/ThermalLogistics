@@ -64,6 +64,8 @@ public abstract class ElementSlot<I> extends ElementBase {
 		return new Rectangle(gui.getGuiLeft() + posX + 1, gui.getGuiTop() + posY + 1, 16, 16);
 	}
 
+	public abstract void accept(@Nonnull I ingredient, int mouse);
+
 	public abstract void accept(@Nonnull I ingredient);
 
 	public abstract Object getIngredient();

@@ -57,23 +57,29 @@ public class ElementSlotItem extends ElementSlot<ItemStack> {
 	@Override
 	public boolean onMousePressed(int mouseX, int mouseY, int mouseButton) {
 		if (mouseButton < 2 && intersectsWith(mouseX, mouseY)) {
-			ItemStack get = stack.get();
 			ItemStack drag = gui.draggedStack.isEmpty() ? gui.mc.player.inventory.getItemStack() : gui.draggedStack;
-			ItemStack stack;
 
-			if (drag.isEmpty())
-				stack = ItemStack.EMPTY;
-			else if (mouseButton == 0)
-				stack = drag.copy();
-			else if (ItemHelper.itemsIdentical(get, drag))
-				stack = ItemHelper.cloneStack(get, get.getCount() + 1);
-			else
-				stack = ItemHelper.cloneStack(drag, 1);
-
-			consumer.accept(stack);
+			accept(drag, mouseButton);
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public void accept(@Nonnull ItemStack ingredient, int mouse) {
+		ItemStack get = stack.get();
+		ItemStack stack;
+
+		if (ingredient.isEmpty())
+			stack = ItemStack.EMPTY;
+		else if (mouse == 0)
+			stack = ingredient.copy();
+		else if (ItemHelper.itemsIdentical(get, ingredient))
+			stack = ItemHelper.cloneStack(get, get.getCount() + 1);
+		else
+			stack = ItemHelper.cloneStack(ingredient, 1);
+
+		consumer.accept(stack);
 	}
 
 	public ItemStack get() {
