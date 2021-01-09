@@ -1,0 +1,90 @@
+itemGroup.thermallogistics.creativeTab=Thermal Logistics
+
+item.logistics.requester.basic.name=Demandeur
+item.logistics.requester.hardened.name=Demandeur endurci
+item.logistics.requester.reinforced.name=Demandeur renforcé
+item.logistics.requester.signalum.name=Demandeur signalum
+item.logistics.requester.resonant.name=Demandeur résonant
+item.logistics.requester.info=Attire ou fabrique des objets/fluides à lui.
+
+item.logistics.crafter.basic.name=Fabricateur
+item.logistics.crafter.hardened.name=Fabricateur endurci
+item.logistics.crafter.reinforced.name=Fabricateur renforcé
+item.logistics.crafter.signalum.name=Fabricateur signalum
+item.logistics.crafter.resonant.name=Fabricateur résonant
+item.logistics.crafter.info=Fabrique des items/fluide sur demande.
+
+item.logistics.distributor.basic.name=Distributeur
+item.logistics.distributor.hardened.name=Distributeur endurci
+item.logistics.distributor.reinforced.name=Distributeur renforcé
+item.logistics.distributor.signalum.name=Distributeur signalum
+item.logistics.distributor.resonant.name=Distributeur résonant
+item.logistics.distributor.info=Extrait les objets/fluides en priorisant les filtres.
+
+item.logistics.manager.name=Gestionnaire de réseau
+
+item.logistics.terminal.item.name=Terminal
+tile.logistics.terminal.item.name=Terminal
+
+info.logistics.terminal.dump.inventory=Vider dans l'inventaire
+info.logistics.terminal.dump.network=Vider dans le réseau
+info.logistics.terminal.requester=Mettez un demandeur dans le slot prévu avant de demander des objets.
+
+info.logistics.terminal.autofocus.true=Barre de recherche toujours active
+info.logistics.terminal.autofocus.false=Barre de recherche interactive
+info.logistics.terminal.jei.true=Synchroniser avec JEI
+info.logistics.terminal.jei.false=Ne pas synchroniser avec JEI
+
+info.logistics.import=Importation
+info.logistics.fluid.get=Recevoir des fluides
+
+info.logistics.inputs=Entrées: §f%s
+info.logistics.outputs=Sorties: §f%s
+info.logistics.split=Recettes: %s
+info.logistics.parallel=Faire les recettes en parallèle
+info.logistics.series=Faire les recettes en series
+info.logistics.unlinked.0=Cette recette n'est pas liée
+info.logistics.unlinked.1=Cliquer ici avec un gestionnaire de réseau pour commencer la liaison
+info.logistics.enable=Activer le fabricateur et les fabricateurs liés
+info.logistics.disable=Désactiver le fabricateur et les fabricateurs liés
+
+info.logistics.tab.link=Fabricateurs liés
+info.logistics.tab.fluid=Ajouter un fluide
+info.logistics.tab.crafting=Fabrication
+info.logistics.tab.input=Entrées
+info.logistics.tab.output=Sorties
+info.logistics.tab.missing=Objets ou recettes manquants
+info.logistics.manager.a.0=Utiliser sur un servomoteur pour contrôler le système.
+info.logistics.manager.a.1=Utiliser sur deux fabricateurs pour les lier entre eux.
+info.logistics.manager.a.2=Intéragis avec les servomoteurs.
+
+info.logistics.manager.b.0=§eAppuyer sur (%s) pour activer les connexions.§r
+info.logistics.manager.b.1=§eAppuyer sur(%s) pour activer les connexions de masse.§r
+info.logistics.manager.b.2=§eAppuyer sur (%s) pour activer le monitoring.§r
+
+info.logistics.manager.c.0=Monitoring activé
+info.logistics.manager.c.1=Connexions activées
+info.logistics.manager.c.2=Connexions de masse activées
+
+info.logistics.manager.d.0=Lien commencé...
+info.logistics.manager.d.1=Inapte pour lier. Essayer encore.
+info.logistics.manager.d.2=Ces fabricateurs sont déjà liés.
+info.logistics.manager.d.3=Lié avec succès! Soyez sûrs de bien réactiver la recette.
+info.logistics.manager.d.4=Lien annulé.
+info.logistics.manager.d.5=Le fabricateur n'as pas de recettes.
+info.logistics.manager.d.6=Le fabricateur a plus d'une recettes, sélectionner-en une à l'intérieur.
+
+info.logistics.manager.e.0=Des objets voyagent vers ce câble
+info.logistics.manager.e.1=%s x %s
+info.logistics.manager.e.2=Aucun objet ne voyage vers ce câble
+
+info.logistics.manager.f=Linking %s at {x%s, y%s, z%s, %s}
+
+gui.logistics.terminal.request=Demande
+gui.logistics.terminal.complex=La demande est trop complexe
+gui.logistics.terminal.missing=Objets manquants
+gui.logistics.terminal.missing.fluid=%s mB x %s
+gui.logistics.terminal.enough=Aucun objet n'a besoin d'être demandé
+gui.logistics.terminal.buffer=Tampon
+gui.logistics.terminal.or=OU
+gui.logistics.terminal.cancel=Clic-droit pour annuler
