@@ -22,6 +22,7 @@ import cofh.core.network.PacketTileInfo;
 import cofh.core.util.helpers.BlockHelper;
 import cofh.core.util.helpers.ServerHelper;
 import cofh.thermaldynamics.ThermalDynamics;
+import cofh.thermaldynamics.duct.attachments.filter.FilterLogic;
 import cofh.thermaldynamics.duct.attachments.filter.IFilterItems;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.item.DuctUnitItem;
@@ -59,8 +60,8 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	public static final int[][] SPLITS = {{1}, {2, 1}, {3, 1}, {4, 2, 1}, {6, 3, 2, 1}};
 	private final List<Recipe<ItemStack>> recipes = NonNullList.create();
 
-	private boolean processParallel = true;
-	private int currentRecipe = 0;
+	private boolean processParallel = false;
+	private int currentRecipe = -1;
 
 	private final IFilterItems filter2 = new IFilterItems() {
 		@Override
@@ -99,6 +100,18 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 
 		// Disable redstone control
 		rsMode = ControlMode.DISABLED;
+	}
+
+	@Override
+	public FilterLogic createFilterLogic() {
+		FilterLogic filter = super.createFilterLogic();
+
+		if (!baseTile.world().isRemote) {
+			// Set max stack size to 64
+			filter.setLevel(FilterLogic.levelRetainSize, 64);
+		}
+
+		return filter;
 	}
 
 	@Override

@@ -7,7 +7,9 @@ import cofh.core.util.CoreUtils;
 import cofh.core.util.helpers.RecipeHelper;
 import cofh.thermaldynamics.duct.TDDucts;
 import cofh.thermalfoundation.item.ItemMaterial;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
@@ -19,15 +21,18 @@ import javax.annotation.Nullable;
 
 public class BlockTerminalItem extends BlockTerminal {
 
-	public BlockTerminalItem(String name, String type) {
-		super(name, type);
+	public BlockTerminalItem(String name, String type, boolean active) {
+		super(name, type, active);
 	}
 
 	@Override
 	public void breakBlock(World world, BlockPos pos, IBlockState state) {
-		TileTerminalItem tile = (TileTerminalItem) world.getTileEntity(pos);
-		for (int i = 0; i < tile.inventory.getSizeInventory(); i++)
-			CoreUtils.dropItemStackIntoWorldWithVelocity(tile.inventory.getStackInSlot(i), world, pos);
+		if (!keepInventory) {
+			TileTerminalItem tile = (TileTerminalItem) world.getTileEntity(pos);
+			for (int i = 0; i < tile.inventory.getSizeInventory(); i++)
+				CoreUtils.dropItemStackIntoWorldWithVelocity(tile.inventory.getStackInSlot(i), world, pos);
+		}
+
 		super.breakBlock(world, pos, state);
 	}
 
@@ -39,17 +44,20 @@ public class BlockTerminalItem extends BlockTerminal {
 
 	@Override
 	public boolean initialize() {
-		RecipeHelper.addShapedRecipe(new ItemStack(this),
-				" X ",
-				"YCY",
-				"IPI",
-				'C', Loader.isModLoaded("thermalexpansion") ? CompatTE.MACHINE_FRAME : "blockIron",
-				'I', "gearCopper",
-				'P', ItemMaterial.powerCoilGold,
-				'X', ThermalLogistics.Items.manager,
-				'Y', TDDucts.itemBasic.itemStack
-		);
+		RecipeHelper.addShapedRecipe(new ItemStack(this), " X ", "YCY", "IPI", 'C',
+				Loader.isModLoaded("thermalexpansion") ? CompatTE.MACHINE_FRAME : "blockIron", 'I', "gearCopper", 'P',
+				ItemMaterial.powerCoilGold, 'X', ThermalLogistics.Items.manager, 'Y', TDDucts.itemBasic.itemStack);
 		return true;
+	}
+
+	@Override
+	protected Item getItem() {
+		return Item.getItemFromBlock(ThermalLogistics.Blocks.terminal_item);
+	}
+
+	@Override
+	public Block getActive(boolean active) {
+		return active ? ThermalLogistics.Blocks.terminal_item_active : ThermalLogistics.Blocks.terminal_item;
 	}
 
 }

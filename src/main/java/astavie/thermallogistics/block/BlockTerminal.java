@@ -2,12 +2,16 @@ package astavie.thermallogistics.block;
 
 import astavie.thermallogistics.ThermalLogistics;
 import astavie.thermallogistics.tile.TileTerminal;
+import cofh.api.tileentity.IInventoryRetainer;
 import cofh.core.block.BlockCoreTile;
+import cofh.core.block.TileCore;
 import cofh.core.block.TileNameable;
 import cofh.core.render.IModelRegister;
 import cofh.core.util.CoreUtils;
 import cofh.core.util.RayTracer;
 import cofh.core.util.helpers.*;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.PropertyBool;
 import net.minecraft.block.properties.PropertyEnum;
@@ -17,9 +21,11 @@ import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.IStringSerializable;
@@ -37,24 +43,33 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class BlockTerminal extends BlockCoreTile implements IModelRegister {
+public abstract class BlockTerminal extends BlockCoreTile implements IModelRegister {
 
 	public static final PropertyEnum<Direction> DIRECTION = PropertyEnum.create("direction", Direction.class, Direction.values());
-	public static final PropertyBool ACTIVE = PropertyBool.create("active");
 
-	public BlockTerminal(String name, String type) {
+	public final boolean active;
+	public boolean keepInventory = false;
+
+	public BlockTerminal(String name, String type, boolean active) {
 		super(Material.IRON, "logistics");
 
 		setTranslationKey(name + "." + type);
 		this.name = name + "_" + type;
+		if (active) {
+			this.name += "_active";
+		}
+		this.active = active;
 
 		setRegistryName(this.name);
-		setCreativeTab(ThermalLogistics.INSTANCE.tab);
+
+		if (!active) {
+			setCreativeTab(ThermalLogistics.INSTANCE.tab);
+		}
 
 		setHardness(15.0F);
 		setResistance(25.0F);
 
-		this.setDefaultState(this.blockState.getBaseState().withProperty(ACTIVE, false).withProperty(DIRECTION, Direction.NORTH));
+		this.setDefaultState(this.blockState.getBaseState().withProperty(DIRECTION, Direction.NORTH));
 	}
 
 	@Nonnull
@@ -130,23 +145,42 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 	@Nonnull
 	@Override
 	protected BlockStateContainer createBlockState() {
-		return new BlockStateContainer(this, ACTIVE, DIRECTION);
+		return new BlockStateContainer(this, DIRECTION);
 	}
 
 	@Override
 	public void breakBlock(World world, BlockPos pos, IBlockState state) {
-		CoreUtils.dropItemStackIntoWorldWithVelocity(((TileTerminal<?>) world.getTileEntity(pos)).requester.get(), world, pos);
-		super.breakBlock(world, pos, state);
+		if (!keepInventory) {
+			CoreUtils.dropItemStackIntoWorldWithVelocity(((TileTerminal<?>) world.getTileEntity(pos)).requester.get(), world, pos);
+		}
+
+		TileEntity tile = world.getTileEntity(pos);
+
+		if (tile instanceof TileCore) {
+			((TileCore) tile).blockBroken();
+		}
+		if (tile instanceof IInventoryRetainer && ((IInventoryRetainer) tile).retainInventory()) {
+			// do nothing
+		} else if (tile instanceof IInventory) {
+			IInventory inv = (IInventory) tile;
+			for (int i = 0; i < inv.getSizeInventory(); i++) {
+				CoreUtils.dropItemStackIntoWorldWithVelocity(inv.getStackInSlot(i), world, pos);
+			}
+		}
 	}
+
+	protected abstract Item getItem();
+
+	public abstract Block getActive(boolean active);
 
 	@Override
 	public ItemStack getPickBlock(IBlockState state, RayTraceResult target, World world, BlockPos pos, EntityPlayer player) {
-		return new ItemStack(Item.getItemFromBlock(this));
+		return new ItemStack(getItem());
 	}
 
 	@Override
 	public ArrayList<ItemStack> dropDelegate(NBTTagCompound nbt, IBlockAccess world, BlockPos pos, int fortune) {
-		return new ArrayList<>(Collections.singleton(new ItemStack(Item.getItemFromBlock(this))));
+		return new ArrayList<>(Collections.singleton(new ItemStack(getItem())));
 	}
 
 	@Override
@@ -169,7 +203,7 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 		if (world.getBlockState(pos).getBlock() != this)
 			return ret;
 
-		ItemStack dropBlock = new ItemStack(Item.getItemFromBlock(this));
+		ItemStack dropBlock = new ItemStack(getItem());
 		if (nbt != null && !nbt.isEmpty())
 			dropBlock.setTagCompound(nbt);
 
@@ -207,7 +241,7 @@ public class BlockTerminal extends BlockCoreTile implements IModelRegister {
 	@Override
 	public void registerModels() {
 		ModelResourceLocation location = new ModelResourceLocation(ThermalLogistics.MOD_ID + ":" + name);
-		ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(this), 0, location);
+		ModelLoader.setCustomModelResourceLocation(getItem(), 0, location);
 	}
 
 	public enum Direction implements IStringSerializable {

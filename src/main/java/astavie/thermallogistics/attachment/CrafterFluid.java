@@ -59,7 +59,7 @@ public class CrafterFluid extends ServoFluid implements IAttachmentCrafter<Fluid
 
 	private final IFilterFluid filter2 = fluid -> checkCache() && matchesInput(fluid);
 
-	private boolean processParallel = true;
+	private boolean processParallel = false;
 	private int currentRecipe = 0;
 
 	public CrafterFluid(TileGrid tile, byte side) {

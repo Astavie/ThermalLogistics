@@ -21,9 +21,12 @@ import cofh.core.network.PacketHandler;
 import cofh.core.network.PacketTileInfo;
 import cofh.thermaldynamics.duct.attachments.servo.ServoItem;
 import cofh.thermaldynamics.duct.tiles.DuctUnit;
+import net.minecraft.block.BlockFurnace;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -125,7 +128,7 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 	@Override
 	public boolean shouldRefresh(World world, BlockPos pos, @Nonnull IBlockState oldState, @Nonnull IBlockState newSate) {
-		return oldState.getBlock() != newSate.getBlock();
+		return oldState.getBlock().getClass() != newSate.getBlock().getClass();
 	}
 
 	@Override
@@ -174,8 +177,17 @@ public abstract class TileTerminal<I> extends TileNameable implements ITickable,
 
 	private void setActive(boolean active) {
 		IBlockState state = world.getBlockState(pos);
-		if (state.getValue(BlockTerminal.ACTIVE) != active)
-			world.setBlockState(pos, state.withProperty(BlockTerminal.ACTIVE, active), 3);
+		BlockTerminal block = (BlockTerminal) state.getBlock();
+
+		if (block.active != active) {
+			block.keepInventory = true;
+			world.setBlockState(pos, block.getActive(active).getDefaultState().withProperty(BlockTerminal.DIRECTION, state.getValue(BlockTerminal.DIRECTION)), 3);
+			block.keepInventory = false;
+
+			validate();
+			world.setTileEntity(pos, this);
+			markChunkDirty();
+		}
 	}
 
 	@Override

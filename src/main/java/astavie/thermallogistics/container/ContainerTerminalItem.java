@@ -20,7 +20,7 @@ public class ContainerTerminalItem extends ContainerTerminal {
 	protected void addSlots() {
 		for (int y = 0; y < 3; y++)
 			for (int x = 0; x < 9; x++)
-				addSlotToContainer(new Slot(((TileTerminalItem) super.tile).inventory, x + y * 9, 8 + x * 18, 88 + y * 18));
+				addSlotToContainer(new Slot(((TileTerminalItem) tile).inventory, x + y * 9, 8 + x * 18, 88 + y * 18));
 	}
 
 	@Override

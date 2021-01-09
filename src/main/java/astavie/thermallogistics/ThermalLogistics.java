@@ -30,6 +30,7 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.fml.common.registry.GameRegistry.ObjectHolder;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
@@ -118,7 +119,11 @@ public class ThermalLogistics {
 	@GameRegistry.ObjectHolder(MOD_ID)
 	public static class Blocks {
 
+		@ObjectHolder("terminal_item")
 		public static final BlockTerminalItem terminal_item = null;
+
+		@ObjectHolder("terminal_item_active")
+		public static final BlockTerminalItem terminal_item_active = null;
 
 	}
 
@@ -138,7 +143,8 @@ public class ThermalLogistics {
 
 		@SubscribeEvent
 		public static void registerBlocks(RegistryEvent.Register<Block> event) {
-			register(event.getRegistry(), new BlockTerminalItem("terminal", "item"));
+			register(event.getRegistry(), new BlockTerminalItem("terminal", "item", false));
+			register(event.getRegistry(), new BlockTerminalItem("terminal", "item", true));
 		}
 
 		@SubscribeEvent

@@ -59,7 +59,7 @@ info.logistics.manager.a.1=Utiliser sur deux fabricateurs pour les lier entre eu
 info.logistics.manager.a.2=Intéragis avec les servomoteurs.
 
 info.logistics.manager.b.0=§eAppuyer sur (%s) pour activer les connexions.§r
-info.logistics.manager.b.1=§eAppuyer sur(%s) pour activer les connexions de masse.§r
+info.logistics.manager.b.1=§eAppuyer sur (%s) pour activer les connexions de masse.§r
 info.logistics.manager.b.2=§eAppuyer sur (%s) pour activer le monitoring.§r
 
 info.logistics.manager.c.0=Monitoring activé

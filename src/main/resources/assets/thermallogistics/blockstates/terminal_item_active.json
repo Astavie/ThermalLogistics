@@ -1,0 +1,60 @@
+{
+  "variants": {
+    "normal": {
+      "model": "thermallogistics:terminal_item_active"
+    },
+    "direction=up_north": {
+      "model": "thermallogistics:terminal_item_active",
+      "x": 270
+    },
+    "direction=up_south": {
+      "model": "thermallogistics:terminal_item_active",
+      "x": 270,
+      "y": 180
+    },
+    "direction=up_west": {
+      "model": "thermallogistics:terminal_item_active",
+      "x": 270,
+      "y": 270
+    },
+    "direction=up_east": {
+      "model": "thermallogistics:terminal_item_active",
+      "x": 270,
+      "y": 90
+    },
+    "direction=north": {
+      "model": "thermallogistics:terminal_item_active"
+    },
+    "direction=south": {
+      "model": "thermallogistics:terminal_item_active",
+      "y": 180
+    },
+    "direction=west": {
+      "model": "thermallogistics:terminal_item_active",
+      "y": 270
+    },
+    "direction=east": {
+      "model": "thermallogistics:terminal_item_active",
+      "y": 90
+    },
+    "direction=down_north": {
+      "model": "thermallogistics:terminal_item_active",
+      "x": 90
+    },
+    "direction=down_south": {
+      "model": "thermallogistics:terminal_item_active",
+      "x": 90,
+      "y": 180
+    },
+    "direction=down_west": {
+      "model": "thermallogistics:terminal_item_active",
+      "x": 90,
+      "y": 270
+    },
+    "direction=down_east": {
+      "model": "thermallogistics:terminal_item_active",
+      "x": 90,
+      "y": 90
+    }
+  }
+}
