@@ -7,6 +7,7 @@ import astavie.thermallogistics.tile.TileTerminalItem;
 import astavie.thermallogistics.util.Shared;
 import astavie.thermallogistics.util.collection.ItemList;
 import astavie.thermallogistics.util.type.Type;
+import astavie.thermallogistics.process.Request;
 import cofh.core.gui.element.ElementBase;
 import cofh.core.gui.element.ElementButton;
 import cofh.core.network.PacketHandler;
@@ -76,14 +77,18 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 
 		ItemList copy = new ItemList();
 
+		for (Request<ItemStack> request : tile.requests)
+			if (!request.isError())
+				copy.add(request.type, request.amount);
 		for (ItemStack stack : tile.inventory.items)
 			if (!stack.isEmpty())
 				copy.add(stack);
-		for (ItemStack stack : Minecraft.getMinecraft().player.inventory.mainInventory)
+		for (ItemStack stack : mc.player.inventory.mainInventory)
 			if (!stack.isEmpty())
 				copy.add(stack);
+		copy.add(draggedStack.isEmpty() ? mc.player.inventory.getItemStack() : draggedStack);
 
-		copy.addAll(tile.terminal); // TODO: Add expected items to list of items
+		copy.addAll(tile.terminal);
 
 		int count = 1;
 		if (!tabCrafting.amount.getText().isEmpty())
@@ -131,10 +136,14 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 		}
 
 		if (missing.isEmpty()) {
+			for (Request<ItemStack> r : tile.requests)
+				if (!r.isError())
+					request.remove(r.type, r.amount);
 			for (ItemStack stack : tile.inventory.items)
 				request.remove(stack);
 			for (ItemStack stack : Minecraft.getMinecraft().player.inventory.mainInventory)
 				request.remove(stack);
+			request.remove(draggedStack.isEmpty() ? mc.player.inventory.getItemStack() : draggedStack);
 
 			if (request.isEmpty())
 				return Pair.of(null, Collections.singletonList(StringHelper.localize("gui.logistics.terminal.enough")));
