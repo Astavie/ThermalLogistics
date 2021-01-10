@@ -54,19 +54,19 @@ info.logistics.tab.fluid=添加流体
 info.logistics.tab.crafting=合成
 info.logistics.tab.input=输入
 info.logistics.tab.output=输出
-info.logistics.tab.missing=缺少物品堆叠
+info.logistics.tab.missing=缺少物品
 
 info.logistics.manager.a.0=对各类伺服器右击以监视系统。
 info.logistics.manager.a.1=对两个合成器右击以进行链接。
 info.logistics.manager.a.2=用于与各类伺服器互动。
 
 info.logistics.manager.b.0=§e按(%s)以开始链接。§r
-info.logistics.manager.b.1=§e按(%s)以开始大量链接。§r
+info.logistics.manager.b.1=§e按(%s)以开始批量链接。§r
 info.logistics.manager.b.2=§e按(%s)以开始监视。§r
 
 info.logistics.manager.c.0=监视模式已开启
 info.logistics.manager.c.1=链接模式已开启
-info.logistics.manager.c.2=大量链接模式已开启
+info.logistics.manager.c.2=批量链接模式已开启
 
 info.logistics.manager.d.0=开始链接……
 info.logistics.manager.d.1=无法链接。请再试一次。
@@ -74,7 +74,7 @@ info.logistics.manager.d.2=这些合成器已经被链接过了。
 info.logistics.manager.d.3=链接成功！请确保再次启用合成器内部的配方。
 info.logistics.manager.d.4=链接取消。
 info.logistics.manager.d.5=合成器没有配方。
-info.logistics.manager.d.6=合成器内有多于一个配方，请从中选择一个或使用大量链接。
+info.logistics.manager.d.6=合成器内有多于一个配方，请从中选择一个链接或进行批量链接。
 
 info.logistics.manager.e.0=物品正前往这个管道
 info.logistics.manager.e.1=%s x %s
@@ -84,7 +84,7 @@ info.logistics.manager.f=正与位于{x%2s, y%3s, z%4s, %5s}的%1s链接
 
 gui.logistics.terminal.request=请求
 gui.logistics.terminal.complex=请求过于复杂
-gui.logistics.terminal.missing=缺少物品堆叠
+gui.logistics.terminal.missing=缺少物品
 gui.logistics.terminal.missing.fluid=%s mB x %s
 gui.logistics.terminal.enough=无物品被请求
 gui.logistics.terminal.buffer=缓存
