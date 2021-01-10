@@ -80,7 +80,7 @@ info.logistics.manager.e.0=物品正前往这个管道
 info.logistics.manager.e.1=%s x %s
 info.logistics.manager.e.2=没有物品正前往这个管道
 
-info.logistics.manager.f=正与位于{x%2s, y%3s, z%4s, %5s}的%1s链接
+info.logistics.manager.f=正与位于{x%2$s, y%3$s, z%4$s, %5$s}的%1$s链接
 
 gui.logistics.terminal.request=请求
 gui.logistics.terminal.complex=请求过于复杂
