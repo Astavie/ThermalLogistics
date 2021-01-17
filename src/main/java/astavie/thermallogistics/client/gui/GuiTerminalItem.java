@@ -271,7 +271,7 @@ public class GuiTerminalItem extends GuiTerminal<ItemStack> {
 			super.mouseClickMove(mX, mY, lastClick, timeSinceClick);
 		}
 	}
-
+	
 	@Override
 	protected boolean hasClickedOutside(int x, int y, int left, int top) {
 		boolean yes = super.hasClickedOutside(x, y, left, top);

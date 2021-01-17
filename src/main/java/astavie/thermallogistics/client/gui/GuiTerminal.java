@@ -371,7 +371,16 @@ public abstract class GuiTerminal<I> extends GuiOverlay implements IFocusGui {
 							}
 						}
 
-						Overlay overlay = new Overlay(this, posX * 18 + 7, posY * 18 + 17, 81 + 16, 18);
+						Overlay overlay = new Overlay(this, posX * 18 + 7, posY * 18 + 17, 81 + 16, 18) {
+							@Override
+							public boolean onMouseWheel(int mouseX, int mouseY, int movement) {
+								long amt = amount.get().getText().isEmpty() ? 1 : Long.parseLong(amount.get().getText());
+								amt += (movement > 0 ? 1 : -1);
+								if (amt < 1) amt = 1;
+								amount.get().setText(Long.toString(amt));
+								return true;
+							}
+						};
 						overlay.elements.add(new ElementStack(this, 0, 0, selected, false));
 						overlay.elements.add(amount.get());
 						overlay.elements.add(new ElementButton(this, 81, 2, 14, 14, 222, 0, 222, 14, texture.toString()) {
