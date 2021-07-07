@@ -106,7 +106,7 @@ public class CrafterItem extends ServoItem implements IAttachmentCrafter<ItemSta
 	public FilterLogic createFilterLogic() {
 		FilterLogic filter = super.createFilterLogic();
 
-		if (!baseTile.world().isRemote) {
+		if (baseTile != null && baseTile.world() != null && !baseTile.world().isRemote) {
 			// Set max stack size to 64
 			filter.setLevel(FilterLogic.levelRetainSize, 64);
 		}
