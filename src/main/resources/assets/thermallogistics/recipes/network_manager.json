@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "iRi",
+    "iCi",
+    "iSi"
+  ],
+  "key": {
+    "i": {
+      "type": "forge:ore_dict",
+      "ore": "nuggetIron"
+    },
+    "R": {
+      "item": "minecraft:redstone_torch"
+    },
+    "C": {
+      "item": "thermalfoundation:material",
+      "data": 640
+    },
+    "S": {
+      "type": "forge:ore_dict",
+      "ore": "dustSulfur"
+    }
+  },
+  "result": {
+    "item": "thermallogistics:manager",
+    "count": 1
+  }
+}

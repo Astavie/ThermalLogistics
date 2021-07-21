@@ -355,7 +355,6 @@ public class ItemManager extends ItemCore implements IMultiModeItem, IInitialize
 
 	@Override
 	public boolean initialize() {
-		RecipeHelper.addShapedRecipe(new ItemStack(this), "iRi", "iCi", "iSi", 'i', "nuggetIron", 'R', Blocks.REDSTONE_TORCH, 'C', ItemMaterial.partToolCasing, 'S', "dustSulfur");
 		return true;
 	}
 
